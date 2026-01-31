@@ -7,5 +7,7 @@ Route::get('/karma', [FeedController::class, 'index'])
     ->name('feeds.index');
 Route::post('/karma', [FeedController::class, 'store'])
     ->name('feeds.store');
+Route::post('/karma/planning/recalculate', [FeedController::class, 'recalculatePlanning'])
+    ->name('feeds.planning.recalculate');
 Route::delete('/karma/{feed}', [FeedController::class, 'destroy'])
     ->name('feeds.destroy');

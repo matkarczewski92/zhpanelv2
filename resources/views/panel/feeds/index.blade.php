@@ -101,6 +101,89 @@
         <div class="col-12 col-xl-4"></div>
     </div>
 
+    @php
+        $planningRows = $planning['rows'] ?? [];
+        $planningLeadTime = $planning['lead_time_days'] ?? 0;
+        $planningTotalLabel = $planning['total_cost_label'] ?? '—';
+    @endphp
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div
+                class="glass-card glass-table-wrapper"
+                id="feedPlanning"
+                data-url="{{ route('panel.feeds.planning.recalculate', [], false) }}"
+            >
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="strike"><span>Planowanie zapotrzebowania</span></div>
+                    <div class="d-flex align-items-center gap-3 text-muted small">
+                        <span>Dzisiejsza data: <span class="fw-semibold">{{ $planning['today'] ?? now()->format('Y-m-d') }}</span></span>
+                        <span>Czas dostawy: <span class="fw-semibold">{{ $planningLeadTime }}</span> dni</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table glass-table table-sm align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted small">
+                                <th>Nazwa karmy</th>
+                                <th style="width: 80px;">DK</th>
+                                <th style="width: 120px;">DZ</th>
+                                <th style="width: 140px;">Zamówienie</th>
+                                <th style="width: 90px;">Nowa DK</th>
+                                <th style="width: 130px;">Nowa DZ</th>
+                                <th style="width: 120px;" class="text-end">Kwota</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($planningRows as $feedId => $row)
+                                <tr data-feed-id="{{ $feedId }}">
+                                    <td class="fw-semibold text-break">{{ $row['name'] }}</td>
+                                    <td class="js-dk fw-semibold">{{ $row['dk_label'] }}</td>
+                                    <td class="js-dz text-nowrap text-muted small">{{ $row['dz_label'] }}</td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                class="form-control form-control-sm js-order-qty"
+                                                value="{{ $row['order_qty'] ?? 0 }}"
+                                                aria-label="Zamówienie dla {{ $row['name'] }}"
+                                            >
+                                            <span class="input-group-text">szt</span>
+                                        </div>
+                                    </td>
+                                    <td class="js-new-dk fw-semibold">{{ $row['new_dk_label'] }}</td>
+                                    <td class="js-new-dz text-nowrap text-muted small">{{ $row['new_dz_label'] }}</td>
+                                    <td class="js-row-cost text-end text-nowrap">{{ $row['row_cost_label'] }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">Brak danych.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-body border-top border-opacity-10 border-light d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="text-danger small" data-planning-error></div>
+                    <div class="d-flex align-items-center gap-4 ms-auto">
+                        <div class="text-end">
+                            <div class="text-muted small">Suma</div>
+                            <div class="fs-6 fw-semibold" data-planning-total>{{ $planningTotalLabel }}</div>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn-outline-light btn-sm"
+                            data-action="planning-recalculate"
+                        >
+                            Przelicz
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @foreach ($feeds as $feed)
         <div
             class="modal fade"

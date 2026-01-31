@@ -3,3 +3,4 @@ import * as bootstrap from 'bootstrap/dist/js/bootstrap.bundle.min.js';
 window.bootstrap = bootstrap;
 import './animals-index';
 import './toasts';
+import './feeds-planning';
