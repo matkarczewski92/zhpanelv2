@@ -472,8 +472,8 @@ class GetAnimalProfileQuery
                 'types' => AnimalType::orderBy('name')->get(['id', 'name'])->map(fn($t) => ['id' => $t->id, 'name' => $t->name])->all(),
                 'categories' => AnimalCategory::orderBy('name')->get(['id', 'name'])->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->all(),
                 'sex' => [
-                    ['value' => Sex::MALE, 'label' => Sex::label(Sex::MALE)],
-                    ['value' => Sex::FEMALE, 'label' => Sex::label(Sex::FEMALE)],
+                    ['value' => Sex::Male->value, 'label' => Sex::label(Sex::Male->value)],
+                    ['value' => Sex::Female->value, 'label' => Sex::label(Sex::Female->value)],
                 ],
                 'feeds' => Feed::orderBy('name')->get(['id', 'name'])->map(fn($f) => ['id' => $f->id, 'name' => $f->name])->all(),
             ],
