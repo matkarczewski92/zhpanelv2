@@ -157,6 +157,7 @@ class GetAnimalProfileQuery
                 'id' => $photo->id,
                 'url' => $url,
                 'thumb_url' => $url,
+                'label' => $animal->name,
                 'is_main' => (bool) $photo->main_profil_photo,
                 'website_visible' => (bool) $photo->webside,
                 'delete_url' => route('panel.animals.photos.destroy', [$animal->id, $photo->id]),
@@ -174,6 +175,7 @@ class GetAnimalProfileQuery
             'items' => $items,
             'main_url' => $main,
             'banner_url' => $banner,
+            'has_photos' => count($items) > 0,
         ];
     }
 
@@ -389,10 +391,17 @@ class GetAnimalProfileQuery
             ->get()
             ->sortBy(fn($g) => $order[$g->type] ?? 99)
             ->map(function (AnimalGenotype $genotype) use ($animal) {
+                $typeLabel = match ($genotype->type) {
+                    'v' => 'v-homozygota',
+                    'h' => 'h-heterozygota',
+                    'p' => 'p-poshet',
+                    default => $genotype->type,
+                };
                 return [
                     'id' => $genotype->id,
                     'label' => optional($genotype->category)->name,
                     'type_code' => $genotype->type,
+                    'type_label' => $typeLabel,
                     'delete_url' => route('panel.animals.genotypes.destroy', [$animal->id, $genotype->id]),
                 ];
             })
@@ -425,30 +434,45 @@ class GetAnimalProfileQuery
                 'label' => 'Galeria',
                 'icon' => 'image',
                 'url' => '#',
+                'href' => '#',
                 'modal' => '#galleryModal',
+                'type' => 'modal',
+                'key' => 'gallery',
             ],
             [
                 'label' => 'Etykieta',
                 'icon' => 'tag',
                 'url' => route('panel.animals.label', $animal->id),
+                'href' => route('panel.animals.label', $animal->id),
+                'type' => 'link',
+                'key' => 'label',
             ],
             [
                 'label' => 'Profil publiczny',
                 'icon' => 'person',
                 'url' => $publicUrl,
+                'href' => $publicUrl,
                 'toggle_url' => $togglePublicUrl,
                 'is_public' => (bool) $animal->public_profile,
+                'type' => 'public-toggle',
+                'key' => 'public-toggle',
             ],
             [
                 'label' => 'Paszport',
                 'icon' => 'id',
                 'url' => route('panel.animals.passport', $animal->id),
+                'href' => route('panel.animals.passport', $animal->id),
+                'type' => 'link',
+                'key' => 'passport',
             ],
             [
                 'label' => 'Edycja',
                 'icon' => 'pencil',
                 'url' => '#animalEditModal',
+                'href' => '#animalEditModal',
                 'modal' => '#animalEditModal',
+                'type' => 'modal',
+                'key' => 'edit',
             ],
         ];
     }
