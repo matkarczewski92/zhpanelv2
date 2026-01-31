@@ -25,5 +25,6 @@ Route::prefix('panel')
         })->name('home');
 
         require __DIR__ . '/animals.php';
+        require __DIR__ . '/feeds.php';
         require __DIR__ . '/offers.php';
     });

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Application\Animals\Commands;
 
@@ -13,12 +13,12 @@ class DeleteAnimalCommand
      *
      * @return array{soft:bool, deleted:bool, message:string}
      */
-    public function handle(Animal ): array
+    public function handle(Animal $animal): array
     {
         // stage 1: move to category 5 (Usunięte)
-        if ((int) ->animal_category_id !== 5) {
-            ->animal_category_id = 5;
-            ->save();
+        if ((int) $animal->animal_category_id !== 5) {
+            $animal->animal_category_id = 5;
+            $animal->save();
 
             return [
                 'soft' => true,
@@ -29,8 +29,8 @@ class DeleteAnimalCommand
 
         // stage 2: hard delete
         try {
-            DB::transaction(static function () use (): void {
-                ->delete();
+            DB::transaction(static function () use ($animal): void {
+                $animal->delete();
             });
 
             return [
@@ -38,7 +38,7 @@ class DeleteAnimalCommand
                 'deleted' => true,
                 'message' => 'Zwierzę usunięte trwale.',
             ];
-        } catch (QueryException ) {
+        } catch (QueryException $exception) {
             return [
                 'soft' => false,
                 'deleted' => false,

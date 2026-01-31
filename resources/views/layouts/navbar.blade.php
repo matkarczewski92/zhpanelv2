@@ -1,4 +1,4 @@
-﻿<nav class="navbar navbar-expand-xl navbar-dark fixed-top navbar-glass">
+<nav class="navbar navbar-expand-xl navbar-dark fixed-top navbar-glass">
     <div class="container-fluid">
         <a class="navbar-brand fw-semibold" href="{{ route('panel.home') }}">ZH Panel</a>
         <button
@@ -19,6 +19,9 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.animals.*') ? 'active' : '' }}" href="{{ route('panel.animals.index') }}">Zwierzęta</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.feeds.*') ? 'active' : '' }}" href="{{ route('panel.feeds.index') }}">Karma</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.offers.*') ? 'active' : '' }}" href="{{ route('panel.offers.index') }}">Oferty</a>
@@ -81,6 +84,13 @@
                 data-bs-dismiss="offcanvas"
             >
                 Zwierzęta
+            </a>
+            <a
+                class="nav-link {{ request()->routeIs('panel.feeds.*') ? 'active' : '' }}"
+                href="{{ route('panel.feeds.index') }}"
+                data-bs-dismiss="offcanvas"
+            >
+                Karma
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.offers.*') ? 'active' : '' }}"
