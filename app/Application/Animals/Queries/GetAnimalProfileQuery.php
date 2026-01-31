@@ -368,10 +368,12 @@ class GetAnimalProfileQuery
 
     private function buildFeedingDefaults(Animal $animal): array
     {
+        $today = Carbon::now()->toDateString();
         return [
             'feed_id' => $animal->feed_id,
             'quantity' => 1,
-            'date' => Carbon::now()->toDateString(),
+            'date' => $today,
+            'date_iso' => $today,
         ];
     }
 
