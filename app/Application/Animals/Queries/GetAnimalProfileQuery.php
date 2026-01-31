@@ -307,10 +307,11 @@ class GetAnimalProfileQuery
     {
         $wintering = $animal->winterings()->with('stage')->latest()->first();
         if (!$wintering) {
-            return [];
+            return ['active' => false];
         }
 
         return [
+            'active' => true,
             'stage' => optional($wintering->stage)->name,
             'started_at' => optional($wintering->created_at)->toDateString(),
         ];
