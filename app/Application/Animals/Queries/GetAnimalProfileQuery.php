@@ -151,7 +151,7 @@ class GetAnimalProfileQuery
     {
         $items = [];
         $main = null;
-        foreach ($animal->photos as $photo) {
+        foreach ($animal->photos->sortByDesc('created_at') as $photo) {
             $url = $this->photoUrl($photo->url);
             $items[] = [
                 'id' => $photo->id,
@@ -189,6 +189,7 @@ class GetAnimalProfileQuery
             ['label' => 'Domyślna karma', 'value' => optional($animal->feed)->name],
             ['label' => 'Interwał karmienia', 'value' => $this->resolveFeedingInterval($animal)],
             ['label' => 'Publiczny tag', 'value' => $animal->public_profile_tag],
+            ['label' => 'Profil publiczny', 'value' => $animal->public_profile ? 'Tak' : 'Nie'],
         ];
     }
 
@@ -455,8 +456,8 @@ class GetAnimalProfileQuery
             [
                 'label' => 'Galeria',
                 'icon' => '<i class="bi bi-image"></i>',
-                'url' => '#',
-                'href' => '#',
+                'url' => '#galleryModal',
+                'href' => '#galleryModal',
                 'modal' => '#galleryModal',
                 'type' => 'modal',
                 'key' => 'gallery',
@@ -478,6 +479,15 @@ class GetAnimalProfileQuery
                 'is_public' => (bool) $animal->public_profile,
                 'type' => 'public-toggle',
                 'key' => 'public-toggle',
+            ],
+            [
+                'label' => 'Profil publiczny',
+                'icon' => '<i class="bi bi-person-circle"></i>',
+                'url' => $publicUrl,
+                'href' => $publicUrl,
+                'type' => 'link',
+                'key' => 'public',
+                'disabled' => !((bool) $animal->public_profile),
             ],
             [
                 'label' => 'Paszport',
@@ -508,6 +518,7 @@ class GetAnimalProfileQuery
                 'second_name' => $animal->second_name,
                 'animal_type_id' => $animal->animal_type_id,
                 'category_id' => $animal->animal_category_id,
+                'animal_category_id' => $animal->animal_category_id,
                 'sex' => $animal->sex,
                 'date_of_birth' => optional($animal->date_of_birth)->toDateString(),
                 'feed_id' => $animal->feed_id,
