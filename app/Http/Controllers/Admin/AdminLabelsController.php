@@ -38,11 +38,7 @@ class AdminLabelsController extends Controller
         }
 
         $rows = $labels->buildMany($ids);
-        $csv = $labels->exportCsv($rows, ';');
-        $encoded = iconv('UTF-8', 'Windows-1250//TRANSLIT', $csv);
-        if ($encoded !== false) {
-            $csv = $encoded;
-        }
+        $csv = $labels->exportCsvWin1250($rows, ';');
         $filename = 'etykiety_admin.csv';
 
         return response()->streamDownload(function () use ($csv): void {

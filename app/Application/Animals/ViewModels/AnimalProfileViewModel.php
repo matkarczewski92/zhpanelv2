@@ -22,6 +22,7 @@ class AnimalProfileViewModel
      * @param int $feedingCount
      * @param array<int, array<string, mixed>> $weightsSeries
      * @param int $weightsCount
+     * @param AnimalWeightChartViewModel $weightChart
      * @param int $moltsCount
      * @param array<int, array<string, mixed>> $genotypeChips
      * @param array<int, array<string, mixed>> $genotypeCategoryOptions
@@ -53,6 +54,7 @@ class AnimalProfileViewModel
         public readonly int $feedingCount = 0,
         public readonly array $weightsSeries = [],
         public readonly int $weightsCount = 0,
+        public readonly AnimalWeightChartViewModel $weightChart,
         public readonly int $moltsCount = 0,
         public readonly array $genotypeChips = [],
         public readonly array $genotypeCategoryOptions = [],
@@ -70,10 +72,7 @@ class AnimalProfileViewModel
         public readonly bool $is_public_profile_enabled = false,
         public readonly string $public_profile_url = '',
         public readonly string $toggle_public_profile_url = '',
-        public readonly array $edit = [],
-        public readonly array $feedSegments = [],
-        public readonly array $feedColors = [],
-        public readonly string $chartEndDate = ''
+        public readonly array $edit = []
     ) {
     }
 }

@@ -10,8 +10,9 @@
             height="220"
             class="mb-3"
             data-series='@json($profile->weightsSeries)'
-            data-feed-segments='@json($profile->feedSegments)'
-            data-feed-colors='@json($profile->feedColors)'
+            data-feed-index='@json($profile->weightChart->feedIndexValues ?? [])'
+            data-feed-names='@json($profile->weightChart->feedNameByIndex ?? [])'
+            data-has-feed="{{ !empty($profile->weightChart->feedIndexMeta['feed_id_to_index'] ?? []) ? '1' : '0' }}"
         ></canvas>
 
         <form method="POST" action="{{ route('panel.animals.weights.store', $profile->animal['id']) }}" class="row g-2 align-items-end">
@@ -174,64 +175,50 @@
             const chartCanvas = document.getElementById('weightsChart');
             if (chartCanvas) {
                 const series = JSON.parse(chartCanvas.getAttribute('data-series') || '[]');
-                const segments = JSON.parse(chartCanvas.getAttribute('data-feed-segments') || '[]');
-                const feedColors = JSON.parse(chartCanvas.getAttribute('data-feed-colors') || '{}');
+                const feedIndexValues = JSON.parse(chartCanvas.getAttribute('data-feed-index') || '[]');
+                const feedNameByIndex = JSON.parse(chartCanvas.getAttribute('data-feed-names') || '[]');
+                const hasFeed = chartCanvas.getAttribute('data-has-feed') === '1';
                 const ctx = chartCanvas.getContext('2d');
                 if (series.length) {
                     const labels = series.map((p) => p.date);
                     const data = series.map((p) => p.value);
-                    const feedLookup = segments
-                        .map((s) => ({
-                            ...s,
-                            start: s.start,
-                            end: s.end,
-                        }))
-                        .sort((a, b) => a.start.localeCompare(b.start));
+                    const findFeedByIndex = (index) => feedNameByIndex[index] || 'brak danych';
 
-                    const findFeedByDate = (dateStr) => {
-                        for (const s of feedLookup) {
-                            if (dateStr >= s.start && dateStr <= s.end) {
-                                return s.feed_name || 'brak danych';
-                            }
-                        }
-                        return 'brak danych';
-                    };
-
-                    const feedBandsPlugin = {
-                        id: 'feedBands',
-                        beforeDraw(chart) {
-                            if (!segments.length) return;
-                            const { ctx, chartArea, scales } = chart;
-                            const xScale = scales.x;
-                            ctx.save();
-                            segments.forEach((seg, idx) => {
-                                const xStart = xScale.getPixelForValue(seg.start);
-                                const xEnd = xScale.getPixelForValue(seg.end);
-                                if (isNaN(xStart) || isNaN(xEnd)) return;
-                                const color = feedColors[seg.feed_id] || 'rgba(255,255,255,0.08)';
-                                ctx.fillStyle = color;
-                                ctx.fillRect(xStart, chartArea.top, xEnd - xStart, chartArea.bottom - chartArea.top);
-                            });
-                            ctx.restore();
+                    const datasets = [
+                        {
+                            label: 'Waga',
+                            data,
+                            yAxisID: 'yWeight',
+                            fill: true,
+                            borderColor: '#6ea8fe',
+                            backgroundColor: 'rgba(110, 168, 254, 0.25)',
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#fff',
                         },
-                    };
+                    ];
+
+                    if (hasFeed) {
+                        datasets.push({
+                            label: 'Karma',
+                            data: feedIndexValues,
+                            yAxisID: 'yFeed',
+                            fill: false,
+                            borderColor: 'rgba(245, 158, 11, 0.9)',
+                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            tension: 0,
+                            stepped: true,
+                            spanGaps: false,
+                        });
+                    }
 
                     new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels,
-                            datasets: [
-                                {
-                                    label: 'Waga',
-                                    data,
-                                    fill: true,
-                                    borderColor: '#6ea8fe',
-                                    backgroundColor: 'rgba(110, 168, 254, 0.25)',
-                                    tension: 0.35,
-                                    pointRadius: 3,
-                                    pointBackgroundColor: '#fff',
-                                },
-                            ],
+                            datasets,
                         },
                         options: {
                             plugins: {
@@ -239,20 +226,31 @@
                                 tooltip: {
                                     callbacks: {
                                         label(context) {
-                                            const label = `Waga: ${context.formattedValue} g`;
-                                            const date = context.label;
-                                            const feed = findFeedByDate(date);
-                                            return [label, `Karma w tym okresie: ${feed}`];
+                                            const index = context.dataIndex ?? 0;
+                                            const feed = findFeedByIndex(index);
+                                            if (context.dataset.label === 'Waga') {
+                                                const label = `Waga: ${context.formattedValue} g`;
+                                                return [label, `Karma w tym okresie: ${feed}`];
+                                            }
+                                            if (context.dataset.label === 'Karma') {
+                                                return `Karma: ${feed}`;
+                                            }
+                                            return context.formattedValue;
                                         },
                                     },
                                 },
                             },
                             scales: {
                                 x: { ticks: { color: '#ccc' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-                                y: { ticks: { color: '#ccc' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+                                yWeight: { ticks: { color: '#ccc' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+                                yFeed: {
+                                    position: 'right',
+                                    ticks: { display: false },
+                                    grid: { drawOnChartArea: false, color: 'rgba(255,255,255,0.08)' },
+                                    border: { color: 'rgba(255,255,255,0.08)' },
+                                },
                             },
                         },
-                        plugins: [feedBandsPlugin],
                     });
                 }
             }

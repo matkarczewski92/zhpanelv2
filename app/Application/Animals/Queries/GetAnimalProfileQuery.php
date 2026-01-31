@@ -16,12 +16,17 @@ use App\Models\AnimalType;
 use App\Models\AnimalWeight;
 use App\Models\Feed;
 use App\Models\Litter;
+use App\Services\Animal\AnimalWeightChartService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 
 class GetAnimalProfileQuery
 {
+    public function __construct(private readonly AnimalWeightChartService $weightChartService)
+    {
+    }
+
     /**
      * Build the profile view model.
      */
@@ -52,6 +57,11 @@ class GetAnimalProfileQuery
         [$weights, $weightsSeries] = $this->buildWeights($animal);
         [$molts, $moltsCount] = $this->buildMolts($animal);
 
+        $weightChart = $this->weightChartService->buildFromCollections(
+            $animal->weights,
+            $animal->feedings
+        );
+
         $wintering = $this->buildWintering($animal);
         [$offerSummary, $reservationSummary, $offerForm, $offerExists, $reservationExists] = $this->buildOffer($animal);
         [$littersAsParent, $littersCount] = $this->buildLitters($animal);
@@ -77,12 +87,6 @@ class GetAnimalProfileQuery
 
         $edit = $this->buildEditData($animal);
 
-        // Feed overlay for weight chart
-        $chartEnd = $weightsSeries
-            ? Carbon::parse(end($weightsSeries)['date'])
-            : Carbon::now();
-        [$feedSegments, $feedColors] = $this->buildFeedSegments($animal->feedings, $chartEnd);
-
         return new AnimalProfileViewModel(
             animal: $animalData,
             photos: $photos,
@@ -102,6 +106,7 @@ class GetAnimalProfileQuery
             feedingCount: $feedingCount,
             weightsSeries: $weightsSeries,
             weightsCount: $weightsCount,
+            weightChart: $weightChart,
             moltsCount: $moltsCount,
             genotypeChips: $genotypeChips,
             genotypeCategoryOptions: $genotypeCategoryOptions,
@@ -119,10 +124,7 @@ class GetAnimalProfileQuery
             is_public_profile_enabled: $isPublic,
             public_profile_url: $publicUrl,
             toggle_public_profile_url: $togglePublicUrl,
-            edit: $edit,
-            feedSegments: $feedSegments,
-            feedColors: $feedColors,
-            chartEndDate: $chartEnd->toDateString()
+            edit: $edit
         );
     }
 
@@ -281,7 +283,10 @@ class GetAnimalProfileQuery
         })->toArray();
 
         $series = $weights
-            ->sortBy('created_at')
+            ->sortBy([
+                ['created_at', 'asc'],
+                ['id', 'asc'],
+            ])
             ->map(fn(AnimalWeight $w) => ['date' => optional($w->created_at)->toDateString(), 'value' => $w->value])
             ->values()
             ->all();
@@ -540,69 +545,6 @@ class GetAnimalProfileQuery
             'delete_url' => route('panel.animals.delete', $animal->id),
             'is_deleted_category' => (int) $animal->animal_category_id === 5,
         ];
-    }
-
-    /**
-     * @param Collection<int, AnimalFeeding> $feedings
-     */
-    private function buildFeedSegments(Collection $feedings, Carbon $chartEnd): array
-    {
-        // ignore certain feed ids
-        $ignored = [9, 10, 12];
-        $filtered = $feedings
-            ->filter(fn(AnimalFeeding $f) => $f->feed_id && !in_array($f->feed_id, $ignored, true))
-            ->sortBy([
-                ['created_at', 'asc'],
-                ['id', 'asc'],
-            ])
-            ->values();
-
-        if ($filtered->isEmpty()) {
-            return [[], []];
-        }
-
-        $segments = [];
-        $colors = [];
-
-        $current = $filtered->first();
-        $startDate = $current->created_at->toDateString();
-        $prevFeedId = $current->feed_id;
-        $prevFeedName = optional($current->feed)->name ?? 'Karma';
-        $assignColor = function (int $feedId) use (&$colors) {
-            if (isset($colors[$feedId])) {
-                return $colors[$feedId];
-            }
-            // Deterministic HSL -> RGBA mapping for unique-ish per-feed color.
-            $hue = crc32((string) $feedId) % 360;
-            $colors[$feedId] = "hsla({$hue}, 70%, 50%, 0.18)";
-            return $colors[$feedId];
-        };
-
-        foreach ($filtered->slice(1) as $feeding) {
-            if ($feeding->feed_id !== $prevFeedId) {
-                $segments[] = [
-                    'start' => $startDate,
-                    'end' => $feeding->created_at->toDateString(),
-                    'feed_id' => $prevFeedId,
-                    'feed_name' => $prevFeedName,
-                    'color' => $assignColor($prevFeedId),
-                ];
-                $startDate = $feeding->created_at->toDateString();
-                $prevFeedId = $feeding->feed_id;
-                $prevFeedName = optional($feeding->feed)->name ?? 'Karma';
-            }
-        }
-
-        // Last segment
-        $segments[] = [
-            'start' => $startDate,
-            'end' => $chartEnd->toDateString(),
-            'feed_id' => $prevFeedId,
-            'feed_name' => $prevFeedName,
-            'color' => $assignColor($prevFeedId),
-        ];
-
-        return [$segments, $colors];
     }
 
     private function sanitizeName(string $name): string
