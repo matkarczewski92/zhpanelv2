@@ -12,13 +12,17 @@ class AnimalLabelController extends Controller
     public function download(Animal $animal, LabelService $labels): StreamedResponse
     {
         $row = $labels->buildLabel($animal);
-        $csv = "\xEF\xBB\xBF" . $labels->exportCsv(collect([$row]));
+        $csv = $labels->exportCsv(collect([$row]), ';');
+        $encoded = iconv('UTF-8', 'Windows-1250//TRANSLIT', $csv);
+        if ($encoded !== false) {
+            $csv = $encoded;
+        }
         $filename = 'etykieta_' . $animal->id . '.csv';
 
         return response()->streamDownload(function () use ($csv): void {
             echo $csv;
         }, $filename, [
-            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Type' => 'text/csv; charset=windows-1250',
         ]);
     }
 }

@@ -169,11 +169,13 @@ class GetAnimalProfileQuery
             }
         }
 
+        $avatar = $main ?? ($items[0]['url'] ?? null);
         $banner = $main ?? ($items[0]['url'] ?? asset('Image/1_20231104195852.jpg'));
 
         return [
             'items' => $items,
             'main_url' => $main,
+            'avatar_url' => $avatar,
             'banner_url' => $banner,
             'has_photos' => count($items) > 0,
         ];

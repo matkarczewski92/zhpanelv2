@@ -53,11 +53,11 @@ class LabelService
         return $animals->map(fn ($animal) => $this->buildLabel($animal));
     }
 
-    public function exportCsv(Collection $labels): string
+    public function exportCsv(Collection $labels, string $delimiter = ';'): string
     {
         $headers = ['id', 'type', 'name', 'sex', 'date_of_birth', 'code', 'qr_url', 'price'];
         $lines = [];
-        $lines[] = implode(';', $headers);
+        $lines[] = implode($delimiter, $headers);
         foreach ($labels as $row) {
             $line = [];
             $line[] = $row['animal_id'] ?? '';
@@ -68,15 +68,15 @@ class LabelService
             $line[] = $row['public_profile_tag'] ?? '';
             $line[] = $this->qrUrl($row['public_profile_tag'] ?? '');
             $line[] = $row['price'] ?? '';
-            $lines[] = implode(';', array_map([$this, 'csvValue'], $line));
+            $lines[] = implode($delimiter, array_map(fn ($value) => $this->csvValue($value, $delimiter), $line));
         }
-        return implode("\n", $lines);
+        return implode("\r\n", $lines);
     }
 
-    private function csvValue(?string $value): string
+    private function csvValue(?string $value, string $delimiter): string
     {
         $val = (string) $value;
-        if (Str::contains($val, [';', '"', "\n"])) {
+        if (Str::contains($val, [$delimiter, '"', "\n", "\r"])) {
             $val = '"' . str_replace('"', '""', $val) . '"';
         }
         return $val;

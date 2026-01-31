@@ -278,11 +278,22 @@
                     const nameInput = tr.querySelector('.name-input');
                     const sexSelect = tr.querySelector('.sex-select');
                     const priceInput = tr.querySelector('.price-input');
+
+                    const nameVal = nameInput?.value ?? '';
+                    const sexVal = sexSelect?.value ?? '';
+                    const priceVal = priceInput?.value ?? '';
+
+                    const nameDirty = nameInput && nameVal !== (nameInput.dataset.original || '');
+                    const sexDirty = sexSelect && sexVal !== (sexSelect.dataset.original || '');
+                    const priceDirty = priceInput && priceVal !== (priceInput.dataset.original || '');
+
+                    if (!nameDirty && !sexDirty && !priceDirty) return;
+
                     items.push({
                         animal_id: animalId,
-                        name: nameInput?.value ?? null,
-                        sex: sexSelect?.value ?? null,
-                        price: priceInput?.value ?? null,
+                        name: nameVal.trim() === '' ? null : nameVal.trim(),
+                        sex: sexVal === '' ? null : sexVal,
+                        price: priceVal === '' ? null : priceVal,
                     });
                 });
 
@@ -326,7 +337,14 @@
                     document.getElementById('bulkSaveBtn').disabled = true;
                 } else {
                     let msg = 'Błąd zapisu';
-                    try { const data = await resp.json(); msg = data.message || msg; } catch {}
+                    try {
+                        const data = await resp.json();
+                        if (data?.message) msg = data.message;
+                        if (data?.errors) {
+                            const firstError = Object.values(data.errors)[0];
+                            if (firstError) msg = Array.isArray(firstError) ? firstError[0] : String(firstError);
+                        }
+                    } catch {}
                     showToast(msg, 'danger');
                 }
             });
