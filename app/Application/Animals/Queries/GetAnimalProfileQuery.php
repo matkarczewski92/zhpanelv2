@@ -213,6 +213,7 @@ class GetAnimalProfileQuery
                     'feed_id' => $feeding->feed_id,
                     'quantity' => $feeding->amount,
                     'date_iso' => $date,
+                    'update_url' => route('panel.animals.feedings.update', [$animal->id, $feeding->id]),
                 ],
             ];
         })->toArray();
@@ -229,7 +230,8 @@ class GetAnimalProfileQuery
                         ->map(function (Collection $monthGroup, $month) use ($animal) {
                             return [
                                 'month' => $month,
-                                'month_label' => Carbon::create()->month($month)->locale('pl')->monthName . ' ' . optional($monthGroup->first()->created_at)->year,
+                                'month_label' => str_pad((string) $month, 2, '0', STR_PAD_LEFT),
+                                'month_label_full' => Carbon::create()->month($month)->locale('pl')->monthName . ' ' . optional($monthGroup->first()->created_at)->year,
                                 'entries' => $monthGroup->sortByDesc('created_at')->map(function (AnimalFeeding $feeding) use ($animal) {
                                     $date = optional($feeding->created_at)->toDateString();
                                     return [
@@ -244,6 +246,7 @@ class GetAnimalProfileQuery
                                             'date_iso' => $date,
                                             'feed_id' => $feeding->feed_id,
                                             'quantity' => $feeding->amount,
+                                            'update_url' => route('panel.animals.feedings.update', [$animal->id, $feeding->id]),
                                         ],
                                     ];
                                 })->values()->all(),
@@ -348,22 +351,38 @@ class GetAnimalProfileQuery
 
     private function buildLitters(Animal $animal): array
     {
+        $categoryOrder = [4 => 0, 1 => 1, 2 => 2];
+        $categoryLabels = [
+            1 => 'W trakcie',
+            2 => 'Planowany',
+            4 => 'Zrealizowane',
+        ];
+
         $litters = Litter::query()
             ->where(function ($q) use ($animal) {
                 $q->where('parent_male', $animal->id)->orWhere('parent_female', $animal->id);
             })
+            ->whereIn('category', array_keys($categoryOrder))
             ->orderByDesc('created_at')
             ->get();
 
-        $mapped = $litters->map(function (Litter $litter) {
+        $sorted = $litters->sortBy(function (Litter $litter) use ($categoryOrder) {
+            return [$categoryOrder[$litter->category] ?? 99, -$litter->id];
+        });
+
+        $mapped = $sorted->map(function (Litter $litter) use ($categoryLabels) {
+            $code = $litter->litter_code ?: ('L#' . $litter->id);
+            $categoryLabel = $categoryLabels[$litter->category] ?? '';
             return [
                 'id' => $litter->id,
-                'label' => $litter->public_id ?? ('L#' . $litter->id),
-                'url' => Route::has('panel.litters.show') ? route('panel.litters.show', $litter->id) : '',
+                'code' => $code,
+                'title' => trim($code . ' ' . $categoryLabel),
+                'category_code' => (string) $litter->category,
+                'url' => Route::has('panel.litters.show') ? route('panel.litters.show', $litter->id) : '#',
             ];
         })->toArray();
 
-        return [$mapped, $litters->count()];
+        return [$mapped, count($mapped)];
     }
 
     private function buildFeedingDefaults(Animal $animal): array
