@@ -454,7 +454,7 @@ class GetAnimalProfileQuery
         return [
             [
                 'label' => 'Galeria',
-                'icon' => 'image',
+                'icon' => '<i class="bi bi-image"></i>',
                 'url' => '#',
                 'href' => '#',
                 'modal' => '#galleryModal',
@@ -463,7 +463,7 @@ class GetAnimalProfileQuery
             ],
             [
                 'label' => 'Etykieta',
-                'icon' => 'tag',
+                'icon' => '<i class="bi bi-tag"></i>',
                 'url' => route('panel.animals.label', $animal->id),
                 'href' => route('panel.animals.label', $animal->id),
                 'type' => 'link',
@@ -471,7 +471,7 @@ class GetAnimalProfileQuery
             ],
             [
                 'label' => 'Profil publiczny',
-                'icon' => 'person',
+                'icon' => '<i class="bi bi-eye"></i>',
                 'url' => $publicUrl,
                 'href' => $publicUrl,
                 'toggle_url' => $togglePublicUrl,
@@ -481,7 +481,7 @@ class GetAnimalProfileQuery
             ],
             [
                 'label' => 'Paszport',
-                'icon' => 'id',
+                'icon' => '<i class="bi bi-person-vcard"></i>',
                 'url' => route('panel.animals.passport', $animal->id),
                 'href' => route('panel.animals.passport', $animal->id),
                 'type' => 'link',
@@ -489,7 +489,7 @@ class GetAnimalProfileQuery
             ],
             [
                 'label' => 'Edycja',
-                'icon' => 'pencil',
+                'icon' => '<i class="bi bi-pencil-square"></i>',
                 'url' => '#animalEditModal',
                 'href' => '#animalEditModal',
                 'modal' => '#animalEditModal',
@@ -550,41 +550,19 @@ class GetAnimalProfileQuery
 
         $segments = [];
         $colors = [];
-        $palette = [
-            'rgba(111, 207, 151, 0.18)',
-            'rgba(130, 170, 255, 0.18)',
-            'rgba(255, 196, 110, 0.18)',
-            'rgba(255, 138, 128, 0.18)',
-            'rgba(160, 132, 232, 0.18)',
-            'rgba(108, 217, 217, 0.18)',
-            'rgba(255, 213, 79, 0.18)',
-            'rgba(244, 143, 177, 0.18)',
-            'rgba(176, 190, 197, 0.18)',
-            'rgba(120, 144, 156, 0.18)',
-            'rgba(255, 241, 118, 0.18)',
-            'rgba(129, 199, 132, 0.18)',
-        ];
-        $paletteCount = count($palette);
 
         $current = $filtered->first();
         $startDate = $current->created_at->toDateString();
         $prevFeedId = $current->feed_id;
         $prevFeedName = optional($current->feed)->name ?? 'Karma';
-        $lastColor = null;
-
-        $assignColor = function (int $feedId) use (&$colors, $palette, $paletteCount, &$lastColor) {
+        $assignColor = function (int $feedId) use (&$colors) {
             if (isset($colors[$feedId])) {
                 return $colors[$feedId];
             }
-            $idx = crc32((string) $feedId) % $paletteCount;
-            $color = $palette[$idx];
-            if ($color === $lastColor) {
-                $idx = ($idx + 1) % $paletteCount;
-                $color = $palette[$idx];
-            }
-            $colors[$feedId] = $color;
-            $lastColor = $color;
-            return $color;
+            // Deterministic HSL -> RGBA mapping for unique-ish per-feed color.
+            $hue = crc32((string) $feedId) % 360;
+            $colors[$feedId] = "hsla({$hue}, 70%, 50%, 0.18)";
+            return $colors[$feedId];
         };
 
         foreach ($filtered->slice(1) as $feeding) {
