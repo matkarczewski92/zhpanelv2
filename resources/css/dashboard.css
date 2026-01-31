@@ -55,7 +55,10 @@ body.panel-body {
 }
 
 .panel-body .table > :not(caption) > * > * {
-    padding: 0.4rem 0.55rem;
+    padding: 0.32rem 0.55rem;
+    line-height: 1.2;
+    vertical-align: middle;
+    border-bottom: 0;
 }
 
 .panel-body .btn {
@@ -134,16 +137,19 @@ body.panel-body {
 
 .glass-table > :not(caption) > * > * {
     background-color: transparent;
+    padding: 0.32rem 0.55rem;
+    line-height: 1.2;
+    vertical-align: middle;
 }
 
 .glass-table thead th {
     background-color: transparent;
     color: rgba(248, 249, 250, 0.85);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 0;
 }
 
 .glass-table tbody tr {
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: transparent;
 }
 
 .glass-table tbody tr:hover {
@@ -151,7 +157,26 @@ body.panel-body {
 }
 
 .glass-table tbody td {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 0;
+}
+
+@media (min-width: 1200px) {
+    .modal-half {
+        max-width: 60vw;
+    }
+}
+
+.animals-table > :not(caption) > * > * {
+    padding: 0.28rem 0.45rem;
+    font-size: 0.9rem;
+    line-height: 1.25;
+}
+
+.animals-table thead th {
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding-top: 0.32rem;
+    padding-bottom: 0.32rem;
 }
 
 .glass-table.table-hover > tbody > tr:hover > * {

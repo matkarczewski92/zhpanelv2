@@ -7,7 +7,7 @@
             data-bs-toggle="offcanvas"
             data-bs-target="#panelOffcanvas"
             aria-controls="panelOffcanvas"
-            aria-label="Otwórz menu"
+            aria-label="Otw�rz menu"
         >
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -22,6 +22,9 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.feeds.*') ? 'active' : '' }}" href="{{ route('panel.feeds.index') }}">Karma</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.finances.*') ? 'active' : '' }}" href="{{ route('panel.finances.index') }}">Finanse</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.offers.*') ? 'active' : '' }}" href="{{ route('panel.offers.index') }}">Oferty</a>
@@ -83,7 +86,7 @@
                 href="{{ route('panel.animals.index') }}"
                 data-bs-dismiss="offcanvas"
             >
-                Zwierzęta
+                Zwierz�ta
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.feeds.*') ? 'active' : '' }}"
@@ -91,6 +94,13 @@
                 data-bs-dismiss="offcanvas"
             >
                 Karma
+            </a>
+            <a
+                class="nav-link {{ request()->routeIs('panel.finances.*') ? 'active' : '' }}"
+                href="{{ route('panel.finances.index') }}"
+                data-bs-dismiss="offcanvas"
+            >
+                Finanse
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.offers.*') ? 'active' : '' }}"

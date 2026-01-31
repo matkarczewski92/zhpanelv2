@@ -5,18 +5,31 @@ namespace App\Http\Controllers\Panel;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Panel\StoreFeedRequest;
 use App\Models\Feed;
+use App\Services\Panel\FeedConsumptionChartService;
 use App\Services\Panel\FeedService;
 use Illuminate\View\View;
 
 class FeedController extends Controller
 {
-    public function __construct(private readonly FeedService $service)
+    public function __construct(
+        private readonly FeedService $service,
+        private readonly FeedConsumptionChartService $chartService
+    )
     {
     }
 
     public function index(): View
     {
-        return view('panel.feeds.index', $this->service->getIndexData());
+        $year = (int) request('year', now()->year);
+
+        return view('panel.feeds.index', array_merge(
+            $this->service->getIndexData(),
+            [
+                'chart' => $this->chartService->getChartData($year),
+                'selectedYear' => $year,
+                'availableYears' => $this->chartService->getAvailableYears(),
+            ]
+        ));
     }
 
     public function store(StoreFeedRequest $request)
