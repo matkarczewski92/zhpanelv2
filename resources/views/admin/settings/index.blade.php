@@ -20,6 +20,7 @@
             'system' => 'System config',
             'feeds' => 'Karma',
             'finance-categories' => 'Kategorie finansowe',
+            'color-groups' => 'Grupy kolorystyczne',
         ]; @endphp
         @foreach($tabs as $key => $label)
             <li class="nav-item" role="presentation">
@@ -37,5 +38,6 @@
         @include('admin.settings.tabs.system', ['vm' => $vm])
         @include('admin.settings.tabs.feeds', ['vm' => $vm])
         @include('admin.settings.tabs.finance-categories', ['vm' => $vm])
+        @include('admin.settings.tabs.color-groups', ['vm' => $vm])
     </div>
 @endsection

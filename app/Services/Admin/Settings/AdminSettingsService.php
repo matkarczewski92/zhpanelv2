@@ -11,6 +11,7 @@ use App\Models\WinteringStage;
 use App\Models\SystemConfig;
 use App\Models\Feed;
 use App\Models\FinanceCategory;
+use App\Models\ColorGroup;
 use App\ViewModels\Admin\AdminSettingsViewModel;
 
 class AdminSettingsService
@@ -25,6 +26,10 @@ class AdminSettingsService
         $system = SystemConfig::orderBy('key')->get();
         $feeds = Feed::orderBy('id')->get();
         $financeCategories = FinanceCategory::withCount('finances')->orderBy('id')->get();
+        $colorGroups = ColorGroup::withCount('animals')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
 
         return new AdminSettingsViewModel(
             activeTab: $tab ?: 'categories',
@@ -35,7 +40,8 @@ class AdminSettingsService
             winteringStages: $winter,
             systemConfig: $system,
             feeds: $feeds,
-            financeCategories: $financeCategories
+            financeCategories: $financeCategories,
+            colorGroups: $colorGroups
         );
     }
 }

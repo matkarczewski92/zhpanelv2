@@ -52,13 +52,28 @@
                                     <td>
                                         <input type="checkbox" class="form-check-input row-check" value="{{ $row['animal_id'] }}">
                                     </td>
-                                    <td>{{ $row['animal_id'] }}</td>
+                                    <td>
+                                        @if ($row['profile_url'] !== '#')
+                                            <a class="link-reset" href="{{ $row['profile_url'] }}">{{ $row['animal_id'] }}</a>
+                                        @else
+                                            {{ $row['animal_id'] }}
+                                        @endif
+                                    </td>
                                     <td data-field="name">
                                         <div class="readonly-view">
-                                            @if ($row['second_name'])
-                                                <span class="text-muted">"{{ $row['second_name'] }}"</span>
+                                            @if ($row['profile_url'] !== '#')
+                                                <a class="link-reset" href="{{ $row['profile_url'] }}">
+                                                    @if ($row['second_name'])
+                                                        <span class="text-muted">"{{ $row['second_name'] }}"</span>
+                                                    @endif
+                                                    <span class="animal-name-render">{!! $row['animal_name_html'] !!}</span>
+                                                </a>
+                                            @else
+                                                @if ($row['second_name'])
+                                                    <span class="text-muted">"{{ $row['second_name'] }}"</span>
+                                                @endif
+                                                <span class="animal-name-render">{!! $row['animal_name_html'] !!}</span>
                                             @endif
-                                            <span class="animal-name-render">{!! $row['animal_name_html'] !!}</span>
                                         </div>
                                         <div class="edit-view d-none">
                                             <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary name-input" value="{{ $row['animal_name_plain'] ?? strip_tags($row['animal_name_html']) }}" data-original="{{ $row['animal_name_plain'] ?? strip_tags($row['animal_name_html']) }}">

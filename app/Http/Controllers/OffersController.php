@@ -12,10 +12,10 @@ use Illuminate\View\View;
 
 class OffersController extends Controller
 {
-    public function index(GetOffersIndexQuery $query): View
+    public function index(Request $request, GetOffersIndexQuery $query): View
     {
         return view('panel.offers.index', [
-            'offers' => $query->handle(),
+            'offers' => $query->handle($request),
         ]);
     }
 

@@ -11,6 +11,7 @@ use App\Http\Controllers\Animals\AnimalOfferController;
 use App\Http\Controllers\Animals\AnimalPassportController;
 use App\Http\Controllers\Animals\AnimalLabelController;
 use App\Http\Controllers\Animals\AnimalPublicVisibilityController;
+use App\Http\Controllers\Animals\AnimalColorGroupController;
 
 
 Route::get('/animals', [AnimalController::class, 'index'])
@@ -81,3 +82,6 @@ Route::get('/animals/{animal}/label', [AnimalLabelController::class, 'download']
 
 Route::post('/animals/{animal}/toggle-public', AnimalPublicVisibilityController::class)
     ->name('animals.toggle-public');
+
+Route::post('/animals/{animal}/color-groups', AnimalColorGroupController::class)
+    ->name('animals.color-groups.sync');

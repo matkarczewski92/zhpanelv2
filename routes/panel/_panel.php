@@ -8,10 +8,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware(['web', 'auth'])
     ->name('logout');

@@ -72,7 +72,9 @@ class AnimalProfileViewModel
         public readonly bool $is_public_profile_enabled = false,
         public readonly string $public_profile_url = '',
         public readonly string $toggle_public_profile_url = '',
-        public readonly array $edit = []
+        public readonly array $edit = [],
+        public readonly array $colorGroups = [],
+        public readonly array $navigation = []
     ) {
     }
 }

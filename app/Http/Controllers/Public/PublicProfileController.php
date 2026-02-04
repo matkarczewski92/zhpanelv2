@@ -2,19 +2,40 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Application\Public\Queries\ResolvePublicProfileLookupQuery;
 use App\Http\Controllers\Controller;
 use App\Services\PublicProfileService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Http\Response;
+use Illuminate\View\View;
 
 class PublicProfileController extends Controller
 {
-    public function show(string $code, PublicProfileService $service): View
-    {
+    public function show(
+        string $code,
+        PublicProfileService $service,
+        ResolvePublicProfileLookupQuery $lookupQuery
+    ): View|RedirectResponse {
+        $lookup = $lookupQuery->handle($code);
+
+        if ($lookup['status'] !== 'ok') {
+            $message = $lookup['status'] === 'not_public'
+                ? 'Profil publiczny nie jest dostêpny dla podanego kodu.'
+                : 'Brak profilu dla podanego kodu.';
+
+            return redirect(route('web.home') . '#profile')
+                ->withInput(['code' => $code])
+                ->with('profile_lookup_error', $message);
+        }
+
         $profile = $service->getByCode($code);
 
-        abort_if(!$profile, 404);
+        if (!$profile) {
+            return redirect(route('web.home') . '#profile')
+                ->withInput(['code' => $code])
+                ->with('profile_lookup_error', 'Brak profilu dla podanego kodu.');
+        }
 
         $weightsPage = $service->getWeightsPage($code, 1, 5);
         $moltsPage = $service->getMoltsPage($code, 1, 5);

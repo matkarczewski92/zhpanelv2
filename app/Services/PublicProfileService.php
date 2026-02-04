@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\ViewModels\PublicAnimalProfileViewModel;
 use App\Models\Animal;
+use App\Models\AnimalPhotoGallery;
 use App\Models\Litter;
 use App\Domain\Shared\Enums\Sex;
 use Carbon\Carbon;
@@ -23,10 +24,16 @@ class PublicProfileService
         $nameHtml = $this->sanitizeName($animal->name);
         $secondName = $animal->second_name ? e($animal->second_name) : '';
 
-        $bannerUrl = $this->resolveImage($animal->photos?->firstWhere('banner_possition', '!=', null)?->url);
-        $avatarUrl = $this->resolveImage($animal->photos?->firstWhere('main_profil_photo', 1)?->url);
+        $photos = $this->loadAnimalPhotos($animal->id);
+        $bannerUrl = $this->resolveImage(optional($photos->firstWhere('banner_possition', '!=', null))->url);
+        $avatarUrl = $this->resolveImage(optional($photos->firstWhere('main_profil_photo', 1))->url);
 
-        $gallery = $animal->photos?->filter(fn ($photo) => (int) $photo->webside === 1)
+        $gallerySource = $photos->where('webside', 1);
+        if ($gallerySource->isEmpty()) {
+            $gallerySource = $photos;
+        }
+
+        $gallery = $gallerySource
             ->map(function ($photo) {
                 $url = $this->resolveImage($photo->url);
                 return [
@@ -34,9 +41,13 @@ class PublicProfileService
                     'is_featured_on_homepage' => (bool) $photo->webside,
                     'title' => basename($photo->url ?? 'foto'),
                 ];
-            })->values()->all() ?? [];
+            })
+            ->unique('url')
+            ->values()
+            ->all();
 
         $details = [
+            ['label' => 'ID', 'value' => (string) $animal->id],
             ['label' => 'Typ', 'value' => $animal->animalType?->name ?? '-'],
             ['label' => 'Kategoria', 'value' => $animal->animalCategory?->name ?? '-'],
             ['label' => 'Płeć', 'value' => Sex::label((int) $animal->sex)],
@@ -178,6 +189,16 @@ class PublicProfileService
         }
 
         return $animal;
+    }
+
+    private function loadAnimalPhotos(int $animalId)
+    {
+        return AnimalPhotoGallery::query()
+            ->where('animal_id', $animalId)
+            ->orderByDesc('main_profil_photo')
+            ->orderByDesc('banner_possition')
+            ->orderByDesc('id')
+            ->get(['id', 'animal_id', 'url', 'main_profil_photo', 'banner_possition', 'webside']);
     }
 
     private function baseQuery()

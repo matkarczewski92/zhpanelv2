@@ -12,6 +12,7 @@
                 @include('panel.animals.partials.details', ['profile' => $profile])
                 @include('panel.animals.partials.genotype', ['profile' => $profile])
                 @include('panel.animals.partials.wintering', ['profile' => $profile])
+                @include('panel.animals.partials.color-groups', ['profile' => $profile])
             </div>
             <div class="col-lg-6">
                 @include('panel.animals.partials.feedings', ['profile' => $profile])

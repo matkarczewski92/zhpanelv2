@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Settings\WinteringStageController;
 use App\Http\Controllers\Admin\Settings\SystemConfigController;
 use App\Http\Controllers\Admin\Settings\FeedController;
 use App\Http\Controllers\Admin\Settings\FinanceCategoryController;
+use App\Http\Controllers\Admin\Settings\ColorGroupController;
 
 Route::get('/settings', AdminSettingsController::class)->name('settings.index');
 
@@ -57,3 +58,8 @@ Route::delete('/settings/feeds/{feed}', [FeedController::class, 'destroy'])->nam
 Route::post('/settings/finance-categories', [FinanceCategoryController::class, 'store'])->name('settings.finance-categories.store');
 Route::patch('/settings/finance-categories/{category}', [FinanceCategoryController::class, 'update'])->name('settings.finance-categories.update');
 Route::delete('/settings/finance-categories/{category}', [FinanceCategoryController::class, 'destroy'])->name('settings.finance-categories.destroy');
+
+// color groups
+Route::post('/settings/color-groups', [ColorGroupController::class, 'store'])->name('settings.color-groups.store');
+Route::patch('/settings/color-groups/{colorGroup}', [ColorGroupController::class, 'update'])->name('settings.color-groups.update');
+Route::delete('/settings/color-groups/{colorGroup}', [ColorGroupController::class, 'destroy'])->name('settings.color-groups.destroy');

@@ -6,11 +6,12 @@ use App\Application\Offers\ViewModels\OffersIndexViewModel;
 use App\Models\Animal;
 use App\Models\AnimalOffer;
 use App\Domain\Shared\Enums\Sex;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class GetOffersIndexQuery
 {
-    public function handle(): OffersIndexViewModel
+    public function handle(Request $request): OffersIndexViewModel
     {
         $offers = AnimalOffer::query()
             ->with(['animal.animalType', 'animal.animalCategory', 'reservations'])
@@ -87,6 +88,31 @@ class GetOffersIndexQuery
             ];
         })->values();
 
+        $orderedAnimalIds = $grouped
+            ->flatMap(fn (array $group) => collect($group['rows'])->pluck('animal_id'))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+        $idsString = implode(',', $orderedAnimalIds);
+        $backUrl = $this->encodeBackUrl($request->fullUrl());
+
+        $grouped = $grouped->map(function (array $group) use ($idsString, $backUrl) {
+            $group['rows'] = collect($group['rows'])->map(function (array $row) use ($idsString, $backUrl) {
+                if ($row['animal_id']) {
+                    $row['profile_url'] = route('panel.animals.show', [
+                        'animal' => $row['animal_id'],
+                        'nav_ids' => $idsString,
+                        'nav_back' => $backUrl,
+                    ]);
+                }
+
+                return $row;
+            })->values();
+
+            return $group;
+        })->values();
+
         $grandPrice = $grouped->sum('sum_price_value');
         $grandDeposit = $grouped->sum('sum_deposit_value');
 
@@ -98,5 +124,13 @@ class GetOffersIndexQuery
             bulkEditUrl: route('panel.offers.bulkEdit'),
             sexOptions: collect(Sex::cases())->map(fn ($sex) => ['value' => $sex->value, 'label' => Sex::label($sex->value)])->values()->all()
         );
+    }
+
+    private function encodeBackUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH) ?: '/';
+        $query = parse_url($url, PHP_URL_QUERY);
+
+        return base64_encode($query ? ($path . '?' . $query) : $path);
     }
 }

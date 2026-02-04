@@ -35,10 +35,17 @@ class AnimalController extends Controller
             ->with('toast', ['type' => 'success', 'message' => 'Zwierzę dodane.']);
     }
 
-    public function show(Animal $animal, GetAnimalProfileQuery $query)
+    public function show(Animal $animal, Request $request, GetAnimalProfileQuery $query)
     {
+        $navigationInput = [
+            'nav_ids' => (string) $request->query('nav_ids', ''),
+            'nav_back' => (string) $request->query('nav_back', ''),
+        ];
+        $profile = $query->handle($animal->id, $navigationInput);
+
         return view('panel.animals.show', [
-            'profile' => $query->handle($animal->id),
+            'profile' => $profile,
+            'animalNav' => $profile->navigation,
         ]);
     }
 

@@ -65,6 +65,23 @@
                     <a class="btn btn-outline-light" href="{{ route('panel.animals.index') }}">Reset</a>
                 </div>
             </form>
+
+            @if (!empty($colorGroupFilters))
+                <div class="mt-3 pt-3 border-top border-light border-opacity-10">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="small text-muted me-1">Grupy kolorystyczne:</span>
+                        @foreach ($colorGroupFilters as $group)
+                            <a
+                                href="{{ $group['toggle_url'] }}"
+                                class="btn btn-sm {{ $group['is_active'] ? 'btn-primary' : 'btn-outline-light' }}"
+                            >
+                                {{ $group['name'] }}
+                            </a>
+                        @endforeach
+                        <a href="{{ $colorGroupClearUrl }}" class="btn btn-sm btn-outline-secondary">Wyczyść</a>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -136,10 +153,10 @@
                                             @if ($animal['is_wintering'])
                                                 <span class="wintering-icon" aria-hidden="true">&#10052;</span>
                                             @endif
-                                            <a class="link-reset flex-grow-1" href="{{ route('panel.animals.show', $animal['id']) }}">
+                                            <a class="link-reset flex-grow-1" href="{{ $animal['profile_url'] }}">
                                                 {!! $animal['name_display_html'] !!}
                                             </a>
-                                            <a class="btn btn-outline-light btn-sm d-md-none" href="{{ route('panel.animals.show', $animal['id']) }}">
+                                            <a class="btn btn-outline-light btn-sm d-md-none" href="{{ $animal['profile_url'] }}">
                                                 <span aria-hidden="true">›</span>
                                                 <span class="visually-hidden">Podgląd</span>
                                             </a>
@@ -151,7 +168,7 @@
                                     <td class="d-none d-md-table-cell">{{ $animal['last_feed_at'] ?? '-' }}</td>
                                     <td class="d-none d-md-table-cell">{{ $animal['next_feed_at'] ?? '-' }}</td>
                                     <td class="d-none d-md-table-cell text-end">
-                                        <a class="btn btn-outline-light btn-sm" href="{{ route('panel.animals.show', $animal['id']) }}">Podgląd</a>
+                                        <a class="btn btn-outline-light btn-sm" href="{{ $animal['profile_url'] }}">Podgląd</a>
                                     </td>
                                 </tr>
                             @empty

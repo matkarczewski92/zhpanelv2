@@ -8,6 +8,7 @@ use App\Models\AnimalCategory;
 use App\Models\AnimalFeeding;
 use App\Models\AnimalType;
 use App\Models\AnimalWeight;
+use App\Models\ColorGroup;
 use App\Models\Feed;
 use App\Models\SystemConfig;
 use Carbon\Carbon;
@@ -23,6 +24,7 @@ class GetAnimalsIndexQuery
         $typeId = $this->intOrNull($request->query('type_id'));
         $categoryId = $this->intOrNull($request->query('category_id'));
         $feedId = $this->intOrNull($request->query('feed_id'));
+        $colorGroupIds = $this->normalizeIdList($request->query('color_groups', []));
         $sort = $request->query('sort');
         $direction = strtolower((string) $request->query('direction', 'asc'));
 
@@ -33,6 +35,11 @@ class GetAnimalsIndexQuery
         $types = AnimalType::orderBy('id')->get();
         $categories = AnimalCategory::orderBy('name')->get();
         $feeds = Feed::orderBy('name')->get();
+        $activeColorGroups = ColorGroup::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
 
         if (!$categoryId) {
             $categoryId = $this->resolveDefaultCategoryId($categories);
@@ -92,6 +99,12 @@ class GetAnimalsIndexQuery
             $query->where('animals.feed_id', $feedId);
         }
 
+        if ($colorGroupIds !== []) {
+            $query->whereHas('colorGroups', function ($builder) use ($colorGroupIds): void {
+                $builder->whereIn('color_groups.id', $colorGroupIds);
+            });
+        }
+
         if (!$typeId) {
             $query->orderBy('animals.animal_type_id');
         }
@@ -138,6 +151,30 @@ class GetAnimalsIndexQuery
             ];
         });
 
+        $orderedIds = $collection
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+        $idsString = implode(',', $orderedIds);
+        $backUrl = $this->encodeBackUrl($request->fullUrl());
+        $positionById = [];
+        foreach ($orderedIds as $position => $id) {
+            $positionById[$id] = $position;
+        }
+
+        $collection = $collection->map(function (array $row) use ($idsString, $backUrl, $positionById): array {
+            $id = (int) $row['id'];
+            $row['profile_url'] = route('panel.animals.show', [
+                'animal' => $id,
+                'nav_ids' => $idsString,
+                'nav_back' => $backUrl,
+            ]);
+            $row['nav_position'] = ($positionById[$id] ?? 0) + 1;
+
+            return $row;
+        });
+
         $paginator->setCollection($collection);
 
         return [
@@ -151,11 +188,40 @@ class GetAnimalsIndexQuery
                 'type_id' => $typeId,
                 'category_id' => $categoryId,
                 'feed_id' => $feedId,
+                'color_groups' => $colorGroupIds,
             ],
+            'colorGroupFilters' => $this->buildColorGroupFilters($request, $activeColorGroups, $colorGroupIds),
+            'colorGroupClearUrl' => $this->buildColorGroupClearUrl($request),
             'sort' => $sort,
             'direction' => $direction,
             'sortLinks' => $this->buildSortLinks($request, $sort, $direction),
         ];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function normalizeIdList(mixed $value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        $raw = is_array($value) ? $value : explode(',', (string) $value);
+
+        $ids = [];
+        foreach ($raw as $item) {
+            if (!is_numeric($item)) {
+                continue;
+            }
+
+            $id = (int) $item;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+
+        return array_values($ids);
     }
 
     private function intOrNull(mixed $value): ?int
@@ -253,6 +319,51 @@ class GetAnimalsIndexQuery
         return $groups;
     }
 
+    private function buildColorGroupFilters(Request $request, Collection $groups, array $selectedIds): array
+    {
+        $baseQuery = $request->query();
+        unset($baseQuery['page']);
+
+        return $groups->map(function ($group) use ($baseQuery, $request, $selectedIds) {
+            $id = (int) $group->id;
+            $nextIds = $selectedIds;
+
+            if (in_array($id, $nextIds, true)) {
+                $nextIds = array_values(array_diff($nextIds, [$id]));
+            } else {
+                $nextIds[] = $id;
+                $nextIds = array_values(array_unique($nextIds));
+            }
+
+            $query = $baseQuery;
+            if ($nextIds === []) {
+                unset($query['color_groups']);
+            } else {
+                $query['color_groups'] = $nextIds;
+            }
+
+            $queryString = http_build_query($query);
+
+            return [
+                'id' => $id,
+                'name' => $group->name,
+                'slug' => $group->slug,
+                'is_active' => in_array($id, $selectedIds, true),
+                'toggle_url' => $queryString ? $request->url() . '?' . $queryString : $request->url(),
+            ];
+        })->values()->all();
+    }
+
+    private function buildColorGroupClearUrl(Request $request): string
+    {
+        $query = $request->query();
+        unset($query['page'], $query['color_groups']);
+
+        $queryString = http_build_query($query);
+
+        return $queryString ? $request->url() . '?' . $queryString : $request->url();
+    }
+
     private function formatWeightLabel(mixed $value): string
     {
         if ($value === null) {
@@ -287,6 +398,14 @@ class GetAnimalsIndexQuery
         }
 
         return $main;
+    }
+
+    private function encodeBackUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH) ?: '/';
+        $query = parse_url($url, PHP_URL_QUERY);
+
+        return base64_encode($query ? ($path . '?' . $query) : $path);
     }
 
     private function sanitizeName(?string $value): string

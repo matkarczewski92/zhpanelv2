@@ -14,6 +14,7 @@ use App\Models\AnimalOffer;
 use App\Models\AnimalPhotoGallery;
 use App\Models\AnimalType;
 use App\Models\AnimalWeight;
+use App\Models\ColorGroup;
 use App\Models\Feed;
 use App\Models\Litter;
 use App\Services\Animal\AnimalWeightChartService;
@@ -30,7 +31,7 @@ class GetAnimalProfileQuery
     /**
      * Build the profile view model.
      */
-    public function handle(int $animalId): AnimalProfileViewModel
+    public function handle(int $animalId, array $navigationInput = []): AnimalProfileViewModel
     {
         $animal = Animal::query()
             ->with([
@@ -44,6 +45,7 @@ class GetAnimalProfileQuery
                 'offers.reservation',
                 'winterings.stage',
                 'genotypes.category',
+                'colorGroups',
             ])
             ->findOrFail($animalId);
 
@@ -86,6 +88,8 @@ class GetAnimalProfileQuery
         $togglePublicUrl = route('panel.animals.toggle-public', $animal->id);
 
         $edit = $this->buildEditData($animal);
+        $colorGroups = $this->buildColorGroups($animal);
+        $navigation = $this->buildNavigation($animal->id, $navigationInput);
 
         return new AnimalProfileViewModel(
             animal: $animalData,
@@ -124,7 +128,9 @@ class GetAnimalProfileQuery
             is_public_profile_enabled: $isPublic,
             public_profile_url: $publicUrl,
             toggle_public_profile_url: $togglePublicUrl,
-            edit: $edit
+            edit: $edit,
+            colorGroups: $colorGroups,
+            navigation: $navigation
         );
     }
 
@@ -545,6 +551,87 @@ class GetAnimalProfileQuery
             'delete_url' => route('panel.animals.delete', $animal->id),
             'is_deleted_category' => (int) $animal->animal_category_id === 5,
         ];
+    }
+
+    private function buildColorGroups(Animal $animal): array
+    {
+        $options = ColorGroup::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($group) => [
+                'id' => $group->id,
+                'name' => $group->name,
+            ])
+            ->all();
+
+        return [
+            'options' => $options,
+            'selected_ids' => $animal->colorGroups->pluck('id')->map(fn ($id) => (int) $id)->all(),
+            'update_url' => route('panel.animals.color-groups.sync', $animal->id),
+        ];
+    }
+
+    private function buildNavigation(int $animalId, array $input): array
+    {
+        $rawIds = (string) ($input['nav_ids'] ?? '');
+        $ids = collect(explode(',', $rawIds))
+            ->map(fn ($value) => is_numeric($value) ? (int) $value : null)
+            ->filter(fn ($value) => $value !== null && $value > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $index = array_search($animalId, $ids, true);
+        if ($index === false) {
+            return [];
+        }
+
+        $backUrl = $this->decodeBackUrl((string) ($input['nav_back'] ?? ''));
+        $idsString = implode(',', $ids);
+
+        $prevId = $index > 0 ? $ids[$index - 1] : null;
+        $nextId = $index < (count($ids) - 1) ? $ids[$index + 1] : null;
+
+        return [
+            'position' => $index + 1,
+            'total' => count($ids),
+            'back_url' => $backUrl,
+            'prev_url' => $prevId ? route('panel.animals.show', [
+                'animal' => $prevId,
+                'nav_ids' => $idsString,
+                'nav_back' => $input['nav_back'] ?? null,
+            ]) : null,
+            'next_url' => $nextId ? route('panel.animals.show', [
+                'animal' => $nextId,
+                'nav_ids' => $idsString,
+                'nav_back' => $input['nav_back'] ?? null,
+            ]) : null,
+        ];
+    }
+
+    private function decodeBackUrl(string $encoded): ?string
+    {
+        if ($encoded === '') {
+            return null;
+        }
+
+        $decoded = base64_decode($encoded, true);
+        if (!is_string($decoded) || $decoded === '') {
+            return null;
+        }
+
+        $host = parse_url($decoded, PHP_URL_HOST);
+        if ($host !== null) {
+            return null;
+        }
+
+        return str_starts_with($decoded, '/') ? $decoded : null;
     }
 
     private function sanitizeName(string $name): string

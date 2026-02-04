@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domain\Shared\Enums\Sex;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -127,6 +128,12 @@ class Animal extends Model
     public function genotypes(): HasMany
     {
         return $this->hasMany(AnimalGenotype::class, 'animal_id');
+    }
+
+    public function colorGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(ColorGroup::class, 'animal_color_group', 'animal_id', 'color_group_id')
+            ->withTimestamps();
     }
 
     /**

@@ -35,10 +35,44 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.massdata.*') ? 'active' : '' }}" href="{{ route('panel.massdata.index') }}">Masowe Dane</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('web.home') }}">Web</a>
+                </li>
                 {{-- placeholder for future links --}}
             </ul>
 
-            <div class="dropdown ms-auto">
+            @php
+                $animalNav = $animalNav ?? [];
+                $hasAnimalNav = request()->routeIs('panel.animals.show') && !empty($animalNav);
+            @endphp
+
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                @if ($hasAnimalNav)
+                    @if (!empty($animalNav['back_url']))
+                        <a class="btn btn-outline-light btn-sm" href="{{ $animalNav['back_url'] }}" title="Powrót do listy">
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
+                    @endif
+                    <a
+                        class="btn btn-outline-light btn-sm @if (empty($animalNav['prev_url'])) disabled @endif"
+                        href="{{ $animalNav['prev_url'] ?? '#' }}"
+                        title="Poprzedni wąż"
+                    >
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                    <span class="small text-light-emphasis">
+                        {{ $animalNav['position'] ?? 0 }}/{{ $animalNav['total'] ?? 0 }}
+                    </span>
+                    <a
+                        class="btn btn-outline-light btn-sm @if (empty($animalNav['next_url'])) disabled @endif"
+                        href="{{ $animalNav['next_url'] ?? '#' }}"
+                        title="Następny wąż"
+                    >
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                @endif
+
+                <div class="dropdown ms-5">
                 <button
                     id="adminMenuToggle"
                     class="btn btn-link text-light p-0"
@@ -78,6 +112,7 @@
                         </form>
                     </li>
                 </ul>
+            </div>
             </div>
         </div>
     </div>
@@ -138,6 +173,13 @@
                 data-bs-dismiss="offcanvas"
             >
                 Masowe Dane
+            </a>
+            <a
+                class="nav-link"
+                href="{{ route('web.home') }}"
+                data-bs-dismiss="offcanvas"
+            >
+                Web
             </a>
             <div class="border-top border-secondary my-2"></div>
             <a class="nav-link" href="{{ route('admin.settings.index') }}" data-bs-dismiss="offcanvas">
