@@ -28,6 +28,7 @@ class LabelService
         return [
             'animal_id' => (string) $animal->id,
             'public_profile_tag' => $code,
+            'secret_tag' => (string) ($animal->secret_tag ?? ''),
             'animal_type' => $animal->animalType?->name ?? '',
             'litter_code' => $animal->litter?->litter_code ?? '',
             'name' => $second . $name,
@@ -56,7 +57,7 @@ class LabelService
 
     public function exportCsv(Collection $labels, string $delimiter = ';'): string
     {
-        $headers = ['id', 'type', 'name', 'sex', 'date_of_birth', 'code', 'qr_url', 'price'];
+        $headers = ['id', 'type', 'name', 'sex', 'date_of_birth', 'code', 'secret_tag', 'qr_url', 'price'];
         $lines = [];
         $lines[] = implode($delimiter, $headers);
         foreach ($labels as $row) {
@@ -67,6 +68,7 @@ class LabelService
             $line[] = $this->plainText($row['sex'] ?? '');
             $line[] = $row['date_of_birth'] ?? '';
             $line[] = $row['public_profile_tag'] ?? '';
+            $line[] = $row['secret_tag'] ?? '';
             $line[] = $this->qrUrl($row['public_profile_tag'] ?? '');
             $line[] = $row['price'] ?? '';
             $lines[] = implode($delimiter, array_map(fn ($value) => $this->csvValue($value, $delimiter), $line));

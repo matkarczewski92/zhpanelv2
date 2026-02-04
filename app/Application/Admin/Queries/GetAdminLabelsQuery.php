@@ -8,7 +8,7 @@ use App\Models\Animal;
 
 class GetAdminLabelsQuery
 {
-    public function handle(): AdminLabelsViewModel
+    public function handle(string $exportRouteName = 'admin.labels.export', string $title = 'Drukowanie etykiet'): AdminLabelsViewModel
     {
         $animals = Animal::query()
             ->with(['animalType', 'animalCategory'])
@@ -26,13 +26,15 @@ class GetAdminLabelsQuery
                     'sex' => Sex::label((int) $animal->sex),
                     'category' => $animal->animalCategory?->name ?? '-',
                     'public_profile_tag' => $animal->public_profile_tag ?? '-',
+                    'secret_tag' => $animal->secret_tag ?? '-',
                     'date_of_birth' => optional($animal->date_of_birth)->format('Y-m-d'),
                 ];
             });
 
         return new AdminLabelsViewModel(
             animals: $animals->all(),
-            exportUrl: route('admin.labels.export')
+            exportUrl: route($exportRouteName),
+            title: $title
         );
     }
 }

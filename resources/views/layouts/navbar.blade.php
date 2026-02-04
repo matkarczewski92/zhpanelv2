@@ -98,6 +98,11 @@
                         </a>
                     </li>
                     <li>
+                        <a class="dropdown-item" href="{{ route('admin.labels.secret.print') }}">
+                            Etykiety (sekret)
+                        </a>
+                    </li>
+                    <li>
                         <a class="dropdown-item" href="{{ route('admin.shipping-list.index') }}">
                             Lista przewozowa
                         </a>
@@ -197,6 +202,9 @@
             </a>
             <a class="nav-link" href="{{ route('admin.labels.print') }}" data-bs-dismiss="offcanvas">
                 Drukowanie etykiet
+            </a>
+            <a class="nav-link" href="{{ route('admin.labels.secret.print') }}" data-bs-dismiss="offcanvas">
+                Etykiety (sekret)
             </a>
             <a class="nav-link" href="{{ route('admin.shipping-list.index') }}" data-bs-dismiss="offcanvas">
                 Lista przewozowa

@@ -2,6 +2,7 @@
 
 namespace App\Application\Animals\Commands;
 
+use App\Application\Animals\Services\SecretTagGenerator;
 use App\Domain\Events\AnimalRegistered;
 use App\Models\Animal;
 use Illuminate\Support\Arr;
@@ -9,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class RegisterAnimalCommand
 {
+    public function __construct(
+        private readonly SecretTagGenerator $secretTagGenerator
+    ) {
+    }
+
     public function handle(array $data): Animal
     {
         $payload = Arr::only($data, [
@@ -23,6 +29,7 @@ class RegisterAnimalCommand
             'animal_category_id',
             'public_profile',
             'public_profile_tag',
+            'secret_tag',
             'web_gallery',
         ]);
 
@@ -33,6 +40,10 @@ class RegisterAnimalCommand
 
         if (!array_key_exists('public_profile', $payload)) {
             $payload['public_profile'] = 0;
+        }
+
+        if (empty($payload['secret_tag'])) {
+            $payload['secret_tag'] = $this->secretTagGenerator->generate();
         }
 
         $payload = array_filter($payload, static fn ($value) => $value !== null);

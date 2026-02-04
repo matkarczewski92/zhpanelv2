@@ -1,11 +1,11 @@
 ﻿@extends('layouts.panel')
 
-@section('title', 'Drukowanie etykiet')
+@section('title', $vm->title)
 
 @section('content')
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Lista zwierząt (kategorie 1,2,4)</span>
+            <span>{{ $vm->title }} - lista zwierząt (kategorie 1,2,4)</span>
             <form id="adminLabelForm" method="POST" action="{{ $vm->exportUrl }}">
                 @csrf
                 <input type="hidden" name="animal_ids" id="adminAnimalIds" />
@@ -24,6 +24,7 @@
                             <th>Płeć</th>
                             <th>Kategoria</th>
                             <th>Kod węża</th>
+                            <th>Secret tag</th>
                             <th>Data urodzenia</th>
                         </tr>
                     </thead>
@@ -37,11 +38,12 @@
                                 <td>{{ $animal['sex'] }}</td>
                                 <td>{{ $animal['category'] }}</td>
                                 <td>{{ $animal['public_profile_tag'] }}</td>
+                                <td>{{ $animal['secret_tag'] }}</td>
                                 <td>{{ $animal['date_of_birth'] ?? '-' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted">Brak danych.</td>
+                                <td colspan="9" class="text-center text-muted">Brak danych.</td>
                             </tr>
                         @endforelse
                     </tbody>

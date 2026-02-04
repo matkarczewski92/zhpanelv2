@@ -9,7 +9,8 @@ class AdminLabelsViewModel
      */
     public function __construct(
         public readonly array $animals,
-        public readonly string $exportUrl
+        public readonly string $exportUrl,
+        public readonly string $title
     ) {
     }
 }

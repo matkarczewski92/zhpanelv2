@@ -23,7 +23,8 @@ class Animal extends Model
   8 => 'animal_category_id',
   9 => 'public_profile',
   10 => 'public_profile_tag',
-  11 => 'web_gallery',
+  11 => 'secret_tag',
+  12 => 'web_gallery',
 );
 
     protected $casts = array (

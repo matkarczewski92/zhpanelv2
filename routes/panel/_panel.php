@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Panel\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -16,9 +17,7 @@ Route::prefix('panel')
     ->middleware(['web', 'auth'])
     ->name('panel.')
     ->group(function () {
-        Route::get('/', function () {
-            return view('admin.dashboard');
-        })->name('home');
+        Route::get('/', [DashboardController::class, 'index'])->name('home');
 
         require __DIR__ . '/animals.php';
         require __DIR__ . '/feeds.php';

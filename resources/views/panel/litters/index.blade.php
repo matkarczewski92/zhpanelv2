@@ -48,7 +48,7 @@
     </div>
 
     <div class="row g-3">
-        <div class="col-12 col-xl-8">
+        <div class="col-12">
             <div class="glass-card glass-table-wrapper mb-3">
                 <div class="card-header">
                     <div class="strike"><span>Aktualne mioty ({{ $page->counts['actual'] }})</span></div>
@@ -73,23 +73,6 @@
                     <div class="strike"><span>Zakonczone mioty ({{ $page->counts['closed'] }})</span></div>
                 </div>
                 @include('panel.litters._list-table', ['rows' => $page->closedLitters, 'emptyMessage' => 'Brak zakonczonych miotow.'])
-            </div>
-        </div>
-
-        <div class="col-12 col-xl-4">
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="strike"><span>Dodaj miot</span></div>
-                </div>
-                <div class="card-body">
-                    @include('panel.litters._form', [
-                        'form' => (object) ['maleParents' => $page->maleParents, 'femaleParents' => $page->femaleParents, 'categories' => $page->categories],
-                        'action' => route('panel.litters.store'),
-                        'method' => 'POST',
-                        'submitLabel' => 'Dodaj miot',
-                        'errorBag' => 'litterCreate',
-                    ])
-                </div>
             </div>
         </div>
     </div>

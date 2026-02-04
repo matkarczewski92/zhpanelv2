@@ -12,11 +12,34 @@ class AdminLabelsController extends Controller
     public function print(GetAdminLabelsQuery $query)
     {
         return view('admin.labels.print', [
-            'vm' => $query->handle(),
+            'vm' => $query->handle(
+                exportRouteName: 'admin.labels.export',
+                title: 'Drukowanie etykiet'
+            ),
+        ]);
+    }
+
+    public function printSecret(GetAdminLabelsQuery $query)
+    {
+        return view('admin.labels.print', [
+            'vm' => $query->handle(
+                exportRouteName: 'admin.labels.secret.export',
+                title: 'Etykiety (sekret)'
+            ),
         ]);
     }
 
     public function export(Request $request, LabelService $labels)
+    {
+        return $this->exportLabels($request, $labels, 'etykiety_admin.csv');
+    }
+
+    public function exportSecret(Request $request, LabelService $labels)
+    {
+        return $this->exportLabels($request, $labels, 'etykiety_secret_admin.csv');
+    }
+
+    private function exportLabels(Request $request, LabelService $labels, string $filename)
     {
         $ids = collect($request->input('animal_ids', []))
             ->flatMap(function ($v) {
@@ -39,7 +62,6 @@ class AdminLabelsController extends Controller
 
         $rows = $labels->buildMany($ids);
         $csv = $labels->exportCsvWin1250($rows, ';');
-        $filename = 'etykiety_admin.csv';
 
         return response()->streamDownload(function () use ($csv): void {
             echo $csv;

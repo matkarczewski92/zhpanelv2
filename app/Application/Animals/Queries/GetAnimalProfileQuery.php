@@ -476,14 +476,6 @@ class GetAnimalProfileQuery
                 'key' => 'gallery',
             ],
             [
-                'label' => 'Etykieta',
-                'icon' => '<i class="bi bi-tag"></i>',
-                'url' => route('panel.animals.label', $animal->id),
-                'href' => route('panel.animals.label', $animal->id),
-                'type' => 'link',
-                'key' => 'label',
-            ],
-            [
                 'label' => 'Profil publiczny',
                 'icon' => '<i class="bi bi-eye"></i>',
                 'url' => $publicUrl,
@@ -509,6 +501,14 @@ class GetAnimalProfileQuery
                 'href' => route('panel.animals.passport', $animal->id),
                 'type' => 'link',
                 'key' => 'passport',
+            ],
+            [
+                'label' => 'Etykieta',
+                'icon' => '<i class="bi bi-tag"></i>',
+                'url' => route('panel.animals.label', $animal->id),
+                'href' => route('panel.animals.label', $animal->id),
+                'type' => 'link',
+                'key' => 'label',
             ],
             [
                 'label' => 'Edycja',
