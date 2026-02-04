@@ -28,11 +28,11 @@
                         <p class="h5 mb-2">Miot @if($litter['season']) - Sezon {{ $litter['season'] }}@endif</p>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-light btn-sm rounded-circle" data-bs-toggle="modal" data-bs-target="#litterGalleryModal" aria-label="Galeria">
-                            <i class="bi bi-image"></i>
+                        <button type="button" class="btn btn-outline-light btn-sm rounded-circle d-inline-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#litterGalleryModal" aria-label="Galeria miotu" style="width: 34px; height: 34px;">
+                            <i class="bi bi-images"></i>
                         </button>
-                        <a href="{{ route('panel.litters.index') }}" class="btn btn-light btn-sm rounded-circle" aria-label="Powrot">
-                            <i class="bi bi-arrow-left"></i>
+                        <a href="{{ route('panel.litters.index') }}" class="btn btn-outline-light btn-sm rounded-circle d-inline-flex align-items-center justify-content-center" aria-label="Powrot do listy miotow" style="width: 34px; height: 34px;">
+                            <i class="bi bi-chevron-left"></i>
                         </a>
                     </div>
                 </div>

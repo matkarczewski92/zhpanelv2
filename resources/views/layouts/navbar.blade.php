@@ -32,6 +32,9 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.offers.*') ? 'active' : '' }}" href="{{ route('panel.offers.index') }}">Oferty</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.massdata.*') ? 'active' : '' }}" href="{{ route('panel.massdata.index') }}">Masowe Dane</a>
+                </li>
                 {{-- placeholder for future links --}}
             </ul>
 
@@ -118,6 +121,13 @@
                 data-bs-dismiss="offcanvas"
             >
                 Oferty
+            </a>
+            <a
+                class="nav-link {{ request()->routeIs('panel.massdata.*') ? 'active' : '' }}"
+                href="{{ route('panel.massdata.index') }}"
+                data-bs-dismiss="offcanvas"
+            >
+                Masowe Dane
             </a>
             <div class="border-top border-secondary my-2"></div>
             <a class="nav-link" href="{{ route('admin.settings.index') }}" data-bs-dismiss="offcanvas">
