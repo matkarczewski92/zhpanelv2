@@ -504,7 +504,7 @@ class GetAnimalProfileQuery
             ],
             [
                 'label' => 'Etykieta',
-                'icon' => '<i class="bi bi-tag"></i>',
+                'icon' => '<i class="bi bi-printer"></i>',
                 'url' => route('panel.animals.label', $animal->id),
                 'href' => route('panel.animals.label', $animal->id),
                 'type' => 'link',

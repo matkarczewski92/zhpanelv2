@@ -219,6 +219,47 @@ body.panel-body {
     border-radius: 8px;
 }
 
+.panel-body .offcanvas-backdrop {
+    z-index: 1040;
+}
+
+.panel-body .offcanvas {
+    z-index: 1045;
+}
+
+.panel-body .modal-backdrop {
+    z-index: 1050;
+}
+
+.panel-body .modal {
+    z-index: 1055;
+}
+
+.panel-body .offcanvas-backdrop:not(.show),
+.panel-body .modal-backdrop:not(.show) {
+    pointer-events: none;
+}
+
+.panel-mobile-nav .offcanvas-body,
+#actionsOffcanvas .offcanvas-body {
+    overflow-y: auto;
+    max-height: 100dvh;
+    -webkit-overflow-scrolling: touch;
+}
+
+.panel-body .modal-dialog {
+    margin: 0.5rem auto;
+}
+
+.panel-body .modal-content {
+    max-height: calc(100dvh - 1rem);
+}
+
+.panel-body .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .link-reset {
     color: inherit;
     text-decoration: none;

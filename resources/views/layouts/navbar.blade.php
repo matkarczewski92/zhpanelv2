@@ -126,7 +126,7 @@
     </div>
 </nav>
 
-<div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="panelOffcanvas" aria-labelledby="panelOffcanvasLabel">
+<div class="offcanvas offcanvas-end text-bg-dark panel-mobile-nav" tabindex="-1" id="panelOffcanvas" aria-labelledby="panelOffcanvasLabel">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="panelOffcanvasLabel">ZH Panel</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Zamknij"></button>
@@ -136,80 +136,71 @@
             <a
                 class="nav-link {{ request()->routeIs('panel.home') ? 'active' : '' }}"
                 href="{{ route('panel.home') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Home
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.animals.*') ? 'active' : '' }}"
                 href="{{ route('panel.animals.index') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Zwierz�ta
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.feeds.*') ? 'active' : '' }}"
                 href="{{ route('panel.feeds.index') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Karma
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.litters.*') ? 'active' : '' }}"
                 href="{{ route('panel.litters.index') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Mioty
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.litters-planning.*') ? 'active' : '' }}"
                 href="{{ route('panel.litters-planning.index') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Planowanie miotow
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.finances.*') ? 'active' : '' }}"
                 href="{{ route('panel.finances.index') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Finanse
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.offers.*') ? 'active' : '' }}"
                 href="{{ route('panel.offers.index') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Oferty
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.massdata.*') ? 'active' : '' }}"
                 href="{{ route('panel.massdata.index') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Masowe Dane
             </a>
             <a
                 class="nav-link"
                 href="{{ route('web.home') }}"
-                data-bs-dismiss="offcanvas"
             >
                 Web
             </a>
             <div class="border-top border-secondary my-2"></div>
-            <a class="nav-link" href="{{ route('admin.settings.index') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link" href="{{ route('admin.settings.index') }}">
                 Ustawienia portalu
             </a>
-            <a class="nav-link" href="{{ route('admin.labels.print') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link" href="{{ route('admin.labels.print') }}">
                 Drukowanie etykiet
             </a>
-            <a class="nav-link" href="{{ route('admin.labels.secret.print') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link" href="{{ route('admin.labels.secret.print') }}">
                 Etykiety (sekret)
             </a>
-            <a class="nav-link" href="{{ route('admin.shipping-list.index') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link" href="{{ route('admin.shipping-list.index') }}">
                 Lista przewozowa
             </a>
-            <a class="nav-link" href="{{ route('admin.pricelist.index') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link" href="{{ route('admin.pricelist.index') }}">
                 Cennik
             </a>
             <form method="POST" action="{{ route('logout') }}" class="mt-2">

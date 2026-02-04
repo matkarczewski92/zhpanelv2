@@ -94,19 +94,91 @@
         <div class="d-grid gap-2">
             @foreach ($profile->actions as $action)
                 @php $isModal = $action['type'] === 'modal'; @endphp
-                <a
-                    class="btn profile-action-btn w-100 text-start"
-                    href="{{ $action['href'] }}"
-                    @if ($isModal)
-                        data-bs-toggle="modal"
-                        data-bs-target="{{ $action['href'] }}"
-                    @endif
-                    data-bs-dismiss="offcanvas"
-                >
-                    <span class="profile-action-icon">{!! $action['icon'] !!}</span>
-                    {{ $action['label'] }}
-                </a>
+                @if($action['key'] === 'public-toggle')
+                    <form method="POST" action="{{ $profile->toggle_public_profile_url }}">
+                        @csrf
+                        <button type="submit" class="btn profile-action-btn w-100 text-start">
+                            <span class="profile-action-icon" style="color: {{ $profile->is_public_profile_enabled ? 'limegreen' : '#7a7a7a' }};">
+                                @if($profile->is_public_profile_enabled)
+                                    <i class="bi bi-eye-fill"></i>
+                                @else
+                                    <i class="bi bi-eye-slash-fill"></i>
+                                @endif
+                            </span>
+                            Profil publiczny (toggle)
+                        </button>
+                    </form>
+                    @continue
+                @endif
+                @if ($isModal)
+                    <button
+                        type="button"
+                        class="btn profile-action-btn w-100 text-start"
+                        data-action-open-modal="{{ $action['href'] }}"
+                    >
+                        <span class="profile-action-icon">{!! $action['icon'] !!}</span>
+                        {{ $action['label'] }}
+                    </button>
+                @else
+                    <a
+                        class="btn profile-action-btn w-100 text-start"
+                        href="{{ $action['href'] }}"
+                        @if(isset($action['disabled']) && $action['disabled']) style="pointer-events:none; opacity:0.5;" @endif
+                    >
+                        <span class="profile-action-icon">{!! $action['icon'] !!}</span>
+                        {{ $action['label'] }}
+                    </a>
+                @endif
             @endforeach
         </div>
     </div>
 </div>
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const actionsOffcanvasEl = document.getElementById('actionsOffcanvas');
+            if (!actionsOffcanvasEl || !window.bootstrap) {
+                return;
+            }
+
+            const actionsOffcanvas = window.bootstrap.Offcanvas.getOrCreateInstance(actionsOffcanvasEl);
+            let pendingModalSelector = null;
+
+            const clearDormantBackdrops = () => {
+                document.querySelectorAll('.offcanvas-backdrop:not(.show), .modal-backdrop:not(.show)').forEach((el) => {
+                    el.remove();
+                });
+                if (!document.querySelector('.offcanvas.show') && !document.querySelector('.modal.show')) {
+                    document.body.classList.remove('offcanvas-open', 'modal-open');
+                    document.body.style.removeProperty('overflow');
+                    document.body.style.removeProperty('padding-right');
+                }
+            };
+
+            document.querySelectorAll('[data-action-open-modal]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    pendingModalSelector = btn.getAttribute('data-action-open-modal');
+                    actionsOffcanvas.hide();
+                });
+            });
+
+            actionsOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
+                clearDormantBackdrops();
+                if (!pendingModalSelector) {
+                    return;
+                }
+
+                const modalEl = document.querySelector(pendingModalSelector);
+                pendingModalSelector = null;
+                if (!modalEl) {
+                    return;
+                }
+
+                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            });
+
+            document.addEventListener('hidden.bs.modal', clearDormantBackdrops);
+        });
+    </script>
+@endpush
