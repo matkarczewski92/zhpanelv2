@@ -262,6 +262,15 @@
                 return;
             }
 
+            const printContent = body.cloneNode(true);
+            const summaryRow = printContent.querySelector('.row.g-2');
+            if (summaryRow) {
+                const summaryTitle = document.createElement('h2');
+                summaryTitle.className = 'print-summary-title';
+                summaryTitle.textContent = 'Podsumowanie';
+                summaryRow.parentNode.insertBefore(summaryTitle, summaryRow);
+            }
+
             const printWindow = window.open('', '_blank', 'width=1100,height=900');
             if (!printWindow) {
                 return;
@@ -272,20 +281,30 @@
                     <head>
                         <title>${title}</title>
                         <style>
-                            body { font-family: Arial, sans-serif; color: #111; margin: 20px; }
-                            h1 { font-size: 18px; margin: 0 0 12px 0; }
-                            table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-                            th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; }
-                            th { background: #f3f4f6; }
+                            @page { margin: 10mm; }
+                            body { font-family: Arial, sans-serif; color: #111; margin: 0; font-size: 12px; }
+                            h1 { font-size: 14px; margin: 0 0 10px 0; text-align: center; font-weight: 600; }
+                            h2.print-summary-title { font-size: 13px; margin: 12px 0 8px; text-align: center; font-weight: 600; }
+                            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+                            th, td { border: 0; padding: 3px 6px; text-align: left; vertical-align: top; }
+                            thead th { font-weight: 700; border-bottom: 1px solid #ddd; }
+                            tbody tr { border: 0; }
+                            a { color: inherit; text-decoration: none; }
+                            .text-danger { color: #b91c1c !important; }
+                            .text-success { color: #15803d !important; }
+                            .text-secondary, .text-muted { color: #555 !important; }
+                            .strike { text-align: center; margin: 4px 0 6px; }
+                            .strike::before, .strike::after { display: none !important; }
+                            .strike span { font-size: 12px; text-transform: none; letter-spacing: 0; color: #111; }
                             ul { padding-left: 0; margin: 0; list-style: none; }
-                            li { border: 1px solid #d1d5db; padding: 6px 8px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+                            li { border: 0; padding: 2px 6px; margin-bottom: 2px; display: flex; justify-content: space-between; }
                             .row { display: flex; gap: 12px; }
                             .row > div { flex: 1; }
                         </style>
                     </head>
                     <body>
                         <h1>${title}</h1>
-                        ${body.innerHTML}
+                        ${printContent.innerHTML}
                     </body>
                 </html>
             `);
