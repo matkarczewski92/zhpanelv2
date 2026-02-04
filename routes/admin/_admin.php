@@ -14,7 +14,6 @@ Route::prefix('admin')
         require __DIR__ . '/labels.php';
         require __DIR__ . '/shipping-list.php';
         require __DIR__ . '/pricelist.php';
-        require __DIR__ . '/config.php';
     });
 
 
