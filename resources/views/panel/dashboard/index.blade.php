@@ -183,7 +183,7 @@
                     </div>
                     <div data-print-body>
                     <div class="glass-table-wrapper table-responsive mb-3">
-                        <table class="table glass-table table-sm align-middle mb-0">
+                        <table class="table glass-table table-sm align-middle mb-0 dashboard-feeding-table">
                             <thead>
                                 <tr class="small text-muted">
                                     <th>Nazwa zwierzęcia</th>
@@ -282,11 +282,11 @@
                         <title>${title}</title>
                         <style>
                             @page { margin: 10mm; }
-                            body { font-family: Arial, sans-serif; color: #111; margin: 0; font-size: 12px; }
+                            body { font-family: Arial, sans-serif; color: #111; margin: 0; font-size: 11px; }
                             h1 { font-size: 14px; margin: 0 0 10px 0; text-align: center; font-weight: 600; }
                             h2.print-summary-title { font-size: 13px; margin: 12px 0 8px; text-align: center; font-weight: 600; }
                             table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-                            th, td { border: 0; padding: 3px 6px; text-align: left; vertical-align: top; }
+                            th, td { border: 0; padding: 2px 6px; text-align: left; vertical-align: top; font-size: 10.5px; line-height: 1.2; }
                             thead th { font-weight: 700; border-bottom: 1px solid #ddd; }
                             tbody tr { border: 0; }
                             a { color: inherit; text-decoration: none; }
