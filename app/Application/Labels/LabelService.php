@@ -82,6 +82,46 @@ class LabelService
         return $this->toWin1250($utf8);
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function buildSecretCsvRow(Animal $animal): array
+    {
+        $animal->loadMissing(['offers' => function ($q) {
+            $q->latest('created_at')->limit(1);
+        }]);
+
+        $name = $this->sanitizeName($animal->name);
+        $second = $animal->second_name ? '"' . e($animal->second_name) . '" ' : '';
+
+        return [
+            'animal_id' => (string) $animal->id,
+            'name' => $this->plainText($second . $name),
+            'secret_tag' => (string) ($animal->secret_tag ?? ''),
+        ];
+    }
+
+    /**
+     * @param Collection<int, array<string, string>> $rows
+     */
+    public function exportSecretCsvWin1250(Collection $rows, string $delimiter = ';'): string
+    {
+        $headers = ['id', 'name', 'secret_tag'];
+        $lines = [implode($delimiter, $headers)];
+
+        foreach ($rows as $row) {
+            $line = [
+                $row['animal_id'] ?? '',
+                $row['name'] ?? '',
+                $row['secret_tag'] ?? '',
+            ];
+
+            $lines[] = implode($delimiter, array_map(fn ($value) => $this->csvValue($value, $delimiter), $line));
+        }
+
+        return $this->toWin1250(implode("\r\n", $lines));
+    }
+
     private function csvValue(?string $value, string $delimiter): string
     {
         $val = (string) $value;

@@ -338,29 +338,38 @@ class GetAnimalProfileQuery
     {
         /** @var AnimalOffer|null $offer */
         $offer = $animal->offers()->latest()->first();
-        if (!$offer) {
-            return [null, null, [], false, false];
-        }
+        $reservation = $offer?->reservation;
 
-        $reservation = $offer->reservation;
+        $offerSummary = $offer ? [
+            'price' => $offer->price,
+            'listed_at' => optional($offer->created_at)->toDateString(),
+            'updated_at' => optional($offer->updated_at)->toDateString(),
+            'sold_at' => optional($offer->sold_date)->toDateString(),
+        ] : null;
 
-        return [
-            [
-                'price' => $offer->price,
-                'listed_at' => optional($offer->created_at)->toDateString(),
-                'updated_at' => optional($offer->updated_at)->toDateString(),
-            ],
-            $reservation ? [
-                'reserver_name' => $reservation->reserver_name,
-                'deposit_amount' => $reservation->deposit_amount,
-                'reservation_date' => optional($reservation->reservation_date)->toDateString(),
-                'reservation_valid_until' => optional($reservation->reservation_valid_until)->toDateString(),
-                'notes' => $reservation->notes,
-            ] : null,
-            [], // offer form defaults not used currently
-            true,
-            (bool) $reservation,
+        $reservationSummary = $reservation ? [
+            'reserver_name' => $reservation->booker,
+            'deposit_amount' => $reservation->deposit,
+            'reservation_date' => optional($reservation->created_at)->toDateString(),
+            'reservation_valid_until' => optional($reservation->expiration_date)->toDateString(),
+            'notes' => $reservation->adnotations,
+        ] : null;
+
+        $offerForm = [
+            'action' => route('panel.animals.offer.update', $animal->id),
+            'price' => old('price', $offer?->price),
+            'sold_at' => old('sold_at', optional($offer?->sold_date)->toDateString()),
+            'public_profile_enabled' => (bool) old('public_profile', $animal->public_profile ? 1 : 0),
+            'reserver_name' => old('reserver_name', $reservation?->booker),
+            'deposit_amount' => old('deposit_amount', $reservation?->deposit),
+            'reservation_valid_until' => old('reservation_valid_until', optional($reservation?->expiration_date)->toDateString()),
+            'notes' => old('notes', $reservation?->adnotations),
+            'delete_reservation_url' => $offer && $reservation ? route('panel.animals.offer.reservation.destroy', $animal->id) : null,
+            'delete_offer_url' => $offer ? route('panel.animals.offer.destroy', $animal->id) : null,
+            'sell_url' => $offer ? route('panel.animals.offer.sell', $animal->id) : null,
         ];
+
+        return [$offerSummary, $reservationSummary, $offerForm, (bool) $offer, (bool) $reservation];
     }
 
     private function buildLitters(Animal $animal): array
@@ -501,6 +510,14 @@ class GetAnimalProfileQuery
                 'href' => route('panel.animals.passport', $animal->id),
                 'type' => 'link',
                 'key' => 'passport',
+            ],
+            [
+                'label' => 'CSV secret',
+                'icon' => '<i class="bi bi-filetype-csv"></i>',
+                'url' => route('panel.animals.label.secret', $animal->id),
+                'href' => route('panel.animals.label.secret', $animal->id),
+                'type' => 'link',
+                'key' => 'label-secret',
             ],
             [
                 'label' => 'Etykieta',

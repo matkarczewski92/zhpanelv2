@@ -33,6 +33,25 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const cleanupOverlayState = () => {
+                window.setTimeout(() => {
+                    const hasOpenModal = document.querySelector('.modal.show');
+                    const hasOpenOffcanvas = document.querySelector('.offcanvas.show');
+
+                    if (hasOpenModal || hasOpenOffcanvas) {
+                        return;
+                    }
+
+                    document.querySelectorAll('.modal-backdrop, .offcanvas-backdrop').forEach((el) => el.remove());
+                    document.body.classList.remove('modal-open', 'offcanvas-open');
+                    document.body.style.removeProperty('overflow');
+                    document.body.style.removeProperty('padding-right');
+                }, 0);
+            };
+
+            document.addEventListener('hidden.bs.modal', cleanupOverlayState);
+            document.addEventListener('hidden.bs.offcanvas', cleanupOverlayState);
+
             const photobar = document.getElementById('panelPhotobar');
             const previewModalEl = document.getElementById('animalPhotoPreviewModal');
             const previewImg = document.getElementById('photoPreviewImg');
@@ -92,6 +111,17 @@
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const modalEl = document.getElementById('animalEditModal');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                }
+            });
+        </script>
+    @endif
+    @if ($errors->has('price') || $errors->has('sold_at') || $errors->has('reserver_name') || $errors->has('deposit_amount') || $errors->has('reservation_valid_until') || $errors->has('notes'))
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalEl = document.getElementById('offerEditModal');
                 if (modalEl) {
                     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
                     modal.show();

@@ -21,4 +21,17 @@ class AnimalLabelController extends Controller
             'Content-Type' => 'text/csv; charset=windows-1250',
         ]);
     }
+
+    public function downloadSecret(Animal $animal, LabelService $labels): StreamedResponse
+    {
+        $row = $labels->buildSecretCsvRow($animal);
+        $csv = $labels->exportSecretCsvWin1250(collect([$row]), ';');
+        $filename = 'etykieta_secret_' . $animal->id . '.csv';
+
+        return response()->streamDownload(function () use ($csv): void {
+            echo $csv;
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=windows-1250',
+        ]);
+    }
 }

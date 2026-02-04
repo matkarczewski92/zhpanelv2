@@ -266,7 +266,11 @@
                 const button = event.relatedTarget;
                 if (!button) return;
                 const payload = JSON.parse(button.getAttribute('data-payload'));
-                const form = modal.querySelector('form');
+                const form = modal.querySelector('#offerEditForm');
+                const deleteReservationForm = modal.querySelector('#offerDeleteReservationForm');
+                const deleteOfferForm = modal.querySelector('#offerDeleteForm');
+                const sellForm = modal.querySelector('#offerSellForm');
+
                 form.action = payload.action ?? '#';
                 form.querySelector('[name=\"price\"]').value = payload.price ?? '';
                 form.querySelector('[name=\"sold_at\"]').value = payload.sold_at ?? '';
@@ -276,21 +280,27 @@
                 form.querySelector('[name=\"reservation_valid_until\"]').value = payload.reservation_valid_until ?? '';
                 form.querySelector('[name=\"notes\"]').value = payload.notes ?? '';
 
-                const delResBtn = form.querySelector('[data-role=\"delete-reservation\"]');
-                const delOfferBtn = form.querySelector('[data-role=\"delete-offer\"]');
-                const sellBtn = form.querySelector('[data-role=\"sell-offer\"]');
+                const delResBtn = modal.querySelector('[data-role=\"delete-reservation\"]');
+                const delOfferBtn = modal.querySelector('[data-role=\"delete-offer\"]');
+                const sellBtn = modal.querySelector('[data-role=\"sell-offer\"]');
 
                 if (delResBtn) {
                     delResBtn.hidden = !payload.delete_reservation_url;
-                    delResBtn.setAttribute('formaction', payload.delete_reservation_url || '#');
+                    if (deleteReservationForm) {
+                        deleteReservationForm.action = payload.delete_reservation_url || '#';
+                    }
                 }
                 if (delOfferBtn) {
                     delOfferBtn.hidden = !payload.delete_offer_url;
-                    delOfferBtn.setAttribute('formaction', payload.delete_offer_url || '#');
+                    if (deleteOfferForm) {
+                        deleteOfferForm.action = payload.delete_offer_url || '#';
+                    }
                 }
                 if (sellBtn) {
                     sellBtn.hidden = !payload.sell_url;
-                    sellBtn.setAttribute('formaction', payload.sell_url || '#');
+                    if (sellForm) {
+                        sellForm.action = payload.sell_url || '#';
+                    }
                 }
             });
 

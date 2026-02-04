@@ -64,7 +64,9 @@ Route::patch('/animals/{animal}/photos/{photo}/main', [AnimalPhotoController::cl
 Route::patch('/animals/{animal}/photos/{photo}/website', [AnimalPhotoController::class, 'toggleWebsite'])
     ->name('animals.photos.website');
 
-Route::post('/animals/{animal}/offer', [AnimalOfferController::class, 'store'])
+Route::put('/animals/{animal}/offer', [AnimalOfferController::class, 'update'])
+    ->name('animals.offer.update');
+Route::post('/animals/{animal}/offer', [AnimalOfferController::class, 'update'])
     ->name('animals.offer.store');
 Route::delete('/animals/{animal}/offer', [AnimalOfferController::class, 'destroy'])
     ->name('animals.offer.destroy');
@@ -79,6 +81,8 @@ Route::get('/animals/{animal}/passport', [AnimalPassportController::class, 'show
     ->name('animals.passport');
 Route::get('/animals/{animal}/label', [AnimalLabelController::class, 'download'])
     ->name('animals.label');
+Route::get('/animals/{animal}/label-secret', [AnimalLabelController::class, 'downloadSecret'])
+    ->name('animals.label.secret');
 
 Route::post('/animals/{animal}/toggle-public', AnimalPublicVisibilityController::class)
     ->name('animals.toggle-public');

@@ -67,7 +67,7 @@ class GetOffersIndexQuery
                         'public_toggle_url' => $animal ? route('panel.animals.offer.toggle-public', $animal->id) : '#',
                         'profile_url' => $animal ? route('panel.animals.show', $animal) : '#',
                         'edit_payload' => [
-                            'action' => $animal ? route('panel.animals.offer.store', $animal) : '#',
+                            'action' => $animal ? route('panel.animals.offer.update', $animal) : '#',
                             'price' => $offer->price,
                             'sold_at' => optional($offer->sold_date)->format('Y-m-d'),
                             'public_profile_enabled' => (bool) ($animal?->public_profile ?? false),
