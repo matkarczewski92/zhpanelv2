@@ -140,6 +140,11 @@
     background: transparent;
     border: 0 !important;
     color: inherit;
+    box-shadow: none !important;
+}
+
+.landing-plan-list .list-group-item + .list-group-item {
+    border-top: 0 !important;
 }
 
 .landing-legal {

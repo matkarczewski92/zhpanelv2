@@ -45,7 +45,7 @@ class GetLandingPageQuery
             ->whereHas('animal', function ($query): void {
                 $query->where('public_profile', 1);
             })
-            ->orderByDesc('updated_at')
+            ->orderBy('animal_id')
             ->get(['id', 'animal_id', 'price']);
 
         $offerGroups = $this->buildOfferGroups($offers);
