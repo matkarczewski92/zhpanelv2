@@ -166,11 +166,4 @@
     .landing-hero {
         min-height: 34vh;
     }
-
-    .landing-hero-offer,
-    .landing-hero-plans,
-    .landing-hero-profile,
-    .landing-hero-about {
-        background-attachment: scroll;
-    }
 }
