@@ -6,7 +6,6 @@ use App\Models\Animal;
 use App\Models\AnimalPhotoGallery;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class PhotoGalleryService
 {
@@ -17,8 +16,8 @@ class PhotoGalleryService
 
     public function upload(Animal $animal, UploadedFile $file): void
     {
-        $dir = 'animals/' . $animal->id . '/gallery';
-        $optimized = $this->images->optimizeAndStore($file, $dir);
+        $dir = 'Image/Animals/' . $animal->id;
+        $optimized = $this->images->optimizeAndStoreInPublicPath($file, $dir);
         $path = $optimized['path'];
 
         $isFirst = !AnimalPhotoGallery::where('animal_id', $animal->id)->exists();

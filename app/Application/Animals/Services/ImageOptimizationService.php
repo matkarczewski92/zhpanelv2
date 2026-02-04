@@ -53,6 +53,43 @@ class ImageOptimizationService
         ];
     }
 
+    /**
+     * Stores optimized image directly inside /public/{targetDir}.
+     *
+     * @return array{path:string,url:string}
+     */
+    public function optimizeAndStoreInPublicPath(UploadedFile $file, string $targetDir = 'Image'): array
+    {
+        $image = $this->manager->read($file->getRealPath());
+
+        // Resize to max 1920x1080 (no upscaling)
+        $image->scaleDown(1920, 1080);
+
+        $format = 'jpeg';
+        $quality = 85;
+
+        if (method_exists($image, 'strip')) {
+            $image->strip();
+        }
+
+        $filename = $this->buildFilename($format);
+        $cleanDir = trim($targetDir, '/');
+        $directory = public_path($cleanDir);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $relativePath = $cleanDir . '/' . $filename;
+        $fullPath = public_path($relativePath);
+        $encoded = $image->encodeByExtension($format, $quality)->toString();
+        file_put_contents($fullPath, $encoded);
+
+        return [
+            'path' => $relativePath,
+            'url' => asset($relativePath),
+        ];
+    }
+
     private function buildFilename(string $format): string
     {
         return uniqid('img_', true) . '.' . $format;

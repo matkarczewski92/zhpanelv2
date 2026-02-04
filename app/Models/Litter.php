@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Litter extends Model
 {
@@ -40,6 +42,16 @@ class Litter extends Model
         return $this->hasMany(Animal::class, 'litter_id');
     }
 
+    public function maleParent(): BelongsTo
+    {
+        return $this->belongsTo(Animal::class, 'parent_male');
+    }
+
+    public function femaleParent(): BelongsTo
+    {
+        return $this->belongsTo(Animal::class, 'parent_female');
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
@@ -56,12 +68,22 @@ class Litter extends Model
         return $this->hasMany(LitterAdnotation::class, 'litter_id');
     }
 
+    public function adnotation(): HasOne
+    {
+        return $this->hasOne(LitterAdnotation::class, 'litter_id');
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function gallery(): HasMany
     {
         return $this->hasMany(LitterGallery::class, 'litter_id');
+    }
+
+    public function mainPhoto(): HasOne
+    {
+        return $this->hasOne(LitterGallery::class, 'litter_id')->where('main_photo', 1);
     }
 
     /**

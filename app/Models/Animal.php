@@ -6,6 +6,7 @@ use App\Domain\Shared\Enums\Sex;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Animal extends Model
 {
@@ -92,6 +93,11 @@ class Animal extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(AnimalPhotoGallery::class, 'animal_id');
+    }
+
+    public function mainPhoto(): HasOne
+    {
+        return $this->hasOne(AnimalPhotoGallery::class, 'animal_id')->where('main_profil_photo', 1);
     }
 
     /**

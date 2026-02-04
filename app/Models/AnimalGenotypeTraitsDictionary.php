@@ -15,6 +15,11 @@ class AnimalGenotypeTraitsDictionary extends Model
         return $this->belongsTo(AnimalGenotypeTrait::class, 'trait_id');
     }
 
+    public function genotypeCategory()
+    {
+        return $this->belongsTo(AnimalGenotypeCategory::class, 'category_id');
+    }
+
     public function category()
     {
         return $this->belongsTo(AnimalGenotypeCategory::class, 'category_id');

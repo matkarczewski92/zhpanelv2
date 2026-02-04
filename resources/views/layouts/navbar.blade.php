@@ -24,6 +24,9 @@
                     <a class="nav-link {{ request()->routeIs('panel.feeds.*') ? 'active' : '' }}" href="{{ route('panel.feeds.index') }}">Karma</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.litters.*') ? 'active' : '' }}" href="{{ route('panel.litters.index') }}">Mioty</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.finances.*') ? 'active' : '' }}" href="{{ route('panel.finances.index') }}">Finanse</a>
                 </li>
                 <li class="nav-item">
@@ -94,6 +97,13 @@
                 data-bs-dismiss="offcanvas"
             >
                 Karma
+            </a>
+            <a
+                class="nav-link {{ request()->routeIs('panel.litters.*') ? 'active' : '' }}"
+                href="{{ route('panel.litters.index') }}"
+                data-bs-dismiss="offcanvas"
+            >
+                Mioty
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.finances.*') ? 'active' : '' }}"
