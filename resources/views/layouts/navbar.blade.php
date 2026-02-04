@@ -27,6 +27,9 @@
                     <a class="nav-link {{ request()->routeIs('panel.litters.*') ? 'active' : '' }}" href="{{ route('panel.litters.index') }}">Mioty</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.litters-planning.*') ? 'active' : '' }}" href="{{ route('panel.litters-planning.index') }}">Planowanie miotow</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.finances.*') ? 'active' : '' }}" href="{{ route('panel.finances.index') }}">Finanse</a>
                 </li>
                 <li class="nav-item">
@@ -152,6 +155,13 @@
                 data-bs-dismiss="offcanvas"
             >
                 Mioty
+            </a>
+            <a
+                class="nav-link {{ request()->routeIs('panel.litters-planning.*') ? 'active' : '' }}"
+                href="{{ route('panel.litters-planning.index') }}"
+                data-bs-dismiss="offcanvas"
+            >
+                Planowanie miotow
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.finances.*') ? 'active' : '' }}"

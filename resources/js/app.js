@@ -4,3 +4,4 @@ window.bootstrap = bootstrap;
 import './animals-index';
 import './toasts';
 import './feeds-planning';
+import './litters-planning';

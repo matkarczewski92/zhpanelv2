@@ -23,6 +23,7 @@ Route::prefix('panel')
         require __DIR__ . '/animals.php';
         require __DIR__ . '/feeds.php';
         require __DIR__ . '/litters.php';
+        require __DIR__ . '/litters-planning.php';
         require __DIR__ . '/finances.php';
         require __DIR__ . '/offers.php';
         require __DIR__ . '/massdata.php';
