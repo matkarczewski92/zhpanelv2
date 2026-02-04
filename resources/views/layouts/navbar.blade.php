@@ -60,6 +60,16 @@
                             Drukowanie etykiet
                         </a>
                     </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.shipping-list.index') }}">
+                            Lista przewozowa
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.pricelist.index') }}">
+                            Cennik
+                        </a>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
@@ -135,6 +145,12 @@
             </a>
             <a class="nav-link" href="{{ route('admin.labels.print') }}" data-bs-dismiss="offcanvas">
                 Drukowanie etykiet
+            </a>
+            <a class="nav-link" href="{{ route('admin.shipping-list.index') }}" data-bs-dismiss="offcanvas">
+                Lista przewozowa
+            </a>
+            <a class="nav-link" href="{{ route('admin.pricelist.index') }}" data-bs-dismiss="offcanvas">
+                Cennik
             </a>
             <form method="POST" action="{{ route('logout') }}" class="mt-2">
                 @csrf
