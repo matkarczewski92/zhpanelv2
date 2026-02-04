@@ -31,6 +31,7 @@ class CurrentOffersQueryService
             ->whereHas('animal', function ($query): void {
                 $query->where('public_profile', 1);
             })
+            ->orderBy('animal_id')
             ->orderByDesc('id')
             ->get(['id', 'animal_id', 'price'])
             ->unique('animal_id')
