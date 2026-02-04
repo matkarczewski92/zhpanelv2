@@ -16,6 +16,8 @@ class CurrentOfferResource extends JsonResource
         return [
             'offer_id' => $this->resource['offer_id'] ?? null,
             'animal_id' => $this->resource['animal_id'] ?? null,
+            'type_id' => $this->resource['type_id'] ?? null,
+            'type_name' => $this->resource['type_name'] ?? null,
             'name' => $this->resource['name'] ?? null,
             'sex' => $this->resource['sex'] ?? null,
             'sex_label' => $this->resource['sex_label'] ?? null,

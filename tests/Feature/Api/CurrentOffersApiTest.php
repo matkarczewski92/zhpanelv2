@@ -30,6 +30,7 @@ class CurrentOffersApiTest extends TestCase
                 'date_of_birth' => '2022-08-30',
                 'public_profile' => 1,
                 'public_profile_tag' => 'QHPU4R',
+                'animal_type_id' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -40,6 +41,7 @@ class CurrentOffersApiTest extends TestCase
                 'date_of_birth' => '2022-01-01',
                 'public_profile' => 0,
                 'public_profile_tag' => 'HIDDEN1',
+                'animal_type_id' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -50,9 +52,17 @@ class CurrentOffersApiTest extends TestCase
                 'date_of_birth' => '2021-01-01',
                 'public_profile' => 1,
                 'public_profile_tag' => 'SOLD01',
+                'animal_type_id' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+        ]);
+
+        DB::table('animal_type')->insert([
+            'id' => 1,
+            'name' => 'Wąż zbożowy',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         DB::table('animal_offers')->insert([
@@ -109,6 +119,8 @@ class CurrentOffersApiTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.offer_id', 11)
             ->assertJsonPath('data.0.animal_id', 1)
+            ->assertJsonPath('data.0.type_id', 1)
+            ->assertJsonPath('data.0.type_name', 'Wąż zbożowy')
             ->assertJsonPath('data.0.name', 'Ultramel')
             ->assertJsonPath('data.0.sex', 2)
             ->assertJsonPath('data.0.sex_label', 'samiec')
@@ -126,7 +138,14 @@ class CurrentOffersApiTest extends TestCase
         Schema::dropIfExists('animal_offer_reservations');
         Schema::dropIfExists('animal_offers');
         Schema::dropIfExists('animal_photo_gallery');
+        Schema::dropIfExists('animal_type');
         Schema::dropIfExists('animals');
+
+        Schema::create('animal_type', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
 
         Schema::create('animals', function (Blueprint $table): void {
             $table->id();
@@ -135,6 +154,7 @@ class CurrentOffersApiTest extends TestCase
             $table->date('date_of_birth')->nullable();
             $table->unsignedTinyInteger('public_profile')->default(0);
             $table->string('public_profile_tag')->nullable();
+            $table->unsignedBigInteger('animal_type_id')->nullable();
             $table->timestamps();
         });
 

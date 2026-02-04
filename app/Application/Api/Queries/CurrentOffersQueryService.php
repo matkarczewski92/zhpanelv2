@@ -22,9 +22,10 @@ class CurrentOffersQueryService
     {
         $offers = AnimalOffer::query()
             ->with([
-                'animal:id,name,sex,date_of_birth,public_profile,public_profile_tag',
+                'animal:id,name,sex,date_of_birth,public_profile,public_profile_tag,animal_type_id',
+                'animal.animalType:id,name',
                 'animal.mainPhoto:id,animal_id,url',
-                'reservation:id,offer_id',
+                'reservation',
             ])
             ->whereNull('sold_date')
             ->whereHas('animal', function ($query): void {
@@ -44,6 +45,8 @@ class CurrentOffersQueryService
                 return [
                     'offer_id' => (int) $offer->id,
                     'animal_id' => (int) ($animal?->id ?? 0),
+                    'type_id' => $animal?->animal_type_id !== null ? (int) $animal->animal_type_id : null,
+                    'type_name' => $animal?->animalType?->name,
                     'name' => $this->formatName($animal?->name),
                     'sex' => $sex,
                     'sex_label' => Sex::label($sex),
