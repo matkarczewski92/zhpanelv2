@@ -137,6 +137,7 @@ class GetLandingPageQuery
     private function mapOfferRows(Collection $offers): array
     {
         return $offers
+            ->sortBy(fn (AnimalOffer $offer): int => (int) ($offer->animal?->id ?? PHP_INT_MAX))
             ->map(function (AnimalOffer $offer): array {
                 $animal = $offer->animal;
 
