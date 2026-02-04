@@ -194,6 +194,31 @@
                 t.show();
             };
 
+            const parseJsonSafe = async (response) => {
+                const raw = await response.text();
+                const trimmed = (raw || '').trim();
+                if (!trimmed) return null;
+
+                const objectStart = trimmed.indexOf('{');
+                const arrayStart = trimmed.indexOf('[');
+                let start = -1;
+                if (objectStart >= 0 && arrayStart >= 0) {
+                    start = Math.min(objectStart, arrayStart);
+                } else if (objectStart >= 0) {
+                    start = objectStart;
+                } else if (arrayStart >= 0) {
+                    start = arrayStart;
+                }
+
+                const candidate = start >= 0 ? trimmed.slice(start) : trimmed;
+
+                try {
+                    return JSON.parse(candidate);
+                } catch {
+                    return null;
+                }
+            };
+
             bulkBtn.addEventListener('click', () => {
                 const ids = gatherSelected();
                 if (ids.length === 0) {
@@ -309,36 +334,19 @@
                 });
 
                 if (resp.ok) {
-                    const data = await resp.json();
-                    showToast(`Zapisano zmiany: ${data.updated}`, 'success');
-                    // apply new originals and readonly text
-                    document.querySelectorAll('tbody tr').forEach((tr) => {
-                        const nameInput = tr.querySelector('.name-input');
-                        const nameRender = tr.querySelector('.animal-name-render');
-                        if (nameInput && nameRender) {
-                            nameInput.dataset.original = nameInput.value;
-                            nameRender.textContent = nameInput.value;
-                        }
-                        const sexSelect = tr.querySelector('.sex-select');
-                        const sexReadonly = tr.querySelector('[data-field="sex"] .readonly-view');
-                        if (sexSelect && sexReadonly) {
-                            sexSelect.dataset.original = sexSelect.value;
-                            const label = sexSelect.options[sexSelect.selectedIndex]?.text || sexSelect.value;
-                            sexReadonly.textContent = label;
-                        }
-                        const priceInput = tr.querySelector('.price-input');
-                        const priceReadonly = tr.querySelector('[data-field="price"] .readonly-view');
-                        if (priceInput && priceReadonly) {
-                            priceInput.dataset.original = priceInput.value;
-                            const num = parseFloat(priceInput.value || '0').toFixed(2);
-                            priceReadonly.textContent = `${num} zł`;
-                        }
-                    });
-                    document.getElementById('bulkSaveBtn').disabled = true;
+                    const data = await parseJsonSafe(resp);
+                    showToast(`Zapisano zmiany: ${data?.updated ?? items.length}`, 'success');
+                    if (editToggle) {
+                        editToggle.checked = false;
+                        toggleEditMode(false);
+                    }
+                    resetEdits();
+                    setTimeout(() => window.location.reload(), 150);
+                    return;
                 } else {
                     let msg = 'Błąd zapisu';
                     try {
-                        const data = await resp.json();
+                        const data = await parseJsonSafe(resp);
                         if (data?.message) msg = data.message;
                         if (data?.errors) {
                             const firstError = Object.values(data.errors)[0];

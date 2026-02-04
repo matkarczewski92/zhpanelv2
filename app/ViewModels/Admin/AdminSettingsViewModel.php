@@ -12,7 +12,8 @@ class AdminSettingsViewModel
         public readonly mixed $traits,
         public readonly mixed $winteringStages,
         public readonly mixed $systemConfig,
-        public readonly mixed $feeds
+        public readonly mixed $feeds,
+        public readonly mixed $financeCategories
     ) {
     }
 }

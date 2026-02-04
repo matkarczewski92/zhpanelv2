@@ -38,5 +38,6 @@ You are working on a Laravel application with:
 - Domain Layer (pure business logic)
 - Repository pattern
 - Legacy database schema
+- NO LIVEWIRE
 
 Proceed only after fully reading and understanding all referenced documents.

@@ -9,6 +9,14 @@
             <p class="text-muted mb-0">Zarządzaj typami karmy wykorzystywanej w panelu.</p>
         </div>
     </div>
+    @php
+        $deliveryRows = isset($delivery) ? $delivery->receiptRows : [];
+        $deliveryAvailableFeeds = isset($delivery) ? $delivery->availableFeeds : [];
+        $deliveryTotalLabel = isset($delivery) ? $delivery->totalLabel : '0,00 zl';
+        $deliveryHasItems = isset($delivery) ? $delivery->hasItems : false;
+        $deliveryFormErrors = $errors->getBag('feedDelivery');
+        $deliveryCommitErrors = $errors->getBag('feedDeliveryCommit');
+    @endphp
 
     <div class="row g-4">
         <div class="col-12 col-xl-8">
@@ -61,15 +69,121 @@
             </div>
         </div>
         <div class="col-12 col-xl-4">
-            <div class="glass-card h-100">
-                <div class="card-header">
-                    <div class="strike"><span>Informacja</span></div>
+            <div class="d-flex flex-column gap-4">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="strike"><span>Informacja</span></div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-0 small">
+                            Dodawanie i edycja pozycji karmy jest dostępne w panelu administracyjnym. Ten widok prezentuje
+                            referencyjną listę dostępnych opcji używanych w panelu operacyjnym.
+                        </p>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted mb-0 small">
-                        Dodawanie i edycja pozycji karmy jest dostępne w panelu administracyjnym. Ten widok prezentuje
-                        referencyjną listę dostępnych opcji używanych w panelu operacyjnym.
-                    </p>
+
+                <div class="glass-card glass-table-wrapper">
+                    <div class="card-header">
+                        <div class="strike"><span>Wprowadzanie dostaw karmy</span></div>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ route('panel.feeds.delivery.items.store') }}" class="d-flex flex-column gap-3">
+                            @csrf
+                            <div class="input-group">
+                                <select
+                                    class="form-select @error('feed_id', 'feedDelivery') is-invalid @enderror"
+                                    name="feed_id"
+                                >
+                                    <option value="" selected>Wybierz pozycje</option>
+                                    @forelse ($deliveryAvailableFeeds as $feedOption)
+                                        <option value="{{ $feedOption['id'] }}" @selected((string) old('feed_id') === (string) $feedOption['id'])>
+                                            {{ $feedOption['name'] }}
+                                        </option>
+                                    @empty
+                                        <option value="" disabled>Brak dostepnych pozycji</option>
+                                    @endforelse
+                                </select>
+                                <input
+                                    type="text"
+                                    class="form-control @error('amount', 'feedDelivery') is-invalid @enderror"
+                                    name="amount"
+                                    placeholder="Ilosc"
+                                    value="{{ old('amount') }}"
+                                    inputmode="numeric"
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control @error('value', 'feedDelivery') is-invalid @enderror"
+                                    name="value"
+                                    placeholder="Wartosc"
+                                    value="{{ old('value') }}"
+                                    inputmode="decimal"
+                                >
+                            </div>
+                            @if ($deliveryFormErrors->any())
+                                <div class="small text-danger">
+                                    @foreach ($deliveryFormErrors->all() as $error)
+                                        <div>{{ $error }}</div>
+                                    @endforeach
+                                </div>
+                            @endif
+                            <button class="btn btn-light" type="submit">Dodaj</button>
+                        </form>
+                    </div>
+
+                    <div class="card-header border-top border-opacity-10 border-light">
+                        <div class="strike"><span>Rachunek</span></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table glass-table table-sm align-middle mb-0">
+                            <thead>
+                                <tr class="text-muted small">
+                                    <th>Karma</th>
+                                    <th class="text-center">Ilosc</th>
+                                    <th class="text-center">Wartosc</th>
+                                    <th class="text-center" style="width: 90px;">Akcja</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($deliveryRows as $row)
+                                    <tr>
+                                        <td>{{ $row['name'] }}</td>
+                                        <td class="text-center">{{ $row['amount'] }}</td>
+                                        <td class="text-center text-nowrap">{{ $row['value_label'] }}</td>
+                                        <td class="text-center">
+                                            <form method="POST" action="{{ route('panel.feeds.delivery.items.destroy', $row['feed_id']) }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-outline-light btn-sm px-2 py-0" type="submit" aria-label="Usun pozycje">D</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">Brak pozycji na rachunku.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card-header border-top border-opacity-10 border-light">
+                        <div class="strike"><span>Podsumowanie</span></div>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                        <form method="POST" action="{{ route('panel.feeds.delivery.commit') }}" class="m-0">
+                            @csrf
+                            <button class="btn btn-primary" type="submit" @disabled(!$deliveryHasItems)>Dodaj</button>
+                        </form>
+                        <div class="text-nowrap">Lacznie {{ $deliveryTotalLabel }}</div>
+                    </div>
+                    @if ($deliveryCommitErrors->any())
+                        <div class="px-3 pb-3 small text-danger">
+                            @foreach ($deliveryCommitErrors->all() as $error)
+                                <div>{{ $error }}</div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

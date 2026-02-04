@@ -10,6 +10,7 @@ use App\Models\AnimalGenotypeTraitsDictionary;
 use App\Models\WinteringStage;
 use App\Models\SystemConfig;
 use App\Models\Feed;
+use App\Models\FinanceCategory;
 use App\ViewModels\Admin\AdminSettingsViewModel;
 
 class AdminSettingsService
@@ -23,6 +24,7 @@ class AdminSettingsService
         $winter = WinteringStage::orderBy('order')->get();
         $system = SystemConfig::orderBy('key')->get();
         $feeds = Feed::orderBy('id')->get();
+        $financeCategories = FinanceCategory::withCount('finances')->orderBy('id')->get();
 
         return new AdminSettingsViewModel(
             activeTab: $tab ?: 'categories',
@@ -32,7 +34,8 @@ class AdminSettingsService
             traits: $traits,
             winteringStages: $winter,
             systemConfig: $system,
-            feeds: $feeds
+            feeds: $feeds,
+            financeCategories: $financeCategories
         );
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Settings\TraitDictionaryController;
 use App\Http\Controllers\Admin\Settings\WinteringStageController;
 use App\Http\Controllers\Admin\Settings\SystemConfigController;
 use App\Http\Controllers\Admin\Settings\FeedController;
+use App\Http\Controllers\Admin\Settings\FinanceCategoryController;
 
 Route::get('/settings', AdminSettingsController::class)->name('settings.index');
 
@@ -51,3 +52,8 @@ Route::delete('/settings/system-config/{config}', [SystemConfigController::class
 Route::post('/settings/feeds', [FeedController::class, 'store'])->name('settings.feeds.store');
 Route::patch('/settings/feeds/{feed}', [FeedController::class, 'update'])->name('settings.feeds.update');
 Route::delete('/settings/feeds/{feed}', [FeedController::class, 'destroy'])->name('settings.feeds.destroy');
+
+// finance categories
+Route::post('/settings/finance-categories', [FinanceCategoryController::class, 'store'])->name('settings.finance-categories.store');
+Route::patch('/settings/finance-categories/{category}', [FinanceCategoryController::class, 'update'])->name('settings.finance-categories.update');
+Route::delete('/settings/finance-categories/{category}', [FinanceCategoryController::class, 'destroy'])->name('settings.finance-categories.destroy');

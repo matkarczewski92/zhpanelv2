@@ -1,70 +1,83 @@
 <?php
 
-\Illuminate\Support\Facades\Route::get('/animals', [\App\Http\Controllers\Animals\AnimalController::class, 'index'])
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Animals\AnimalController;
+use App\Http\Controllers\Animals\AnimalFeedingController;
+use App\Http\Controllers\Animals\AnimalWeightController;
+use App\Http\Controllers\Animals\AnimalMoltController;
+use App\Http\Controllers\Animals\AnimalGenotypeController;
+use App\Http\Controllers\Animals\AnimalPhotoController;
+use App\Http\Controllers\Animals\AnimalOfferController;
+use App\Http\Controllers\Animals\AnimalPassportController;
+use App\Http\Controllers\Animals\AnimalLabelController;
+use App\Http\Controllers\Animals\AnimalPublicVisibilityController;
+
+
+Route::get('/animals', [AnimalController::class, 'index'])
     ->name('animals.index');
-\Illuminate\Support\Facades\Route::get('/animals/create', [\App\Http\Controllers\Animals\AnimalController::class, 'create'])
+Route::get('/animals/create', [AnimalController::class, 'create'])
     ->name('animals.create');
-\Illuminate\Support\Facades\Route::post('/animals', [\App\Http\Controllers\Animals\AnimalController::class, 'store'])
+Route::post('/animals', [AnimalController::class, 'store'])
     ->name('animals.store');
-\Illuminate\Support\Facades\Route::get('/animals/{animal}', [\App\Http\Controllers\Animals\AnimalController::class, 'show'])
+Route::get('/animals/{animal}', [AnimalController::class, 'show'])
     ->name('animals.show');
-\Illuminate\Support\Facades\Route::get('/animals/{animal}/edit', [\App\Http\Controllers\Animals\AnimalController::class, 'edit'])
+Route::get('/animals/{animal}/edit', [AnimalController::class, 'edit'])
     ->name('animals.edit');
-\Illuminate\Support\Facades\Route::put('/animals/{animal}', [\App\Http\Controllers\Animals\AnimalController::class, 'update'])
+Route::put('/animals/{animal}', [AnimalController::class, 'update'])
     ->name('animals.update');
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/delete', [\App\Http\Controllers\Animals\AnimalController::class, 'destroy'])
+Route::post('/animals/{animal}/delete', [AnimalController::class, 'destroy'])
     ->name('animals.delete');
 
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/feedings', [\App\Http\Controllers\Animals\AnimalFeedingController::class, 'store'])
+Route::post('/animals/{animal}/feedings', [AnimalFeedingController::class, 'store'])
     ->name('animals.feedings.store');
-\Illuminate\Support\Facades\Route::put('/animals/{animal}/feedings/{feeding}', [\App\Http\Controllers\Animals\AnimalFeedingController::class, 'update'])
+Route::put('/animals/{animal}/feedings/{feeding}', [AnimalFeedingController::class, 'update'])
     ->name('animals.feedings.update');
-\Illuminate\Support\Facades\Route::delete('/animals/{animal}/feedings/{feeding}', [\App\Http\Controllers\Animals\AnimalFeedingController::class, 'destroy'])
+Route::delete('/animals/{animal}/feedings/{feeding}', [AnimalFeedingController::class, 'destroy'])
     ->name('animals.feedings.destroy');
 
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/weights', [\App\Http\Controllers\Animals\AnimalWeightController::class, 'store'])
+Route::post('/animals/{animal}/weights', [AnimalWeightController::class, 'store'])
     ->name('animals.weights.store');
-\Illuminate\Support\Facades\Route::put('/animals/{animal}/weights/{weight}', [\App\Http\Controllers\Animals\AnimalWeightController::class, 'update'])
+Route::put('/animals/{animal}/weights/{weight}', [AnimalWeightController::class, 'update'])
     ->name('animals.weights.update');
-\Illuminate\Support\Facades\Route::delete('/animals/{animal}/weights/{weight}', [\App\Http\Controllers\Animals\AnimalWeightController::class, 'destroy'])
+Route::delete('/animals/{animal}/weights/{weight}', [AnimalWeightController::class, 'destroy'])
     ->name('animals.weights.destroy');
 
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/molts', [\App\Http\Controllers\Animals\AnimalMoltController::class, 'store'])
+Route::post('/animals/{animal}/molts', [AnimalMoltController::class, 'store'])
     ->name('animals.molts.store');
-\Illuminate\Support\Facades\Route::put('/animals/{animal}/molts/{molt}', [\App\Http\Controllers\Animals\AnimalMoltController::class, 'update'])
+Route::put('/animals/{animal}/molts/{molt}', [AnimalMoltController::class, 'update'])
     ->name('animals.molts.update');
-\Illuminate\Support\Facades\Route::delete('/animals/{animal}/molts/{molt}', [\App\Http\Controllers\Animals\AnimalMoltController::class, 'destroy'])
+Route::delete('/animals/{animal}/molts/{molt}', [AnimalMoltController::class, 'destroy'])
     ->name('animals.molts.destroy');
 
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/genotypes', [\App\Http\Controllers\Animals\AnimalGenotypeController::class, 'store'])
+Route::post('/animals/{animal}/genotypes', [AnimalGenotypeController::class, 'store'])
     ->name('animals.genotypes.store');
-\Illuminate\Support\Facades\Route::delete('/animals/{animal}/genotypes/{genotype}', [\App\Http\Controllers\Animals\AnimalGenotypeController::class, 'destroy'])
+Route::delete('/animals/{animal}/genotypes/{genotype}', [AnimalGenotypeController::class, 'destroy'])
     ->name('animals.genotypes.destroy');
 
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/photos', [\App\Http\Controllers\Animals\AnimalPhotoController::class, 'store'])
+Route::post('/animals/{animal}/photos', [AnimalPhotoController::class, 'store'])
     ->name('animals.photos.store');
-\Illuminate\Support\Facades\Route::delete('/animals/{animal}/photos/{photo}', [\App\Http\Controllers\Animals\AnimalPhotoController::class, 'destroy'])
+Route::delete('/animals/{animal}/photos/{photo}', [AnimalPhotoController::class, 'destroy'])
     ->name('animals.photos.destroy');
-\Illuminate\Support\Facades\Route::patch('/animals/{animal}/photos/{photo}/main', [\App\Http\Controllers\Animals\AnimalPhotoController::class, 'setMain'])
+Route::patch('/animals/{animal}/photos/{photo}/main', [AnimalPhotoController::class, 'setMain'])
     ->name('animals.photos.main');
-\Illuminate\Support\Facades\Route::patch('/animals/{animal}/photos/{photo}/website', [\App\Http\Controllers\Animals\AnimalPhotoController::class, 'toggleWebsite'])
+Route::patch('/animals/{animal}/photos/{photo}/website', [AnimalPhotoController::class, 'toggleWebsite'])
     ->name('animals.photos.website');
 
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/offer', [\App\Http\Controllers\Animals\AnimalOfferController::class, 'store'])
+Route::post('/animals/{animal}/offer', [AnimalOfferController::class, 'store'])
     ->name('animals.offer.store');
-\Illuminate\Support\Facades\Route::delete('/animals/{animal}/offer', [\App\Http\Controllers\Animals\AnimalOfferController::class, 'destroy'])
+Route::delete('/animals/{animal}/offer', [AnimalOfferController::class, 'destroy'])
     ->name('animals.offer.destroy');
-\Illuminate\Support\Facades\Route::delete('/animals/{animal}/offer/reservation', [\App\Http\Controllers\Animals\AnimalOfferController::class, 'destroyReservation'])
+Route::delete('/animals/{animal}/offer/reservation', [AnimalOfferController::class, 'destroyReservation'])
     ->name('animals.offer.reservation.destroy');
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/offer/sell', [\App\Http\Controllers\Animals\AnimalOfferController::class, 'sell'])
+Route::post('/animals/{animal}/offer/sell', [AnimalOfferController::class, 'sell'])
     ->name('animals.offer.sell');
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/offer/toggle-public', [\App\Http\Controllers\Animals\AnimalOfferController::class, 'togglePublic'])
+Route::post('/animals/{animal}/offer/toggle-public', [AnimalOfferController::class, 'togglePublic'])
     ->name('animals.offer.toggle-public');
 
-\Illuminate\Support\Facades\Route::get('/animals/{animal}/passport', [\App\Http\Controllers\Animals\AnimalPassportController::class, 'show'])
+Route::get('/animals/{animal}/passport', [AnimalPassportController::class, 'show'])
     ->name('animals.passport');
-\Illuminate\Support\Facades\Route::get('/animals/{animal}/label', [\App\Http\Controllers\Animals\AnimalLabelController::class, 'download'])
+Route::get('/animals/{animal}/label', [AnimalLabelController::class, 'download'])
     ->name('animals.label');
 
-\Illuminate\Support\Facades\Route::post('/animals/{animal}/toggle-public', \App\Http\Controllers\Animals\AnimalPublicVisibilityController::class)
+Route::post('/animals/{animal}/toggle-public', AnimalPublicVisibilityController::class)
     ->name('animals.toggle-public');

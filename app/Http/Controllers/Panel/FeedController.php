@@ -2,39 +2,31 @@
 
 namespace App\Http\Controllers\Panel;
 
+use App\Application\Feeds\Queries\GetFeedIndexQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Panel\RecalculateFeedPlanningRequest;
 use App\Http\Requests\Panel\StoreFeedRequest;
 use App\Models\Feed;
-use App\Services\Panel\FeedConsumptionChartService;
 use App\Services\Panel\FeedDemandPlanningService;
 use App\Services\Panel\FeedService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FeedController extends Controller
 {
     public function __construct(
         private readonly FeedService $service,
-        private readonly FeedConsumptionChartService $chartService,
         private readonly FeedDemandPlanningService $planningService
     )
     {
     }
 
-    public function index(): View
+    public function index(Request $request, GetFeedIndexQuery $query): View
     {
-        $year = (int) request('year', now()->year);
+        $year = (int) $request->input('year', now()->year);
 
-        return view('panel.feeds.index', array_merge(
-            $this->service->getIndexData(),
-            [
-                'chart' => $this->chartService->getChartData($year),
-                'selectedYear' => $year,
-                'availableYears' => $this->chartService->getAvailableYears(),
-                'planning' => $this->planningService->getInitialPlan(),
-            ]
-        ));
+        return view('panel.feeds.index', $query->handle($year));
     }
 
     public function store(StoreFeedRequest $request)
