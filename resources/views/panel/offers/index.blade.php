@@ -3,6 +3,7 @@
 @section('title', 'Oferty')
 
 @section('content')
+    <div class="panel-offers-index">
     <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
         <h4 class="mb-0">Oferty</h4>
         <form id="bulkPassportForm" method="POST" action="{{ route('panel.offers.passports') }}" class="d-flex align-items-center gap-2 flex-wrap">
@@ -151,6 +152,7 @@
     @endif
 
     @include('panel.animals.partials.offer-edit-modal', ['profile' => (object) ['offerForm' => []]])
+    </div>
 @endsection
 
 @push('scripts')

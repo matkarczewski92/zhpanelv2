@@ -966,6 +966,16 @@ body.panel-body {
     justify-content: center;
 }
 
+.panel-litters-index .glass-table thead th,
+.panel-litters-index .glass-table tbody td {
+    font-size: 0.84rem;
+}
+
+.panel-offers-index .glass-table thead th,
+.panel-offers-index .glass-table tbody td {
+    font-size: 0.84rem;
+}
+
 .panel-body .list-group-item {
     background-color: transparent;
     border-color: rgba(255, 255, 255, 0.08);

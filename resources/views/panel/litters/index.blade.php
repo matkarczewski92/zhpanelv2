@@ -7,6 +7,7 @@
         $filters = $page->filters;
     @endphp
 
+    <div class="panel-litters-index">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
             <h1 class="h4 mb-1">Mioty</h1>
@@ -109,4 +110,5 @@
             </div>
         </div>
     @endif
+    </div>
 @endsection
