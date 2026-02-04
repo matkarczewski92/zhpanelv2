@@ -138,7 +138,7 @@
 
 .landing-plan-list .list-group-item {
     background: transparent;
-    border-color: rgba(255, 255, 255, 0.12);
+    border: 0 !important;
     color: inherit;
 }
 

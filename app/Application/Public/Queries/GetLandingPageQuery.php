@@ -228,7 +228,7 @@ class GetLandingPageQuery
 
     private function formatNullableName(?string $name): ?string
     {
-        $value = trim(strip_tags((string) $name, '<b><i><u>'));
+        $value = trim(strip_tags((string) $name));
 
         return $value !== '' ? $value : null;
     }
