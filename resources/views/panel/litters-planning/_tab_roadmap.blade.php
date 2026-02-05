@@ -1,42 +1,74 @@
 <div class="glass-card glass-table-wrapper">
+    @php
+        $activeRoadmap = collect($page->roadmaps ?? [])->firstWhere('id', $page->activeRoadmapId ?? 0);
+    @endphp
     <div class="card-header">
         <div class="strike"><span>Roadmap</span></div>
     </div>
 
     <div class="card-body d-flex flex-column gap-3">
-        <form method="GET" action="{{ route('panel.litters-planning.index') }}" class="row g-2 align-items-end">
-            <input type="hidden" name="tab" value="roadmap">
-            <div class="col-12 col-lg-8">
-                <label class="form-label small text-muted mb-1" for="roadmapExpectedGenes">Docelowe geny / traity</label>
-                <div class="position-relative">
-                    <input
-                        id="roadmapExpectedGenes"
-                        name="roadmap_expected_genes"
-                        class="form-control"
-                        value="{{ $page->roadmapSearchInput }}"
-                        placeholder="np. Snow, Diffused, het Cinder"
-                        data-role="roadmap-genes-input"
-                        data-gene-suggestions='@json($page->connectionGeneSuggestions)'
-                        autocomplete="off"
-                    >
-                    <div class="connections-suggestions list-group position-absolute w-100 d-none" data-role="roadmap-genes-suggestions"></div>
+        @if (!empty($activeRoadmap))
+            <div class="d-flex flex-column gap-2">
+                <div class="small text-muted text-center">
+                    Otwarta roadmapa: {{ $activeRoadmap['name'] }}
                 </div>
-                <div class="form-text text-muted">Dziala jak w wyszukiwarce polaczen. Traity beda mapowane na geny.</div>
-            </div>
-            <div class="col-12 col-lg-2">
-                <label class="form-label small text-muted mb-1" for="roadmapGenerations">Max pokolen</label>
-                <select id="roadmapGenerations" name="roadmap_generations" class="form-select">
-                    <option value="" @selected($page->roadmapGenerations === 0)>Dowolny</option>
-                    @foreach ([2, 3, 4, 5] as $gen)
-                        <option value="{{ $gen }}" @selected($page->roadmapGenerations === $gen)>{{ $gen }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-12 col-lg-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-grow-1">Buduj</button>
-                <a href="{{ route('panel.litters-planning.index', ['tab' => 'roadmap']) }}" class="btn btn-outline-light">Wyczysc</a>
-            </div>
-        </form>
+
+                <form method="POST" action="{{ route('panel.litters-planning.roadmaps.update', $activeRoadmap['id']) }}" class="d-flex flex-column gap-1">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="return_tab" value="roadmap">
+                    <div class="d-flex flex-wrap align-items-end gap-2">
+                        <div class="flex-grow-1">
+                            <label class="form-label small text-muted mb-1">Nazwa roadmapy</label>
+                            <input name="name" class="form-control" value="{{ $activeRoadmap['name'] }}" required>
+                        </div>
+                        <button type="submit" class="btn btn-outline-light text-nowrap">Zmien nazwe</button>
+                        <button type="submit" form="refreshActiveRoadmapForm" class="btn btn-outline-success text-nowrap">Aktualizuj zapisana roadmape</button>
+                        <a href="{{ route('panel.litters-planning.index', ['tab' => 'roadmap']) }}" class="btn btn-outline-light text-nowrap">Nowy roadmap</a>
+                    </div>
+                    <div class="form-text text-muted">
+                        Docelowy gen/trait: {{ $activeRoadmap['search_input'] }}
+                    </div>
+                </form>
+                </div>
+            <form id="refreshActiveRoadmapForm" method="POST" action="{{ route('panel.litters-planning.roadmaps.refresh', $activeRoadmap['id']) }}">
+                @csrf
+            </form>
+        @else
+            <form method="GET" action="{{ route('panel.litters-planning.index') }}" class="row g-2 align-items-end">
+                <input type="hidden" name="tab" value="roadmap">
+                <div class="col-12 col-lg-8">
+                    <label class="form-label small text-muted mb-1" for="roadmapExpectedGenes">Docelowe geny / traity</label>
+                    <div class="position-relative">
+                        <input
+                            id="roadmapExpectedGenes"
+                            name="roadmap_expected_genes"
+                            class="form-control"
+                            value="{{ $page->roadmapSearchInput }}"
+                            placeholder="np. Snow, Diffused, het Cinder"
+                            data-role="roadmap-genes-input"
+                            data-gene-suggestions='@json($page->connectionGeneSuggestions)'
+                            autocomplete="off"
+                        >
+                        <div class="connections-suggestions list-group position-absolute w-100 d-none" data-role="roadmap-genes-suggestions"></div>
+                    </div>
+                    <div class="form-text text-muted">Dziala jak w wyszukiwarce polaczen. Traity beda mapowane na geny.</div>
+                </div>
+                <div class="col-12 col-lg-2">
+                    <label class="form-label small text-muted mb-1" for="roadmapGenerations">Max pokolen</label>
+                    <select id="roadmapGenerations" name="roadmap_generations" class="form-select">
+                        <option value="" @selected($page->roadmapGenerations === 0)>Dowolny</option>
+                        @foreach ([2, 3, 4, 5] as $gen)
+                            <option value="{{ $gen }}" @selected($page->roadmapGenerations === $gen)>{{ $gen }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-12 col-lg-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Buduj</button>
+                    <a href="{{ route('panel.litters-planning.index', ['tab' => 'roadmap']) }}" class="btn btn-outline-light">Wyczysc</a>
+                </div>
+            </form>
+        @endif
 
         @if (!empty($page->roadmapExpectedTraits))
             <div class="d-flex flex-wrap align-items-center gap-2">
@@ -54,6 +86,32 @@
                     <span class="text-warning">Nie pokryto calego celu w limicie pokolen.</span>
                 @endif
             </div>
+
+            @if (empty($activeRoadmap))
+                <form method="POST" action="{{ route('panel.litters-planning.roadmaps.store') }}" class="row g-2 align-items-end">
+                    @csrf
+                    <div class="col-12 col-lg-5">
+                        <label class="form-label small text-muted mb-1" for="saveRoadmapName">Nazwa roadmapy</label>
+                        <input
+                            id="saveRoadmapName"
+                            name="name"
+                            class="form-control"
+                            value="{{ old('name', 'Roadmap: ' . $page->roadmapSearchInput) }}"
+                            placeholder="np. Peppermint projekt"
+                            required
+                        >
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label small text-muted mb-1">Zapisywany cel</label>
+                        <input class="form-control" value="{{ $page->roadmapSearchInput }}" readonly>
+                        <input type="hidden" name="roadmap_expected_genes" value="{{ $page->roadmapSearchInput }}">
+                        <input type="hidden" name="roadmap_generations" value="{{ $page->roadmapGenerations > 0 ? $page->roadmapGenerations : '' }}">
+                    </div>
+                    <div class="col-12 col-lg-3 d-grid">
+                        <button type="submit" class="btn btn-outline-success">Zapisz Roadmap</button>
+                    </div>
+                </form>
+            @endif
         @endif
     </div>
 
@@ -64,24 +122,64 @@
     @else
         <div class="px-3 pb-3 d-flex flex-column gap-2">
             @foreach ($page->roadmapSteps as $step)
-                <div class="connections-matched-box">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                        <div class="fw-semibold">Pokolenie {{ $step['generation'] }}: {{ $step['pairing_label'] }}</div>
-                        <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="connections-matched-box @if(!empty($step['is_realized'])) roadmap-step-realized @endif">
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                        <div class="fw-semibold roadmap-step-title">
+                            Pokolenie {{ $step['generation'] }}: {{ $step['pairing_label'] }}
+                            @if (!empty($step['is_realized']))
+                                <span class="text-success">(ZREALIZOWANE)</span>
+                            @endif
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-nowrap">
                             @if (($step['can_create_litter'] ?? false) && !empty($step['parent_male_id']) && !empty($step['parent_female_id']))
+                                @if (!empty($step['existing_litter_id']) && !empty($step['existing_litter_url']))
+                                    <a href="{{ $step['existing_litter_url'] }}" class="small link-reset text-nowrap">
+                                        Miot:
+                                        {{ !empty($step['existing_litter_code']) ? $step['existing_litter_code'] : ('#' . $step['existing_litter_id']) }}
+                                        @if(!empty($step['existing_litter_season']))
+                                            ({{ $step['existing_litter_season'] }})
+                                        @endif
+                                    </a>
+                                @endif
                                 <a
                                     href="{{ route('panel.litters.create', ['parent_male' => $step['parent_male_id'], 'parent_female' => $step['parent_female_id']]) }}"
-                                    class="btn btn-sm btn-outline-primary"
+                                    class="btn btn-sm btn-outline-primary text-nowrap"
                                 >
                                     Utworz miot
                                 </a>
                             @else
                                 <span class="small text-muted">Krok wirtualny</span>
                             @endif
+                            @if (!empty($activeRoadmap))
+                                <form
+                                    method="POST"
+                                    action="{{ route('panel.litters-planning.roadmaps.step-status', $activeRoadmap['id']) }}"
+                                    class="d-inline-flex align-items-center gap-1 roadmap-step-status-form"
+                                >
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="generation" value="{{ $step['generation'] }}">
+                                    <input type="hidden" name="realized" value="{{ !empty($step['is_realized']) ? 0 : 1 }}">
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm text-nowrap @if(!empty($step['is_realized'])) btn-success @else btn-outline-success @endif"
+                                    >
+                                        @if (!empty($step['is_realized']))
+                                            Cofnij realizacje
+                                        @else
+                                            Oznacz jako zrealizowane
+                                        @endif
+                                    </button>
+                                </form>
+                            @endif
                             <span class="connections-matched-count">{{ $step['probability_label'] }}</span>
                         </div>
                     </div>
-                    <div class="small mb-1">Zostaw: <span class="text-info">{{ $step['keeper_label'] }}</span></div>
+                    @if (!empty($step['has_target_row']))
+                        <div class="small mb-1 text-success">Cel osiagniety w tym etapie.</div>
+                    @else
+                        <div class="small mb-1">Zostaw: <span class="text-info">{{ $step['keeper_label'] }}</span></div>
+                    @endif
                     <div class="d-flex flex-wrap gap-1">
                         @foreach ($step['matched_targets'] as $trait)
                             <span class="badge text-bg-success">{{ $trait }}</span>

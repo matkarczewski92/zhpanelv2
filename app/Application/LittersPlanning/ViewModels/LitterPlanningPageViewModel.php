@@ -59,6 +59,11 @@ class LitterPlanningPageViewModel
      *     can_create_litter:bool,
      *     parent_male_id:int|null,
      *     parent_female_id:int|null,
+     *     existing_litter_id:int|null,
+     *     existing_litter_code:string|null,
+     *     existing_litter_season:int|null,
+     *     existing_litter_url:string|null,
+     *     is_realized:bool,
      *     matched_targets:array<int, string>,
      *     matched_count:int,
      *     total_targets:int,
@@ -72,6 +77,32 @@ class LitterPlanningPageViewModel
      *         matched_targets:array<int, string>
      *     }>
      * }> $roadmapSteps
+     * @param array<int, array{
+     *     id:int,
+     *     name:string,
+     *     search_input:string,
+     *     generations:int,
+     *     expected_traits:array<int, string>,
+     *     target_reachable:bool,
+     *     matched_traits:array<int, string>,
+     *     missing_traits:array<int, string>,
+     *     completed_generations:array<int, int>,
+     *     steps_count:int,
+     *     last_refreshed_at_label:string,
+     *     updated_at_label:string
+     * }> $roadmaps
+     * @param array<int, array{
+     *     roadmap_id:int,
+     *     roadmap_name:string,
+     *     generation:int,
+     *     pairing_label:string,
+     *     keeper_label:string,
+     *     parent_male_id:int|null,
+     *     parent_female_id:int|null,
+     *     litter_id:int|null,
+     *     litter_code:string|null,
+     *     litter_url:string|null
+     * }> $roadmapKeepers
      */
     public function __construct(
         public readonly array $females,
@@ -93,6 +124,9 @@ class LitterPlanningPageViewModel
         public readonly array $roadmapMatchedTraits,
         public readonly array $roadmapMissingTraits,
         public readonly array $roadmapSteps,
+        public readonly array $roadmaps,
+        public readonly int $activeRoadmapId,
+        public readonly array $roadmapKeepers,
     ) {
     }
 }

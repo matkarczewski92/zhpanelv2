@@ -20,18 +20,22 @@ class LitterPlanningIndexRequest extends FormRequest
             'strict_visual_only' => $this->normalizeBoolean($this->input('strict_visual_only')),
             'roadmap_expected_genes' => $this->normalizeText($this->input('roadmap_expected_genes')),
             'roadmap_generations' => $this->normalizeInt($this->input('roadmap_generations')),
+            'roadmap_id' => $this->normalizeInt($this->input('roadmap_id')),
+            'roadmap_open_id' => $this->normalizeInt($this->input('roadmap_open_id')),
         ]);
     }
 
     public function rules(): array
     {
         return [
-            'tab' => ['nullable', 'in:planning,plans,offspring,connections,roadmap'],
+            'tab' => ['nullable', 'in:planning,plans,offspring,connections,roadmap,roadmaps,roadmap-keepers'],
             'season' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'expected_genes' => ['nullable', 'string', 'max:500'],
             'strict_visual_only' => ['nullable', 'boolean'],
             'roadmap_expected_genes' => ['nullable', 'string', 'max:500'],
             'roadmap_generations' => ['nullable', 'integer', 'min:2', 'max:5'],
+            'roadmap_id' => ['nullable', 'integer', 'exists:litter_roadmaps,id'],
+            'roadmap_open_id' => ['nullable', 'integer', 'exists:litter_roadmaps,id'],
         ];
     }
 

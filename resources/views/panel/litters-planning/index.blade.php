@@ -81,6 +81,56 @@
             border-top: 1px dashed rgba(255, 255, 255, 0.15);
         }
 
+        #littersPlanningApp .roadmap-step-realized {
+            border-color: rgba(25, 135, 84, 0.65);
+            background: rgba(25, 135, 84, 0.14);
+        }
+
+        #littersPlanningApp .roadmap-step-realized .roadmap-step-title {
+            color: #8ef0ba;
+        }
+
+        #littersPlanningApp .roadmap-step-realized .connections-matched-count {
+            color: #b8f7d7;
+            background: rgba(25, 135, 84, 0.26);
+            border-color: rgba(25, 135, 84, 0.58);
+        }
+
+        #littersPlanningApp .roadmap-step-status-form {
+            margin: 0;
+        }
+
+        #littersPlanningApp .roadmaps-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+        }
+
+        #littersPlanningApp .roadmaps-action-form {
+            display: inline-flex;
+            align-items: center;
+            margin: 0;
+        }
+
+        #littersPlanningApp .roadmaps-action-details {
+            display: inline-flex;
+            align-items: center;
+            margin: 0;
+        }
+
+        #littersPlanningApp .roadmaps-action-summary {
+            list-style: none;
+            display: inline-flex;
+            align-items: center;
+            margin: 0;
+        }
+
+        #littersPlanningApp .roadmaps-action-summary::-webkit-details-marker {
+            display: none;
+        }
+
         #littersPlanningApp .roadmap-keeper-row td {
             background: rgba(255, 193, 7, 0.16);
             border-top-color: rgba(255, 193, 7, 0.35);
@@ -96,7 +146,7 @@
 @section('content')
     @php
         $activeTab = request()->query('tab', 'planning');
-        if (!in_array($activeTab, ['planning', 'plans', 'offspring', 'connections', 'roadmap'], true)) {
+        if (!in_array($activeTab, ['planning', 'plans', 'offspring', 'connections', 'roadmap', 'roadmaps', 'roadmap-keepers'], true)) {
             $activeTab = 'planning';
         }
     @endphp
@@ -123,6 +173,8 @@
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="offspring">Mozliwe potomstwo</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="connections">Wyszukiwarka polaczen</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="roadmap">Roadmap</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="roadmaps">Zapisane roadmapy</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="roadmap-keepers">Do zostawienia</button>
                 </div>
             </div>
         </div>
@@ -145,6 +197,14 @@
 
         <section data-tab-id="roadmap" class="@if($activeTab !== 'roadmap') d-none @endif">
             @include('panel.litters-planning._tab_roadmap', ['page' => $page])
+        </section>
+
+        <section data-tab-id="roadmaps" class="@if($activeTab !== 'roadmaps') d-none @endif">
+            @include('panel.litters-planning._tab_roadmaps', ['page' => $page])
+        </section>
+
+        <section data-tab-id="roadmap-keepers" class="@if($activeTab !== 'roadmap-keepers') d-none @endif">
+            @include('panel.litters-planning._tab_roadmap_keepers', ['page' => $page])
         </section>
     </div>
 

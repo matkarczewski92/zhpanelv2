@@ -192,7 +192,7 @@ class GetLitterShowQuery
                     'traits_name' => trim((string) ($row['traits_name'] ?? '')),
                     'traits_count' => (int) ($row['traits_count'] ?? 0),
                     'visual_traits' => array_values((array) ($row['visual_traits'] ?? [])),
-                    'carrier_traits' => array_values((array) ($row['carrier_traits'] ?? [])),
+                    'carrier_traits' => $this->sortCarrierTraitsForDisplay(array_values((array) ($row['carrier_traits'] ?? []))),
                 ];
             })
             ->all();
@@ -283,5 +283,53 @@ class GetLitterShowQuery
     {
         $value = trim(strip_tags((string) $name));
         return $value !== '' ? $value : '-';
+    }
+
+    /**
+     * @param array<int, string> $traits
+     * @return array<int, string>
+     */
+    private function sortCarrierTraitsForDisplay(array $traits): array
+    {
+        return collect($traits)
+            ->map(fn (string $trait): string => trim($trait))
+            ->filter()
+            ->values()
+            ->map(function (string $trait, int $index): array {
+                return [
+                    'trait' => $trait,
+                    'index' => $index,
+                    'group' => $this->carrierDisplayGroup($trait),
+                ];
+            })
+            ->sort(function (array $a, array $b): int {
+                if ((int) $a['group'] === (int) $b['group']) {
+                    return (int) $a['index'] <=> (int) $b['index'];
+                }
+
+                return (int) $a['group'] <=> (int) $b['group'];
+            })
+            ->pluck('trait')
+            ->values()
+            ->all();
+    }
+
+    private function carrierDisplayGroup(string $trait): int
+    {
+        $normalized = strtolower(trim($trait));
+        if ($normalized === '') {
+            return 1;
+        }
+
+        if (preg_match('/^([\d.,]+)%\s+het\s+/i', $normalized, $matches) === 1) {
+            $percentRaw = str_replace(',', '.', (string) ($matches[1] ?? ''));
+            if (is_numeric($percentRaw) && (float) $percentRaw < 100.0) {
+                // possible (p) goes at the end
+                return 2;
+            }
+        }
+
+        // regular het (r) before possible
+        return 1;
     }
 }

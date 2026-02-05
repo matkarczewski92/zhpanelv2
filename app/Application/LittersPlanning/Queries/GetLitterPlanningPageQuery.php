@@ -8,6 +8,7 @@ use App\Models\AnimalGenotypeCategory;
 use App\Models\AnimalGenotypeTrait;
 use App\Models\Litter;
 use App\Models\LitterPlan;
+use App\Models\LitterRoadmap;
 use App\Services\Genetics\GenotypeCalculator;
 use Illuminate\Support\Collection;
 
@@ -20,20 +21,39 @@ class GetLitterPlanningPageQuery
     public function handle(array $filters = []): LitterPlanningPageViewModel
     {
         $plans = $this->buildPlans();
+        $savedRoadmapModels = LitterRoadmap::query()
+            ->orderByDesc('updated_at')
+            ->get();
+        $savedRoadmaps = $this->buildSavedRoadmaps($savedRoadmapModels);
+        $roadmapKeeperRows = $this->buildRoadmapKeeperRows($savedRoadmapModels);
         $usedFemaleIds = $this->extractUsedFemaleIds($plans);
+        $selectedRoadmapId = isset($filters['roadmap_id']) && is_numeric($filters['roadmap_id'])
+            ? (int) $filters['roadmap_id']
+            : 0;
+        $openedRoadmapId = isset($filters['roadmap_open_id']) && is_numeric($filters['roadmap_open_id'])
+            ? (int) $filters['roadmap_open_id']
+            : 0;
+        $selectedRoadmap = $selectedRoadmapId > 0
+            ? LitterRoadmap::query()->find($selectedRoadmapId)
+            : null;
         $connectionSearchInput = trim((string) ($filters['expected_genes'] ?? ''));
         $traitGeneAliasMap = $this->buildTraitGeneAliasMap();
         $connectionExpectedTraits = $this->parseExpectedTraits($connectionSearchInput, $traitGeneAliasMap);
         $connectionStrictVisualOnly = (bool) ($filters['strict_visual_only'] ?? false);
         $connectionGeneSuggestions = $this->buildConnectionGeneSuggestions($traitGeneAliasMap);
+        $hasRoadmapManualInput = isset($filters['roadmap_expected_genes'])
+            && trim((string) ($filters['roadmap_expected_genes'] ?? '')) !== '';
         $roadmapSearchInput = trim((string) ($filters['roadmap_expected_genes'] ?? ''));
-        $roadmapExpectedTraits = $this->parseExpectedTraits($roadmapSearchInput, $traitGeneAliasMap);
         $roadmapGenerations = isset($filters['roadmap_generations']) && is_numeric($filters['roadmap_generations'])
             ? (int) $filters['roadmap_generations']
             : 0; // 0 = dowolny
-        $roadmapGenerationsLimit = ($roadmapGenerations >= 2 && $roadmapGenerations <= 5)
-            ? $roadmapGenerations
-            : 5;
+
+        if ($selectedRoadmap && $roadmapSearchInput === '') {
+            $roadmapSearchInput = trim((string) ($selectedRoadmap->search_input ?? ''));
+            $roadmapGenerations = (int) ($selectedRoadmap->generations ?? 0);
+        }
+
+        $roadmapExpectedTraits = $this->parseExpectedTraits($roadmapSearchInput, $traitGeneAliasMap);
 
         $females = Animal::query()
             ->whereIn('animal_category_id', [1, 4])
@@ -110,13 +130,31 @@ class GetLitterPlanningPageQuery
             );
         }
 
-        if (!empty($roadmapExpectedTraits)) {
-            $roadmap = $this->buildRoadmap($roadmapExpectedTraits, $roadmapGenerationsLimit);
+        if ($selectedRoadmap && $roadmapSearchInput !== '' && !$hasRoadmapManualInput) {
+            $completedGenerations = collect((array) ($selectedRoadmap->completed_generations ?? []))
+                ->map(fn (mixed $generation): int => (int) $generation)
+                ->filter(fn (int $generation): bool => $generation > 0)
+                ->unique()
+                ->values()
+                ->all();
+
+            $roadmapTargetReachable = (bool) ($selectedRoadmap->target_reachable ?? false);
+            $roadmapMatchedTraits = array_values((array) ($selectedRoadmap->matched_traits ?? []));
+            $roadmapMissingTraits = array_values((array) ($selectedRoadmap->missing_traits ?? []));
+            $roadmapSteps = $this->applyRoadmapRealizedFlags(
+                array_values((array) ($selectedRoadmap->steps ?? [])),
+                $completedGenerations
+            );
+        } elseif (!empty($roadmapExpectedTraits)) {
+            $roadmap = $this->buildRoadmapSnapshot($roadmapSearchInput, $roadmapGenerations);
             $roadmapTargetReachable = $roadmap['target_reachable'];
             $roadmapMatchedTraits = $roadmap['matched_traits'];
             $roadmapMissingTraits = $roadmap['missing_traits'];
             $roadmapSteps = $roadmap['steps'];
         }
+
+        $roadmapSteps = $this->normalizeRoadmapStepsForDisplay($roadmapSteps);
+        $roadmapSteps = $this->enrichRoadmapStepsWithExistingLitters($roadmapSteps, $currentYear);
 
         return new LitterPlanningPageViewModel(
             females: $females,
@@ -138,7 +176,49 @@ class GetLitterPlanningPageQuery
             roadmapMatchedTraits: $roadmapMatchedTraits,
             roadmapMissingTraits: $roadmapMissingTraits,
             roadmapSteps: $roadmapSteps,
+            roadmaps: $savedRoadmaps,
+            activeRoadmapId: $selectedRoadmapId > 0 ? $selectedRoadmapId : $openedRoadmapId,
+            roadmapKeepers: $roadmapKeeperRows,
         );
+    }
+
+    /**
+     * @return array{
+     *     search_input:string,
+     *     generations:int,
+     *     expected_traits:array<int, string>,
+     *     target_reachable:bool,
+     *     matched_traits:array<int, string>,
+     *     missing_traits:array<int, string>,
+     *     steps:array<int, array<string, mixed>>
+     * }
+     */
+    public function buildRoadmapSnapshot(string $searchInput, int $generations = 0): array
+    {
+        $normalizedSearch = trim($searchInput);
+        $traitGeneAliasMap = $this->buildTraitGeneAliasMap();
+        $expectedTraits = $this->parseExpectedTraits($normalizedSearch, $traitGeneAliasMap);
+        $generationsNormalized = $generations >= 2 && $generations <= 5 ? $generations : 0;
+        $generationsLimit = $generationsNormalized > 0 ? $generationsNormalized : 5;
+
+        $roadmap = !empty($expectedTraits)
+            ? $this->buildRoadmap($expectedTraits, $generationsLimit)
+            : [
+                'target_reachable' => false,
+                'matched_traits' => [],
+                'missing_traits' => [],
+                'steps' => [],
+            ];
+
+        return [
+            'search_input' => $normalizedSearch,
+            'generations' => $generationsNormalized,
+            'expected_traits' => $expectedTraits,
+            'target_reachable' => (bool) ($roadmap['target_reachable'] ?? false),
+            'matched_traits' => array_values((array) ($roadmap['matched_traits'] ?? [])),
+            'missing_traits' => array_values((array) ($roadmap['missing_traits'] ?? [])),
+            'steps' => array_values((array) ($roadmap['steps'] ?? [])),
+        ];
     }
 
     /**
@@ -170,6 +250,375 @@ class GetLitterPlanningPageQuery
                     })->values()->all(),
                 ];
             })
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{
+     *     id:int,
+     *     name:string,
+     *     search_input:string,
+     *     generations:int,
+     *     expected_traits:array<int, string>,
+     *     target_reachable:bool,
+     *     matched_traits:array<int, string>,
+     *     missing_traits:array<int, string>,
+     *     completed_generations:array<int, int>,
+     *     steps_count:int,
+     *     last_refreshed_at_label:string,
+     *     updated_at_label:string
+     * }>
+     */
+    private function buildSavedRoadmaps(Collection $roadmaps): array
+    {
+        return $roadmaps
+            ->map(function (LitterRoadmap $roadmap): array {
+                return [
+                    'id' => (int) $roadmap->id,
+                    'name' => trim((string) $roadmap->name),
+                    'search_input' => trim((string) $roadmap->search_input),
+                    'generations' => (int) ($roadmap->generations ?? 0),
+                    'expected_traits' => array_values((array) ($roadmap->expected_traits ?? [])),
+                    'target_reachable' => (bool) ($roadmap->target_reachable ?? false),
+                    'matched_traits' => array_values((array) ($roadmap->matched_traits ?? [])),
+                    'missing_traits' => array_values((array) ($roadmap->missing_traits ?? [])),
+                    'completed_generations' => collect((array) ($roadmap->completed_generations ?? []))
+                        ->map(fn (mixed $generation): int => (int) $generation)
+                        ->filter(fn (int $generation): bool => $generation > 0)
+                        ->unique()
+                        ->values()
+                        ->all(),
+                    'steps_count' => count((array) ($roadmap->steps ?? [])),
+                    'last_refreshed_at_label' => $roadmap->last_refreshed_at?->format('Y-m-d H:i') ?? '-',
+                    'updated_at_label' => $roadmap->updated_at?->format('Y-m-d H:i') ?? '-',
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $steps
+     * @param array<int, int> $completedGenerations
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyRoadmapRealizedFlags(array $steps, array $completedGenerations): array
+    {
+        return collect($steps)
+            ->map(function (array $step) use ($completedGenerations): array {
+                $generation = (int) ($step['generation'] ?? 0);
+                $step['is_realized'] = $generation > 0 && in_array($generation, $completedGenerations, true);
+
+                return $step;
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $steps
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeRoadmapStepsForDisplay(array $steps): array
+    {
+        return collect($steps)
+            ->map(function (array $step): array {
+                $offspringRows = collect((array) ($step['offspring_rows'] ?? []))
+                    ->map(function (mixed $row): array {
+                        if (!is_array($row)) {
+                            return [];
+                        }
+
+                        $row['carrier_traits'] = $this->sortCarrierTraitsForDisplay(
+                            collect((array) ($row['carrier_traits'] ?? []))
+                                ->map(fn (mixed $trait): string => trim((string) $trait))
+                                ->filter()
+                                ->values()
+                                ->all()
+                        );
+
+                        return $row;
+                    })
+                    ->filter(fn (array $row): bool => !empty($row))
+                    ->values()
+                    ->all();
+
+                $keeperLabels = collect($offspringRows)
+                    ->filter(fn (array $row): bool => (bool) ($row['is_keeper'] ?? false))
+                    ->map(function (array $row): string {
+                        $name = trim((string) ($row['traits_name'] ?? ''));
+                        if ($name !== '') {
+                            return $name;
+                        }
+
+                        $visual = collect((array) ($row['visual_traits'] ?? []))
+                            ->map(fn (mixed $trait): string => trim((string) $trait))
+                            ->filter()
+                            ->values()
+                            ->all();
+                        $carrier = $this->sortCarrierTraitsForDisplay(
+                            collect((array) ($row['carrier_traits'] ?? []))
+                                ->map(fn (mixed $trait): string => trim((string) $trait))
+                                ->filter()
+                                ->values()
+                                ->all()
+                        );
+
+                        $parts = array_merge($visual, $carrier);
+
+                        return !empty($parts) ? implode(', ', $parts) : '-';
+                    })
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $hasTargetRow = collect($offspringRows)
+                    ->contains(fn (array $row): bool => (bool) ($row['is_target'] ?? false));
+
+                if ($hasTargetRow) {
+                    $offspringRows = collect($offspringRows)
+                        ->map(function (array $row): array {
+                            $row['is_keeper'] = false;
+
+                            return $row;
+                        })
+                        ->values()
+                        ->all();
+                }
+
+                $step['offspring_rows'] = $offspringRows;
+                $step['has_target_row'] = $hasTargetRow;
+                if ($hasTargetRow) {
+                    $step['keeper_label'] = '';
+                } elseif (!empty($keeperLabels)) {
+                    $step['keeper_label'] = implode(' + ', $keeperLabels);
+                } else {
+                    $step['keeper_label'] = '-';
+                }
+
+                return $step;
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $steps
+     * @return array<int, array<string, mixed>>
+     */
+    private function enrichRoadmapStepsWithExistingLitters(array $steps, int $minSeason): array
+    {
+        if (empty($steps)) {
+            return [];
+        }
+
+        $pairs = [];
+        foreach ($steps as $index => $step) {
+            $canCreate = (bool) ($step['can_create_litter'] ?? false);
+            $maleId = isset($step['parent_male_id']) ? (int) ($step['parent_male_id'] ?? 0) : 0;
+            $femaleId = isset($step['parent_female_id']) ? (int) ($step['parent_female_id'] ?? 0) : 0;
+
+            if (!$canCreate || $maleId <= 0 || $femaleId <= 0) {
+                continue;
+            }
+
+            $pairs[$maleId . ':' . $femaleId] = [
+                'parent_male' => $maleId,
+                'parent_female' => $femaleId,
+            ];
+        }
+
+        $littersByPair = [];
+        if (!empty($pairs)) {
+            $pairValues = array_values($pairs);
+            $litters = Litter::query()
+                ->where('season', '>=', $minSeason)
+                ->where(function ($query) use ($pairValues): void {
+                    foreach ($pairValues as $pair) {
+                        $query->orWhere(function ($pairQuery) use ($pair): void {
+                            $pairQuery
+                                ->where('parent_male', (int) ($pair['parent_male'] ?? 0))
+                                ->where('parent_female', (int) ($pair['parent_female'] ?? 0));
+                        });
+                    }
+                })
+                ->orderByDesc('season')
+                ->orderByDesc('id')
+                ->get(['id', 'litter_code', 'season', 'parent_male', 'parent_female']);
+
+            foreach ($litters as $litter) {
+                $key = (int) $litter->parent_male . ':' . (int) $litter->parent_female;
+                if (isset($littersByPair[$key])) {
+                    continue;
+                }
+
+                $littersByPair[$key] = [
+                    'id' => (int) $litter->id,
+                    'code' => trim((string) $litter->litter_code),
+                    'season' => (int) ($litter->season ?? 0),
+                ];
+            }
+        }
+
+        return collect($steps)
+            ->map(function (array $step) use ($littersByPair): array {
+                $maleId = isset($step['parent_male_id']) ? (int) ($step['parent_male_id'] ?? 0) : 0;
+                $femaleId = isset($step['parent_female_id']) ? (int) ($step['parent_female_id'] ?? 0) : 0;
+                $pairKey = $maleId . ':' . $femaleId;
+                $linkedLitter = ($maleId > 0 && $femaleId > 0) ? ($littersByPair[$pairKey] ?? null) : null;
+
+                $step['existing_litter_id'] = $linkedLitter ? (int) ($linkedLitter['id'] ?? 0) : null;
+                $step['existing_litter_code'] = $linkedLitter ? (string) ($linkedLitter['code'] ?? '') : null;
+                $step['existing_litter_season'] = $linkedLitter ? (int) ($linkedLitter['season'] ?? 0) : null;
+                $step['existing_litter_url'] = $linkedLitter
+                    ? route('panel.litters.show', (int) ($linkedLitter['id'] ?? 0))
+                    : null;
+
+                return $step;
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param Collection<int, LitterRoadmap> $roadmaps
+     * @return array<int, array{
+     *     roadmap_id:int,
+     *     roadmap_name:string,
+     *     generation:int,
+     *     pairing_label:string,
+     *     keeper_label:string,
+     *     parent_male_id:int|null,
+     *     parent_female_id:int|null,
+     *     litter_id:int|null,
+     *     litter_code:string|null,
+     *     litter_url:string|null
+     * }>
+     */
+    private function buildRoadmapKeeperRows(Collection $roadmaps): array
+    {
+        if ($roadmaps->isEmpty()) {
+            return [];
+        }
+
+        $rows = [];
+        $pairsToResolve = [];
+
+        foreach ($roadmaps as $roadmap) {
+            $steps = collect((array) ($roadmap->steps ?? []))
+                ->filter(fn (mixed $step): bool => is_array($step))
+                ->values();
+
+            foreach ($steps as $step) {
+                $generation = (int) ($step['generation'] ?? 0);
+                $pairingLabel = trim((string) ($step['pairing_label'] ?? '-'));
+                $parentMaleId = isset($step['parent_male_id']) ? (int) $step['parent_male_id'] : 0;
+                $parentFemaleId = isset($step['parent_female_id']) ? (int) $step['parent_female_id'] : 0;
+                $canCreateLitter = (bool) ($step['can_create_litter'] ?? false)
+                    && $parentMaleId > 0
+                    && $parentFemaleId > 0;
+
+                if ($canCreateLitter) {
+                    $pairsToResolve[$parentMaleId . ':' . $parentFemaleId] = [
+                        'parent_male' => $parentMaleId,
+                        'parent_female' => $parentFemaleId,
+                    ];
+                }
+
+                // If this step already contains the final target row, we should
+                // not suggest any "keeper" from this generation in "Do zostawienia".
+                $hasTargetRow = collect((array) ($step['offspring_rows'] ?? []))
+                    ->contains(fn (mixed $row): bool => is_array($row) && (bool) ($row['is_target'] ?? false));
+                if ($hasTargetRow) {
+                    continue;
+                }
+
+                $keeperRows = collect((array) ($step['offspring_rows'] ?? []))
+                    ->filter(fn (mixed $row): bool => is_array($row) && (bool) ($row['is_keeper'] ?? false))
+                    ->values();
+
+                foreach ($keeperRows as $keeperRow) {
+                    $rows[] = [
+                        'roadmap_id' => (int) $roadmap->id,
+                        'roadmap_name' => trim((string) $roadmap->name),
+                        'generation' => $generation,
+                        'pairing_label' => $pairingLabel !== '' ? $pairingLabel : '-',
+                        'keeper_label' => $this->formatRoadmapKeeperLabel((array) $keeperRow),
+                        'parent_male_id' => $canCreateLitter ? $parentMaleId : null,
+                        'parent_female_id' => $canCreateLitter ? $parentFemaleId : null,
+                        'litter_id' => null,
+                        'litter_code' => null,
+                        'litter_url' => null,
+                    ];
+                }
+            }
+        }
+
+        $littersByPair = [];
+        if (!empty($pairsToResolve)) {
+            $pairs = array_values($pairsToResolve);
+            $litters = Litter::query()
+                ->where(function ($query) use ($pairs): void {
+                    foreach ($pairs as $pair) {
+                        $query->orWhere(function ($pairQuery) use ($pair): void {
+                            $pairQuery
+                                ->where('parent_male', (int) ($pair['parent_male'] ?? 0))
+                                ->where('parent_female', (int) ($pair['parent_female'] ?? 0));
+                        });
+                    }
+                })
+                ->orderByDesc('id')
+                ->get(['id', 'litter_code', 'parent_male', 'parent_female']);
+
+            foreach ($litters as $litter) {
+                $key = (int) $litter->parent_male . ':' . (int) $litter->parent_female;
+                if (isset($littersByPair[$key])) {
+                    continue;
+                }
+
+                $littersByPair[$key] = [
+                    'id' => (int) $litter->id,
+                    'code' => trim((string) $litter->litter_code),
+                ];
+            }
+        }
+
+        return collect($rows)
+            ->map(function (array $row) use ($littersByPair): array {
+                $maleId = isset($row['parent_male_id']) ? (int) ($row['parent_male_id'] ?? 0) : 0;
+                $femaleId = isset($row['parent_female_id']) ? (int) ($row['parent_female_id'] ?? 0) : 0;
+                if ($maleId <= 0 || $femaleId <= 0) {
+                    return $row;
+                }
+
+                $key = $maleId . ':' . $femaleId;
+                $linkedLitter = $littersByPair[$key] ?? null;
+                if (!$linkedLitter) {
+                    return $row;
+                }
+
+                $row['litter_id'] = (int) ($linkedLitter['id'] ?? 0);
+                $row['litter_code'] = (string) ($linkedLitter['code'] ?? '');
+                $row['litter_url'] = route('panel.litters.show', $row['litter_id']);
+
+                return $row;
+            })
+            ->sort(function (array $a, array $b): int {
+                $nameCompare = strcmp((string) ($a['roadmap_name'] ?? ''), (string) ($b['roadmap_name'] ?? ''));
+                if ($nameCompare !== 0) {
+                    return $nameCompare;
+                }
+
+                $genA = (int) ($a['generation'] ?? 0);
+                $genB = (int) ($b['generation'] ?? 0);
+                if ($genA === $genB) {
+                    return strcmp((string) ($a['keeper_label'] ?? ''), (string) ($b['keeper_label'] ?? ''));
+                }
+
+                return $genA <=> $genB;
+            })
+            ->values()
             ->all();
     }
 
@@ -1575,6 +2024,7 @@ class GetLitterPlanningPageQuery
             ->filter()
             ->values()
             ->all();
+        $carrier = $this->sortCarrierTraitsForDisplay($carrier);
 
         $parts = array_merge($visual, $carrier);
         if (empty($parts)) {

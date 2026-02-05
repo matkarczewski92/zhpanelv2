@@ -18,3 +18,14 @@ Route::post('/litters-planning/plans/{plan}/realize', [LittersPlanningController
     ->name('litters-planning.realize');
 Route::delete('/litters-planning/plans/{plan}', [LittersPlanningController::class, 'destroy'])
     ->name('litters-planning.destroy');
+
+Route::post('/litters-planning/roadmaps', [LittersPlanningController::class, 'storeRoadmap'])
+    ->name('litters-planning.roadmaps.store');
+Route::put('/litters-planning/roadmaps/{roadmap}', [LittersPlanningController::class, 'updateRoadmap'])
+    ->name('litters-planning.roadmaps.update');
+Route::post('/litters-planning/roadmaps/{roadmap}/refresh', [LittersPlanningController::class, 'refreshRoadmap'])
+    ->name('litters-planning.roadmaps.refresh');
+Route::patch('/litters-planning/roadmaps/{roadmap}/step-status', [LittersPlanningController::class, 'updateRoadmapStepStatus'])
+    ->name('litters-planning.roadmaps.step-status');
+Route::delete('/litters-planning/roadmaps/{roadmap}', [LittersPlanningController::class, 'destroyRoadmap'])
+    ->name('litters-planning.roadmaps.destroy');
