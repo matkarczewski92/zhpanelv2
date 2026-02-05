@@ -70,6 +70,10 @@
                             @error('feed_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label">Secret tag</label>
+                            <input type="text" class="form-control" value="{{ $profile->edit['values']['secret_tag'] ?? '-' }}" disabled readonly>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">Publiczny tag</label>
                             <input type="text" class="form-control" value="{{ $profile->edit['values']['public_profile_tag'] ?? '-' }}" disabled readonly>
                         </div>
