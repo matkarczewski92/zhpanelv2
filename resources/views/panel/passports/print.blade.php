@@ -8,12 +8,12 @@
     <style>
         body { background: #fff; }
         @page { margin: 15mm; }
-        .passport-page { page-break-after: always; break-after: page; display: flex; flex-direction: column; min-height: 100%; }
+        .passport-page { page-break-after: always; break-after: page; }
         .passport-page:last-child { page-break-after: auto; break-after: auto; }
         .logo-row img { max-height: 225px; }
         .section-table td { padding: .45rem .75rem; }
         .label { width: 45%; font-weight: 600; }
-        .passport-footer { margin-top: auto; padding-top: 0; }
+        .passport-footer { margin-top: 0.5rem; padding-top: 0; }
         .journal-title { font-weight: 700; text-align: center; margin-top: 0; }
         .journal-text { font-size: 0.9rem; }
         .secret-tag { font-weight: 700; font-size: calc(1em + 2pt); }
