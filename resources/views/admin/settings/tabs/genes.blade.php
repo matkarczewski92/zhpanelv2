@@ -5,8 +5,8 @@
             <form class="d-flex gap-2" method="POST" action="{{ route('admin.settings.genotype-categories.store') }}">
                 @csrf
                 <input type="text" name="name" class="form-control form-control-sm bg-dark text-light" placeholder="Nazwa" required>
-                <input type="text" name="gene_code" class="form-control form-control-sm bg-dark text-light" placeholder="Kod">
-                <input type="text" name="gene_type" class="form-control form-control-sm bg-dark text-light" placeholder="Typ">
+                <input type="text" name="gene_code" class="form-control form-control-sm bg-dark text-light" placeholder="Kod" maxlength="10" required>
+                <input type="text" name="gene_type" class="form-control form-control-sm bg-dark text-light" placeholder="Typ" maxlength="2" required>
                 <button class="btn btn-sm btn-primary" type="submit">Dodaj</button>
             </form>
         </div>
@@ -22,8 +22,8 @@
                                 @csrf
                                 @method('PATCH')
                                 <div class="col-md-4"><input type="text" name="name" class="form-control form-control-sm bg-dark text-light" value="{{ $gene->name }}" required></div>
-                                <div class="col-md-3"><input type="text" name="gene_code" class="form-control form-control-sm bg-dark text-light" value="{{ $gene->gene_code }}"></div>
-                                <div class="col-md-3"><input type="text" name="gene_type" class="form-control form-control-sm bg-dark text-light" value="{{ $gene->gene_type }}"></div>
+                                <div class="col-md-3"><input type="text" name="gene_code" class="form-control form-control-sm bg-dark text-light" value="{{ $gene->gene_code }}" maxlength="10" required></div>
+                                <div class="col-md-3"><input type="text" name="gene_type" class="form-control form-control-sm bg-dark text-light" value="{{ $gene->gene_type }}" maxlength="2" required></div>
                                 <div class="col-md-2 text-end"><button class="btn btn-sm btn-outline-light" type="submit">Zapisz</button></div>
                             </form>
                         </td>

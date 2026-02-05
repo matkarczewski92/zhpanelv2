@@ -15,8 +15,8 @@ class GenotypeCategoryRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'gene_code' => ['nullable', 'string', 'max:10'],
-            'gene_type' => ['nullable', 'string', 'max:10'],
+            'gene_code' => ['required', 'string', 'max:10'],
+            'gene_type' => ['required', 'string', 'max:2'],
         ];
     }
 }

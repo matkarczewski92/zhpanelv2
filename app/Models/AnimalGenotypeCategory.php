@@ -11,6 +11,8 @@ class AnimalGenotypeCategory extends Model
 
     protected $fillable = [
         'name',
+        'gene_code',
+        'gene_type',
     ];
 
     public $timestamps = false;
