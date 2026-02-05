@@ -102,6 +102,92 @@ const normalizePair = (pair) => ({
     male_name: pair.male_name ?? '',
 });
 
+const initGeneAutocomplete = (app, inputRole, suggestionsRole) => {
+    const input = app.querySelector(`[data-role="${inputRole}"]`);
+    const suggestionsBox = app.querySelector(`[data-role="${suggestionsRole}"]`);
+    if (!(input instanceof HTMLInputElement) || !(suggestionsBox instanceof HTMLElement)) {
+        return;
+    }
+
+    const allSuggestions = parseJson(input.dataset.geneSuggestions, []);
+    if (!Array.isArray(allSuggestions) || allSuggestions.length === 0) {
+        return;
+    }
+
+    const normalize = (value) => String(value || '').trim().toLowerCase();
+
+    const hideSuggestions = () => {
+        suggestionsBox.classList.add('d-none');
+        suggestionsBox.innerHTML = '';
+    };
+
+    const getCurrentToken = () => {
+        const raw = input.value ?? '';
+        const parts = raw.split(',');
+        return {
+            token: parts.length > 0 ? parts[parts.length - 1].trim() : '',
+            parts,
+        };
+    };
+
+    const applySuggestion = (value) => {
+        const raw = input.value ?? '';
+        const parts = raw
+            .split(',')
+            .map((part) => part.trim())
+            .filter((part) => part !== '');
+
+        if (parts.length === 0) {
+            input.value = `${value}, `;
+        } else {
+            parts[parts.length - 1] = value;
+            input.value = `${parts.join(', ')}, `;
+        }
+
+        input.focus();
+        hideSuggestions();
+    };
+
+    const renderSuggestions = () => {
+        const { token } = getCurrentToken();
+        const needle = normalize(token);
+        if (needle.length < 1) {
+            hideSuggestions();
+            return;
+        }
+
+        const matches = allSuggestions
+            .filter((item) => normalize(item).includes(needle))
+            .slice(0, 8);
+
+        if (matches.length === 0) {
+            hideSuggestions();
+            return;
+        }
+
+        suggestionsBox.innerHTML = '';
+        matches.forEach((item) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'connections-suggestion-item list-group-item py-2 px-2';
+            button.textContent = String(item);
+            button.addEventListener('mousedown', (event) => {
+                event.preventDefault();
+                applySuggestion(String(item));
+            });
+            suggestionsBox.appendChild(button);
+        });
+
+        suggestionsBox.classList.remove('d-none');
+    };
+
+    input.addEventListener('input', renderSuggestions);
+    input.addEventListener('focus', renderSuggestions);
+    input.addEventListener('blur', () => {
+        window.setTimeout(hideSuggestions, 120);
+    });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     const app = document.getElementById(appId);
     if (!app) return;
@@ -196,6 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     setTab(app, app.dataset.activeTab || 'planning');
+    initGeneAutocomplete(app, 'connections-genes-input', 'connections-genes-suggestions');
+    initGeneAutocomplete(app, 'roadmap-genes-input', 'roadmap-genes-suggestions');
     normalizeFemaleOptionsLabels();
     refreshCount();
     if (femaleSelect && state.selectedPairs.length > 0) {

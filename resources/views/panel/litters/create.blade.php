@@ -20,6 +20,7 @@
                 <div class="card-body">
                     @include('panel.litters._form', [
                         'form' => $form,
+                        'prefill' => $prefill ?? [],
                         'action' => route('panel.litters.store'),
                         'method' => 'POST',
                         'submitLabel' => 'Dodaj miot',
@@ -30,4 +31,3 @@
         </div>
     </div>
 @endsection
-

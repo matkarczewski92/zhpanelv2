@@ -23,13 +23,80 @@
             background: rgba(33, 37, 41, 0.98);
             z-index: 2;
         }
+
+        #littersPlanningApp .connections-suggestions {
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 1050;
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(20, 24, 31, 0.98);
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        #littersPlanningApp .connections-suggestion-item {
+            border: 0;
+            border-radius: 0.4rem;
+            margin: 0.1rem 0;
+            text-align: left;
+            color: #e9ecef;
+            background: transparent;
+            font-size: 0.92rem;
+            line-height: 1.2rem;
+        }
+
+        #littersPlanningApp .connections-suggestion-item:hover,
+        #littersPlanningApp .connections-suggestion-item:focus {
+            color: #fff;
+            background: rgba(13, 110, 253, 0.28);
+            box-shadow: none;
+        }
+
+        #littersPlanningApp .connections-matched-box {
+            padding: 0.5rem 0.65rem;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 0.55rem;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        #littersPlanningApp .connections-matched-count {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.15rem 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: #9ec5fe;
+            background: rgba(13, 110, 253, 0.22);
+            border: 1px solid rgba(13, 110, 253, 0.45);
+            border-radius: 999px;
+        }
+
+        #littersPlanningApp .connections-matched-row + .connections-matched-row {
+            padding-top: 0.35rem;
+            border-top: 1px dashed rgba(255, 255, 255, 0.15);
+        }
+
+        #littersPlanningApp .roadmap-keeper-row td {
+            background: rgba(255, 193, 7, 0.16);
+            border-top-color: rgba(255, 193, 7, 0.35);
+            border-bottom-color: rgba(255, 193, 7, 0.35);
+        }
+
+        #littersPlanningApp .roadmap-target-row td {
+            box-shadow: inset 0 0 0 1px rgba(25, 135, 84, 0.55);
+        }
     </style>
 @endpush
 
 @section('content')
     @php
         $activeTab = request()->query('tab', 'planning');
-        if (!in_array($activeTab, ['planning', 'plans', 'offspring'], true)) {
+        if (!in_array($activeTab, ['planning', 'plans', 'offspring', 'connections', 'roadmap'], true)) {
             $activeTab = 'planning';
         }
     @endphp
@@ -54,6 +121,8 @@
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="planning">Planowanie laczen</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="plans">Opracowane plany</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="offspring">Mozliwe potomstwo</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="connections">Wyszukiwarka polaczen</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="roadmap">Roadmap</button>
                 </div>
             </div>
         </div>
@@ -68,6 +137,14 @@
 
         <section data-tab-id="offspring" class="@if($activeTab !== 'offspring') d-none @endif">
             @include('panel.litters-planning._tab_offspring', ['page' => $page])
+        </section>
+
+        <section data-tab-id="connections" class="@if($activeTab !== 'connections') d-none @endif">
+            @include('panel.litters-planning._tab_connections', ['page' => $page])
+        </section>
+
+        <section data-tab-id="roadmap" class="@if($activeTab !== 'roadmap') d-none @endif">
+            @include('panel.litters-planning._tab_roadmap', ['page' => $page])
         </section>
     </div>
 

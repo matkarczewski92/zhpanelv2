@@ -16,14 +16,22 @@ class LitterPlanningIndexRequest extends FormRequest
         $this->merge([
             'tab' => $this->normalizeText($this->input('tab')),
             'season' => $this->normalizeInt($this->input('season')),
+            'expected_genes' => $this->normalizeText($this->input('expected_genes')),
+            'strict_visual_only' => $this->normalizeBoolean($this->input('strict_visual_only')),
+            'roadmap_expected_genes' => $this->normalizeText($this->input('roadmap_expected_genes')),
+            'roadmap_generations' => $this->normalizeInt($this->input('roadmap_generations')),
         ]);
     }
 
     public function rules(): array
     {
         return [
-            'tab' => ['nullable', 'in:planning,plans,offspring'],
+            'tab' => ['nullable', 'in:planning,plans,offspring,connections,roadmap'],
             'season' => ['nullable', 'integer', 'min:2000', 'max:2100'],
+            'expected_genes' => ['nullable', 'string', 'max:500'],
+            'strict_visual_only' => ['nullable', 'boolean'],
+            'roadmap_expected_genes' => ['nullable', 'string', 'max:500'],
+            'roadmap_generations' => ['nullable', 'integer', 'min:2', 'max:5'],
         ];
     }
 
@@ -48,5 +56,21 @@ class LitterPlanningIndexRequest extends FormRequest
 
         return $int > 0 ? $int : null;
     }
-}
 
+    private function normalizeBoolean(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value === 1;
+        }
+
+        if (!is_string($value)) {
+            return false;
+        }
+
+        return in_array(strtolower(trim($value)), ['1', 'true', 'on', 'yes'], true);
+    }
+}

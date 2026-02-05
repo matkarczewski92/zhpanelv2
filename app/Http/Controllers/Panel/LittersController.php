@@ -26,6 +26,7 @@ use App\Http\Requests\Panel\UpdateLitterRequest;
 use App\Http\Requests\Panel\UpdateLitterOffspringBatchRequest;
 use App\Models\Litter;
 use App\Models\LitterGallery;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -38,10 +39,21 @@ class LittersController extends Controller
         ]);
     }
 
-    public function create(GetLitterFormOptionsQuery $query): View
+    public function create(Request $request, GetLitterFormOptionsQuery $query): View
     {
+        $form = $query->handle();
+        $prefillMaleId = (int) $request->query('parent_male', 0);
+        $prefillFemaleId = (int) $request->query('parent_female', 0);
+
+        $allowedMaleIds = collect($form->maleParents)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
+        $allowedFemaleIds = collect($form->femaleParents)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
+
         return view('panel.litters.create', [
-            'form' => $query->handle(),
+            'form' => $form,
+            'prefill' => [
+                'parent_male' => in_array($prefillMaleId, $allowedMaleIds, true) ? $prefillMaleId : null,
+                'parent_female' => in_array($prefillFemaleId, $allowedFemaleIds, true) ? $prefillFemaleId : null,
+            ],
         ]);
     }
 

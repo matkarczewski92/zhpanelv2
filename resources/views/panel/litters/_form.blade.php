@@ -4,6 +4,7 @@
     'method' => 'POST',
     'submitLabel' => 'Zapisz',
     'litter' => null,
+    'prefill' => [],
     'errorBag' => 'default',
 ])
 
@@ -54,7 +55,7 @@
         @foreach ($form->maleParents as $animal)
             <option
                 value="{{ $animal['id'] }}"
-                @selected((string) old('parent_male', $current['parent_male']['id'] ?? '') === (string) $animal['id'])
+                @selected((string) old('parent_male', $prefill['parent_male'] ?? ($current['parent_male']['id'] ?? '')) === (string) $animal['id'])
             >
                 #{{ $animal['id'] }} {{ $animal['name'] }}
             </option>
@@ -67,7 +68,7 @@
         @foreach ($form->femaleParents as $animal)
             <option
                 value="{{ $animal['id'] }}"
-                @selected((string) old('parent_female', $current['parent_female']['id'] ?? '') === (string) $animal['id'])
+                @selected((string) old('parent_female', $prefill['parent_female'] ?? ($current['parent_female']['id'] ?? '')) === (string) $animal['id'])
             >
                 #{{ $animal['id'] }} {{ $animal['name'] }}
             </option>
