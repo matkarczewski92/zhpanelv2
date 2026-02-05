@@ -13,9 +13,9 @@
         .logo-row img { max-height: 225px; }
         .section-table td { padding: .45rem .75rem; }
         .label { width: 45%; font-weight: 600; }
-        .passport-footer { margin-top: auto; padding-top: 0.25rem; }
+        .passport-footer { margin-top: auto; padding-top: 0; }
         .journal-title { font-weight: 700; text-align: center; margin-top: 0; }
-        .journal-text { font-size: 0.95rem; }
+        .journal-text { font-size: 0.9rem; }
         .secret-tag { font-weight: 700; font-size: calc(1em + 2pt); }
     </style>
 </head>
@@ -63,7 +63,7 @@
             </tr>
          </table>
 
-        <table class="table section-table mx-auto mt-5">
+        <table class="table section-table mx-auto mt-3">
             <tr>
                 <td class="label">Hodowla</td>
                 <td class="text-end">{{ $passport['breeder_name'] }}</td>
