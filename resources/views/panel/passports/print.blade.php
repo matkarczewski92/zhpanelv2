@@ -63,7 +63,7 @@
             </tr>
          </table>
 
-        <table class="table section-table mx-auto mt-3">
+        <table class="table section-table mx-auto mt-1">
             <tr>
                 <td class="label">Hodowla</td>
                 <td class="text-end">{{ $passport['breeder_name'] }}</td>
@@ -85,7 +85,7 @@
 
         <div class="passport-footer">
             <div class="journal-title">Dziennik Hodowlany</div>
-            <div class="journal-text mt-2">
+            <div class="journal-text mt-4">
                 Aby uzyskać dostęp do Dziennika Hodowlanego wejdź na strone www.dziennik.makssnake.pl lub kliknij Dziennik Hodowlany w menu na naszej stronie. W formularzu rejestracji podaj SECRET TAG <span class="secret-tag">{{ $passport['secret_tag'] }}</span> tego węża. Dzięki temu uzyskasz dostęp do pełnej historii Twojego wężą od momenu jego wyklucia do momentu opuszczenia hodowli (ważenia, wylinki, karmienia, genotyp, metryczka).
                 <br><br>
                 Jeżeli posiadasz już konto w naszym Dzienniku Hodowlanym, wejdź w zakładkę "Zwierzęta" w prawym górym rogu kliknij "Pobierz dane z hodowli" w oknie które sie pojawi wprowadź SECRET TAG <span class="secret-tag">{{ $passport['secret_tag'] }}</span> swojego węża.
