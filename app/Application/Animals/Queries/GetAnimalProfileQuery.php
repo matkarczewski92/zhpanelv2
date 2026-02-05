@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Application\Animals\Queries;
 
@@ -38,6 +38,7 @@ class GetAnimalProfileQuery
                 'animalCategory',
                 'animalType',
                 'feed',
+                'litter',
                 'photos',
                 'feedings.feed',
                 'weights',
@@ -191,11 +192,26 @@ class GetAnimalProfileQuery
 
     private function buildDetails(Animal $animal): array
     {
+        $litterValueHtml = null;
+        if ($animal->litter_id) {
+            $litter = $animal->litter;
+            if ($litter) {
+                $code = $litter->litter_code ?: ('L#' . $litter->id);
+                $url = Route::has('panel.litters.show') ? route('panel.litters.show', $litter->id) : '#';
+                $litterValueHtml = '<a href="' . e($url) . '" class="link-reset">' . e($code) . '</a>';
+            } else {
+                $litterValueHtml = '<i>Wykluty poza hodowlą</i>';
+            }
+        } else {
+            $litterValueHtml = '<i>Wykluty poza hodowlą</i>';
+        }
+
         return [
             ['label' => 'Typ', 'value' => optional($animal->animalType)->name],
             ['label' => 'Kategoria', 'value' => optional($animal->animalCategory)->name],
             ['label' => 'Płeć', 'value' => Sex::label((int) $animal->sex)],
             ['label' => 'Data urodzenia', 'value' => optional($animal->date_of_birth)->format('Y-m-d')],
+            ['label' => 'Miot', 'value_html' => $litterValueHtml],
             ['label' => 'Domyślna karma', 'value' => optional($animal->feed)->name],
             ['label' => 'Interwał karmienia', 'value' => $this->resolveFeedingInterval($animal)],
             ['label' => 'Secret tag', 'value' => $animal->secret_tag],
@@ -203,7 +219,6 @@ class GetAnimalProfileQuery
             ['label' => 'Profil publiczny', 'value' => $animal->public_profile ? 'Tak' : 'Nie'],
         ];
     }
-
     private function buildFeedings(Animal $animal): array
     {
         $feedings = $animal->feedings()
@@ -679,3 +694,6 @@ class GetAnimalProfileQuery
         return asset($url);
     }
 }
+
+
+
