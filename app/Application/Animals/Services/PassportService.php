@@ -29,6 +29,7 @@ class PassportService
                 'name_display_html' => $this->sanitizeName($animal->name),
                 'second_name_text' => $animal->second_name ? e($animal->second_name) : '',
                 'sex_name' => Sex::label((int) $animal->sex),
+                'secret_tag' => (string) ($animal->secret_tag ?? ''),
                 'breeder_name' => 'MaksSnake',
                 'breeder_contact' => 'tel. 698 328 234',
                 'breeder_email' => 'snake@makssnake.pl',
