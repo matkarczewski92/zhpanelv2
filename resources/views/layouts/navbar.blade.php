@@ -7,7 +7,7 @@
             data-bs-toggle="offcanvas"
             data-bs-target="#panelOffcanvas"
             aria-controls="panelOffcanvas"
-            aria-label="Otw�rz menu"
+            aria-label="Otwórz menu"
         >
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -143,7 +143,7 @@
                 class="nav-link {{ request()->routeIs('panel.animals.*') ? 'active' : '' }}"
                 href="{{ route('panel.animals.index') }}"
             >
-                Zwierz�ta
+                Zwierzęta
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.feeds.*') ? 'active' : '' }}"

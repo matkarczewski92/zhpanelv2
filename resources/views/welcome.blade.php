@@ -2,7 +2,7 @@
 <html lang="pl" data-bs-theme="dark">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=0.7">
     <meta name="description" content="Hodowla gadow MaksSnake - profile, oferta i plany hodowlane.">
     <title>Hodowla Gadow MaksSnake</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -31,10 +31,10 @@
                         <li class="nav-item"><a class="nav-link" href="#about-us">O nas</a></li>
                     </ul>
                     <div class="d-flex gap-2">
+                        <a href="https://dziennik.makssnake.pl/" class="btn btn-sm btn-outline-light" target="_blank" rel="noopener noreferrer">Dziennik hodowlany</a>
                         @auth
                             <a href="{{ route('panel.home') }}" class="btn btn-sm btn-primary">Panel</a>
                         @else
-                            <a href="https://dziennik.makssnake.pl/" class="btn btn-sm btn-outline-light" target="_blank" rel="noopener noreferrer">Dziennik hodowlany</a>
                             <a href="{{ route('login') }}" class="btn btn-sm btn-outline-light">ZH</a>
                         @endauth
                     </div>
