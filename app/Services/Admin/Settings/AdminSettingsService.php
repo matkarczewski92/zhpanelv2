@@ -30,6 +30,10 @@ class AdminSettingsService
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
+        $animalsWithoutGenotypes = \App\Models\Animal::query()
+            ->whereDoesntHave('genotypes')
+            ->orderBy('id')
+            ->get(['id', 'name']);
 
         return new AdminSettingsViewModel(
             activeTab: $tab ?: 'categories',
@@ -41,7 +45,8 @@ class AdminSettingsService
             systemConfig: $system,
             feeds: $feeds,
             financeCategories: $financeCategories,
-            colorGroups: $colorGroups
+            colorGroups: $colorGroups,
+            animalsWithoutGenotypes: $animalsWithoutGenotypes
         );
     }
 }

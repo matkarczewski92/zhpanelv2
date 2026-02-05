@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Settings\SystemConfigController;
 use App\Http\Controllers\Admin\Settings\FeedController;
 use App\Http\Controllers\Admin\Settings\FinanceCategoryController;
 use App\Http\Controllers\Admin\Settings\ColorGroupController;
+use App\Http\Controllers\Admin\Settings\GeneticsGeneratorController;
 
 Route::get('/settings', AdminSettingsController::class)->name('settings.index');
 
@@ -63,3 +64,7 @@ Route::delete('/settings/finance-categories/{category}', [FinanceCategoryControl
 Route::post('/settings/color-groups', [ColorGroupController::class, 'store'])->name('settings.color-groups.store');
 Route::patch('/settings/color-groups/{colorGroup}', [ColorGroupController::class, 'update'])->name('settings.color-groups.update');
 Route::delete('/settings/color-groups/{colorGroup}', [ColorGroupController::class, 'destroy'])->name('settings.color-groups.destroy');
+
+// genetics generator
+Route::post('/settings/genetics-generator/generate', [GeneticsGeneratorController::class, 'generate'])->name('settings.genetics-generator.generate');
+Route::post('/settings/genetics-generator/store', [GeneticsGeneratorController::class, 'store'])->name('settings.genetics-generator.store');
