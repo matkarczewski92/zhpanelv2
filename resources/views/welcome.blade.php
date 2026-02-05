@@ -34,7 +34,8 @@
                         @auth
                             <a href="{{ route('panel.home') }}" class="btn btn-sm btn-primary">Panel</a>
                         @else
-                            <a href="{{ route('login') }}" class="btn btn-sm btn-outline-light">Logowanie</a>
+                            <a href="https://dziennik.makssnake.pl/" class="btn btn-sm btn-outline-light" target="_blank" rel="noopener noreferrer">Dziennik hodowlany</a>
+                            <a href="{{ route('login') }}" class="btn btn-sm btn-outline-light">ZH</a>
                         @endauth
                     </div>
                 </div>
