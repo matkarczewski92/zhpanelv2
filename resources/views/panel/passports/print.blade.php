@@ -13,7 +13,7 @@
         .logo-row img { max-height: 225px; }
         .section-table td { padding: .45rem .75rem; }
         .label { width: 45%; font-weight: 600; }
-        .passport-footer { margin-top: auto; padding-top: 1.95rem; }
+        .passport-footer { margin-top: auto; padding-top: 0.25rem; }
         .journal-title { font-weight: 700; text-align: center; margin-top: 0; }
         .journal-text { font-size: 0.95rem; }
         .secret-tag { font-weight: 700; font-size: calc(1em + 2pt); }
