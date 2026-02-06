@@ -47,6 +47,7 @@
                         <th>Temperatura</th>
                         <th>Wilgotnosc</th>
                         <th>Stan ON/OFF</th>
+                        <th>Przelaczniki</th>
                         <th>Zakres / cel</th>
                         <th>Harmonogram</th>
                         <th>Ostatnia synchronizacja</th>
@@ -72,8 +73,20 @@
                             <td>{{ $snapshot['temperature'] }}</td>
                             <td>{{ $snapshot['humidity'] }}</td>
                             <td>{{ $snapshot['switch'] }}</td>
+                            <td class="text-break">{{ $snapshot['switches'] }}</td>
                             <td>{{ $snapshot['target_temperature'] }}</td>
-                            <td class="text-break">{{ $snapshot['schedule'] }}</td>
+                            <td class="text-break">
+                                @if (!empty($snapshot['schedule_lines']))
+                                    @foreach (array_slice($snapshot['schedule_lines'], 0, 4) as $line)
+                                        <div class="small">{{ $line }}</div>
+                                    @endforeach
+                                    @if (count($snapshot['schedule_lines']) > 4)
+                                        <div class="small text-muted">+{{ count($snapshot['schedule_lines']) - 4 }} wiecej</div>
+                                    @endif
+                                @else
+                                    {{ $snapshot['schedule'] }}
+                                @endif
+                            </td>
                             <td>
                                 {{ $device->last_synced_at?->format('Y-m-d H:i:s') ?? '-' }}
                                 @if($device->last_error)
@@ -83,7 +96,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center text-muted">Brak skonfigurowanych urzadzen. Dodaj je w Ustawieniach portalu.</td>
+                            <td colspan="11" class="text-center text-muted">Brak skonfigurowanych urzadzen. Dodaj je w Ustawieniach portalu.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -10,10 +10,13 @@ class EwelinkDeviceDataFormatter
      * @return array{
      *     online:string,
      *     switch:string,
+     *     switches:string,
+     *     switch_states:array<int, string>,
      *     temperature:string,
      *     humidity:string,
      *     target_temperature:string,
      *     schedule:string,
+     *     schedule_lines:array<int, string>,
      *     params_json:string
      * }
      */
@@ -24,14 +27,19 @@ class EwelinkDeviceDataFormatter
 
         $thingParams = is_array($thingPayload['params'] ?? null) ? $thingPayload['params'] : [];
         $params = array_replace_recursive($thingParams, $statusPayload);
+        $schedule = $this->resolveSchedule($params);
+        $switchStates = $this->extractSwitchStates($params);
 
         return [
             'online' => $this->resolveOnline($thingPayload),
-            'switch' => $this->resolveSwitch($params),
+            'switch' => $this->resolveSwitch($params, $switchStates),
+            'switches' => $this->resolveSwitches($params, $switchStates),
+            'switch_states' => $switchStates,
             'temperature' => $this->resolveTemperature($params),
             'humidity' => $this->resolveHumidity($params),
             'target_temperature' => $this->resolveTargetTemperature($params),
-            'schedule' => $this->resolveSchedule($params),
+            'schedule' => $schedule['summary'],
+            'schedule_lines' => $schedule['lines'],
             'params_json' => $this->encodeParams($params),
         ];
     }
@@ -50,35 +58,40 @@ class EwelinkDeviceDataFormatter
 
     /**
      * @param array<string, mixed> $params
+     * @param array<int, string> $switchStates
      */
-    private function resolveSwitch(array $params): string
+    private function resolveSwitch(array $params, array $switchStates = []): string
     {
         $single = $this->findValueByKeys($params, ['switch']);
         if (is_string($single) && $single !== '') {
             return $single;
         }
 
-        if (is_array($params['switches'] ?? null)) {
-            $parts = [];
-            foreach ($params['switches'] as $index => $switchData) {
-                if (!is_array($switchData)) {
-                    continue;
-                }
-
-                $state = $switchData['switch'] ?? null;
-                if (!is_string($state) || $state === '') {
-                    continue;
-                }
-
-                $parts[] = sprintf('ch%s:%s', $index + 1, $state);
-            }
-
-            if (!empty($parts)) {
-                return implode(', ', $parts);
-            }
+        if ($switchStates === []) {
+            return '-';
         }
 
-        return '-';
+        $uniqueStates = array_values(array_unique(array_values($switchStates)));
+
+        return count($uniqueStates) === 1 ? (string) $uniqueStates[0] : 'mixed';
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @param array<int, string> $switchStates
+     */
+    private function resolveSwitches(array $params, array $switchStates = []): string
+    {
+        if ($switchStates === []) {
+            return '-';
+        }
+
+        $parts = [];
+        foreach ($switchStates as $channel => $state) {
+            $parts[] = sprintf('ch%s:%s', $channel, $state);
+        }
+
+        return implode(' | ', $parts);
     }
 
     /**
@@ -94,15 +107,7 @@ class EwelinkDeviceDataFormatter
             'tempValue',
         ]);
 
-        if (is_numeric($value)) {
-            return rtrim(rtrim(number_format((float) $value, 1, '.', ''), '0'), '.') . ' °C';
-        }
-
-        if (is_string($value) && trim($value) !== '' && is_numeric($value)) {
-            return rtrim(rtrim(number_format((float) $value, 1, '.', ''), '0'), '.') . ' °C';
-        }
-
-        return '-';
+        return $this->formatNumericWithUnit($value, ' C');
     }
 
     /**
@@ -116,15 +121,7 @@ class EwelinkDeviceDataFormatter
             'humidityValue',
         ]);
 
-        if (is_numeric($value)) {
-            return rtrim(rtrim(number_format((float) $value, 1, '.', ''), '0'), '.') . ' %';
-        }
-
-        if (is_string($value) && trim($value) !== '' && is_numeric($value)) {
-            return rtrim(rtrim(number_format((float) $value, 1, '.', ''), '0'), '.') . ' %';
-        }
-
-        return '-';
+        return $this->formatNumericWithUnit($value, ' %');
     }
 
     /**
@@ -140,23 +137,18 @@ class EwelinkDeviceDataFormatter
             'setTemp',
         ]);
 
-        if (is_numeric($directValue) || (is_string($directValue) && is_numeric($directValue))) {
-            return rtrim(rtrim(number_format((float) $directValue, 1, '.', ''), '0'), '.') . ' °C';
+        $direct = $this->formatNumericWithUnit($directValue, ' C');
+        if ($direct !== '-') {
+            return $direct;
         }
 
         $targets = $params['targets'] ?? null;
         if (is_array($targets) && !empty($targets)) {
             $first = $targets[0] ?? null;
             if (is_array($first)) {
-                $low = $first['targetLow'] ?? null;
-                $high = $first['targetHigh'] ?? null;
-
-                if (is_numeric($low) && is_numeric($high)) {
-                    return sprintf(
-                        '%s - %s °C',
-                        rtrim(rtrim(number_format((float) $low, 1, '.', ''), '0'), '.'),
-                        rtrim(rtrim(number_format((float) $high, 1, '.', ''), '0'), '.')
-                    );
+                $range = $this->formatTargetRange($first);
+                if ($range !== '-') {
+                    return $range;
                 }
             }
         }
@@ -166,41 +158,401 @@ class EwelinkDeviceDataFormatter
 
     /**
      * @param array<string, mixed> $params
+     * @return array{summary:string, lines:array<int, string>}
      */
-    private function resolveSchedule(array $params): string
+    private function resolveSchedule(array $params): array
     {
+        $lines = [];
+
         $timers = $params['timers'] ?? null;
         if (!is_array($timers) || $timers === []) {
             $timers = $params['schedules'] ?? null;
         }
 
-        if (!is_array($timers) || $timers === []) {
+        if (is_array($timers)) {
+            foreach ($timers as $timer) {
+                if (!is_array($timer)) {
+                    continue;
+                }
+
+                $line = $this->formatTimerLine($timer);
+                if ($line !== null) {
+                    $lines[] = $line;
+                }
+            }
+        }
+
+        foreach ($this->resolveThermostatAutomationLines($params) as $line) {
+            $lines[] = $line;
+        }
+
+        if ($lines === []) {
+            return [
+                'summary' => '-',
+                'lines' => [],
+            ];
+        }
+
+        $summaryLines = array_slice($lines, 0, 2);
+        $summary = implode(' | ', $summaryLines);
+        if (count($lines) > 2) {
+            $summary .= sprintf(' (+%d)', count($lines) - 2);
+        }
+
+        return [
+            'summary' => $summary,
+            'lines' => $lines,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $timer
+     */
+    private function formatTimerLine(array $timer): ?string
+    {
+        $type = strtolower((string) ($timer['coolkit_timer_type'] ?? $timer['type'] ?? 'timer'));
+        $at = trim((string) ($timer['at'] ?? ''));
+        $enabled = !array_key_exists('enabled', $timer) || (bool) $timer['enabled'];
+
+        $prefix = $enabled ? '' : '[OFF] ';
+
+        if ($type === 'repeat') {
+            $timeAndDays = $this->formatRepeatAt($at);
+            $action = $this->formatTimerAction($timer);
+
+            return $prefix . trim(sprintf('Powtarzaj: %s -> %s', $timeAndDays, $action));
+        }
+
+        if ($type === 'once') {
+            $when = $this->formatOnceAt($at);
+            $action = $this->formatTimerAction($timer);
+
+            return $prefix . trim(sprintf('Jednorazowo: %s -> %s', $when, $action));
+        }
+
+        if ($type === 'duration') {
+            $action = $this->formatDurationAction($timer);
+            $start = $this->formatDurationAt($at);
+
+            return $prefix . trim(sprintf('Petla: %s -> %s', $start, $action));
+        }
+
+        $action = $this->formatTimerAction($timer);
+
+        return $prefix . trim(sprintf('%s: %s -> %s', $type, $at !== '' ? $at : '-', $action));
+    }
+
+    /**
+     * @param array<string, mixed> $timer
+     */
+    private function formatTimerAction(array $timer): string
+    {
+        $do = $timer['do'] ?? null;
+        if (is_array($do)) {
+            return $this->formatSwitchActionFromParams($do);
+        }
+
+        return '-';
+    }
+
+    /**
+     * @param array<string, mixed> $timer
+     */
+    private function formatDurationAction(array $timer): string
+    {
+        $startDo = is_array($timer['startDo'] ?? null) ? $timer['startDo'] : [];
+        $endDo = is_array($timer['endDo'] ?? null) ? $timer['endDo'] : [];
+
+        $start = $this->formatSwitchActionFromParams($startDo);
+        $end = $this->formatSwitchActionFromParams($endDo);
+
+        if ($start === '-' && $end === '-') {
             return '-';
         }
 
-        $summaries = [];
-        foreach (array_slice($timers, 0, 2) as $timer) {
-            if (!is_array($timer)) {
+        return sprintf('start %s / end %s', $start, $end);
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<int, string>
+     */
+    private function resolveThermostatAutomationLines(array $params): array
+    {
+        $lines = [];
+
+        $targets = $params['targets'] ?? null;
+        if (is_array($targets)) {
+            foreach ($targets as $index => $target) {
+                if (!is_array($target)) {
+                    continue;
+                }
+
+                $parts = [];
+                $range = $this->formatTargetRange($target);
+                if ($range !== '-') {
+                    $parts[] = 'zakres ' . $range;
+                }
+
+                $reaction = trim((string) ($target['reaction'] ?? $params['reaction'] ?? ''));
+                if ($reaction !== '') {
+                    $parts[] = 'reakcja ' . $reaction;
+                }
+
+                $switch = trim((string) ($target['switch'] ?? ''));
+                if ($switch !== '') {
+                    $parts[] = 'switch ' . $switch;
+                }
+
+                if ($parts !== []) {
+                    $lines[] = sprintf('Termostat #%d: %s', $index + 1, implode(', ', $parts));
+                }
+            }
+        }
+
+        $workMode = trim((string) ($params['workMode'] ?? $params['workmode'] ?? ''));
+        if ($workMode !== '') {
+            $lines[] = 'Tryb pracy: ' . $workMode;
+        }
+
+        $workState = trim((string) ($params['workState'] ?? $params['workstate'] ?? ''));
+        if ($workState !== '') {
+            $lines[] = 'Stan pracy: ' . $workState;
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @param array<string, mixed> $target
+     */
+    private function formatTargetRange(array $target): string
+    {
+        $low = $target['targetLow'] ?? $target['low'] ?? null;
+        $high = $target['targetHigh'] ?? $target['high'] ?? null;
+
+        if ($this->isNumericValue($low) && $this->isNumericValue($high)) {
+            return sprintf('%s-%s C', $this->formatFloat((float) $low), $this->formatFloat((float) $high));
+        }
+
+        if ($this->isNumericValue($low)) {
+            return sprintf('>= %s C', $this->formatFloat((float) $low));
+        }
+
+        if ($this->isNumericValue($high)) {
+            return sprintf('<= %s C', $this->formatFloat((float) $high));
+        }
+
+        return '-';
+    }
+
+    private function formatRepeatAt(string $at): string
+    {
+        $parts = preg_split('/\s+/', trim($at));
+        if (!is_array($parts) || count($parts) < 5) {
+            return $at !== '' ? $at : '-';
+        }
+
+        $minute = $parts[0];
+        $hour = $parts[1];
+        $days = $parts[4];
+
+        $time = $this->formatHourMinute($hour, $minute);
+        $dayLabel = $this->formatCronDays($days);
+
+        return trim($dayLabel . ' ' . $time);
+    }
+
+    private function formatOnceAt(string $at): string
+    {
+        if ($at === '') {
+            return '-';
+        }
+
+        $ts = strtotime($at);
+
+        return $ts === false ? $at : date('Y-m-d H:i', $ts);
+    }
+
+    private function formatDurationAt(string $at): string
+    {
+        $parts = preg_split('/\s+/', trim($at));
+        if (!is_array($parts) || $parts === []) {
+            return '-';
+        }
+
+        $startTs = strtotime((string) $parts[0]);
+        $start = $startTs === false ? (string) $parts[0] : date('Y-m-d H:i', $startTs);
+
+        $firstDelay = isset($parts[1]) && is_numeric($parts[1]) ? (int) $parts[1] : null;
+        $secondDelay = isset($parts[2]) && is_numeric($parts[2]) ? (int) $parts[2] : null;
+
+        if ($firstDelay === null && $secondDelay === null) {
+            return $start;
+        }
+
+        return sprintf(
+            '%s (po %s min / %s min)',
+            $start,
+            $firstDelay !== null ? $firstDelay : '-',
+            $secondDelay !== null ? $secondDelay : '-'
+        );
+    }
+
+    private function formatHourMinute(string $hour, string $minute): string
+    {
+        if (!is_numeric($hour) || !is_numeric($minute)) {
+            return trim($hour . ':' . $minute, ':');
+        }
+
+        return sprintf('%02d:%02d', (int) $hour, (int) $minute);
+    }
+
+    private function formatCronDays(string $days): string
+    {
+        $value = trim($days);
+        if ($value === '' || $value === '*') {
+            return 'codziennie';
+        }
+
+        $dayMap = [
+            0 => 'nd',
+            1 => 'pn',
+            2 => 'wt',
+            3 => 'sr',
+            4 => 'cz',
+            5 => 'pt',
+            6 => 'sb',
+        ];
+
+        $dayNumbers = [];
+        foreach (explode(',', $value) as $chunk) {
+            $chunk = trim($chunk);
+            if ($chunk === '' || !is_numeric($chunk)) {
+                return $value;
+            }
+
+            $num = (int) $chunk;
+            if ($num === 7) {
+                $num = 0;
+            }
+
+            if ($num < 0 || $num > 6) {
+                return $value;
+            }
+
+            $dayNumbers[] = $num;
+        }
+
+        $dayNumbers = array_values(array_unique($dayNumbers));
+        sort($dayNumbers);
+
+        if ($dayNumbers === [0, 1, 2, 3, 4, 5, 6]) {
+            return 'codziennie';
+        }
+
+        if ($dayNumbers === [1, 2, 3, 4, 5]) {
+            return 'pn-pt';
+        }
+
+        if ($dayNumbers === [0, 6]) {
+            return 'weekend';
+        }
+
+        $labels = [];
+        foreach ($dayNumbers as $day) {
+            $labels[] = $dayMap[$day] ?? (string) $day;
+        }
+
+        return implode(',', $labels);
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<int, string>
+     */
+    private function extractSwitchStates(array $params): array
+    {
+        if (!is_array($params['switches'] ?? null)) {
+            return [];
+        }
+
+        $states = [];
+
+        foreach ($params['switches'] as $index => $switchData) {
+            if (!is_array($switchData)) {
                 continue;
             }
 
-            $type = (string) ($timer['coolkit_timer_type'] ?? $timer['type'] ?? 'timer');
-            $at = (string) ($timer['at'] ?? '');
-            $switchState = (string) ($timer['do']['switch'] ?? $timer['startDo']['switch'] ?? '');
-
-            $piece = trim(sprintf('%s %s %s', $type, $at, $switchState));
-            if ($piece !== '') {
-                $summaries[] = $piece;
+            $state = trim((string) ($switchData['switch'] ?? ''));
+            if ($state === '') {
+                continue;
             }
+
+            $channel = isset($switchData['outlet']) && is_numeric($switchData['outlet'])
+                ? ((int) $switchData['outlet']) + 1
+                : ((int) $index) + 1;
+
+            $states[$channel] = $state;
         }
 
-        if (empty($summaries)) {
-            return sprintf('%d wpis(y)', count($timers));
+        ksort($states);
+
+        return $states;
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     */
+    private function formatSwitchActionFromParams(array $params): string
+    {
+        $single = trim((string) ($params['switch'] ?? ''));
+        if ($single !== '') {
+            return strtoupper($single);
         }
 
-        $suffix = count($timers) > 2 ? ' ...' : '';
+        if (!is_array($params['switches'] ?? null)) {
+            return '-';
+        }
 
-        return implode(' | ', $summaries) . $suffix;
+        $parts = [];
+        foreach ($params['switches'] as $index => $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $state = trim((string) ($item['switch'] ?? ''));
+            if ($state === '') {
+                continue;
+            }
+
+            $channel = isset($item['outlet']) && is_numeric($item['outlet'])
+                ? ((int) $item['outlet']) + 1
+                : ((int) $index) + 1;
+
+            $parts[] = sprintf('ch%s:%s', $channel, strtoupper($state));
+        }
+
+        return $parts === [] ? '-' : implode(', ', $parts);
+    }
+
+    private function formatNumericWithUnit(mixed $value, string $unit): string
+    {
+        if (!$this->isNumericValue($value)) {
+            return '-';
+        }
+
+        return $this->formatFloat((float) $value) . $unit;
+    }
+
+    private function formatFloat(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.');
+    }
+
+    private function isNumericValue(mixed $value): bool
+    {
+        return is_numeric($value) || (is_string($value) && trim($value) !== '' && is_numeric($value));
     }
 
     /**
