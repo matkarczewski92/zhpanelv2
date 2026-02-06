@@ -12,10 +12,16 @@ use App\Models\SystemConfig;
 use App\Models\Feed;
 use App\Models\FinanceCategory;
 use App\Models\ColorGroup;
+use App\Models\EwelinkDevice;
+use App\Services\Ewelink\EwelinkDeviceDataFormatter;
 use App\ViewModels\Admin\AdminSettingsViewModel;
 
 class AdminSettingsService
 {
+    public function __construct(private readonly EwelinkDeviceDataFormatter $ewelinkDataFormatter)
+    {
+    }
+
     public function getViewModel(?string $tab = null): AdminSettingsViewModel
     {
         $categories = AnimalCategory::orderBy('id')->get();
@@ -30,6 +36,15 @@ class AdminSettingsService
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
+        $ewelinkDevices = EwelinkDevice::query()
+            ->orderBy('id')
+            ->get()
+            ->map(function (EwelinkDevice $device): array {
+                return [
+                    'device' => $device,
+                    'snapshot' => $this->ewelinkDataFormatter->formatForDevice($device),
+                ];
+            });
         $animalsWithoutGenotypes = \App\Models\Animal::query()
             ->whereDoesntHave('genotypes')
             ->orderBy('id')
@@ -46,6 +61,7 @@ class AdminSettingsService
             feeds: $feeds,
             financeCategories: $financeCategories,
             colorGroups: $colorGroups,
+            ewelinkDevices: $ewelinkDevices,
             animalsWithoutGenotypes: $animalsWithoutGenotypes
         );
     }

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\Settings\FeedController;
 use App\Http\Controllers\Admin\Settings\FinanceCategoryController;
 use App\Http\Controllers\Admin\Settings\ColorGroupController;
 use App\Http\Controllers\Admin\Settings\GeneticsGeneratorController;
+use App\Http\Controllers\Admin\Settings\EwelinkDeviceController;
 
 Route::get('/settings', AdminSettingsController::class)->name('settings.index');
 
@@ -68,3 +69,9 @@ Route::delete('/settings/color-groups/{colorGroup}', [ColorGroupController::clas
 // genetics generator
 Route::post('/settings/genetics-generator/generate', [GeneticsGeneratorController::class, 'generate'])->name('settings.genetics-generator.generate');
 Route::post('/settings/genetics-generator/store', [GeneticsGeneratorController::class, 'store'])->name('settings.genetics-generator.store');
+
+// ewelink devices
+Route::post('/settings/ewelink-devices', [EwelinkDeviceController::class, 'store'])->name('settings.ewelink-devices.store');
+Route::patch('/settings/ewelink-devices/{device}', [EwelinkDeviceController::class, 'update'])->name('settings.ewelink-devices.update');
+Route::delete('/settings/ewelink-devices/{device}', [EwelinkDeviceController::class, 'destroy'])->name('settings.ewelink-devices.destroy');
+Route::post('/settings/ewelink-devices/sync', [EwelinkDeviceController::class, 'sync'])->name('settings.ewelink-devices.sync');

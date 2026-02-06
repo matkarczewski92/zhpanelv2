@@ -15,6 +15,7 @@ class AdminSettingsViewModel
         public readonly mixed $feeds,
         public readonly mixed $financeCategories,
         public readonly mixed $colorGroups,
+        public readonly mixed $ewelinkDevices,
         public readonly mixed $animalsWithoutGenotypes
     ) {
     }

@@ -21,6 +21,7 @@
             'feeds' => 'Karma',
             'finance-categories' => 'Kategorie finansowe',
             'color-groups' => 'Grupy kolorystyczne',
+            'ewelink-devices' => 'eWeLink: Urządzenia',
             'genetics-generator' => 'Generuj genetykę',
         ]; @endphp
         @foreach($tabs as $key => $label)
@@ -40,6 +41,7 @@
         @include('admin.settings.tabs.feeds', ['vm' => $vm])
         @include('admin.settings.tabs.finance-categories', ['vm' => $vm])
         @include('admin.settings.tabs.color-groups', ['vm' => $vm])
+        @include('admin.settings.tabs.ewelink-devices', ['vm' => $vm])
         @include('admin.settings.tabs.genetics-generator', ['vm' => $vm, 'generatedRows' => $generatedRows ?? [], 'selectedAnimalIds' => $selectedAnimalIds ?? null])
     </div>
 @endsection

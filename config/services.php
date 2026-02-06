@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    'ewelink' => [
+        'region' => env('EWELINK_CLOUD_REGION', 'eu'),
+        'oauth_url' => env('EWELINK_CLOUD_OAUTH_URL', 'https://c2ccdn.coolkit.cc/oauth/index.html'),
+        'dispatch_url' => env('EWELINK_CLOUD_BASE_URL'),
+        'redirect_url' => env('EWELINK_CLOUD_REDIRECT_URL'),
+        'app_id' => env('EWELINK_CLOUD_APP_ID'),
+        'app_secret' => env('EWELINK_CLOUD_APP_SECRET'),
+        'oauth_state' => env('EWELINK_CLOUD_OAUTH_STATE'),
+        'api_domains' => [
+            'cn' => env('EWELINK_CLOUD_API_DOMAIN_CN', 'cn-apia.coolkit.cn'),
+            'as' => env('EWELINK_CLOUD_API_DOMAIN_AS', 'as-apia.coolkit.cc'),
+            'us' => env('EWELINK_CLOUD_API_DOMAIN_US', 'us-apia.coolkit.cc'),
+            'eu' => env('EWELINK_CLOUD_API_DOMAIN_EU', 'eu-apia.coolkit.cc'),
+            'au' => env('EWELINK_CLOUD_API_DOMAIN_AU', 'au-apia.coolkit.info'),
+            'test' => env('EWELINK_CLOUD_API_DOMAIN_TEST', 'test-apia.coolkit.cn'),
+        ],
+    ],
+
 ];
