@@ -15,6 +15,8 @@ class DevicesIndexRequest extends FormRequest
     {
         $this->merge([
             'device' => $this->normalizeText($this->input('device')),
+            'code' => $this->normalizeText($this->input('code')),
+            'state' => $this->normalizeText($this->input('state')),
         ]);
     }
 
@@ -22,6 +24,8 @@ class DevicesIndexRequest extends FormRequest
     {
         return [
             'device' => ['nullable', 'string', 'max:100'],
+            'code' => ['nullable', 'string', 'max:500'],
+            'state' => ['nullable', 'string', 'max:100'],
         ];
     }
 

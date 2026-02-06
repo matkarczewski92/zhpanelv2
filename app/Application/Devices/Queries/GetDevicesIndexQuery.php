@@ -3,12 +3,13 @@
 namespace App\Application\Devices\Queries;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class GetDevicesIndexQuery
 {
     /**
-     * @param array{device?:string|null} $filters
+     * @param array{device?:string|null,code?:string|null,state?:string|null} $filters
      * @return array{
      *   selected_device:string,
      *   devices:array<int, string>,
@@ -63,6 +64,7 @@ class GetDevicesIndexQuery
                 'cloud_base_candidates' => [],
                 'cloud_base_selected' => null,
                 'cloud_oauth_authorize_url' => null,
+                'cloud_oauth_callback' => null,
                 'cloud_login_attempts' => [],
                 'cloud_login' => null,
                 'cloud_devices' => null,
@@ -85,17 +87,29 @@ class GetDevicesIndexQuery
         $appId = trim((string) ($cloud['app_id'] ?? ''));
         $appSecret = trim((string) ($cloud['app_secret'] ?? ''));
         $email = trim((string) ($cloud['email'] ?? ''));
-        $password = (string) ($cloud['password'] ?? '');
-        $areaCode = trim((string) ($cloud['area_code'] ?? '+48'));
         $region = trim((string) ($cloud['region'] ?? 'eu'));
         $manualBaseUrl = trim((string) ($cloud['base_url'] ?? ''));
         $oauthCode = trim((string) ($cloud['oauth_code'] ?? ''));
         $redirectUrl = trim((string) ($cloud['redirect_url'] ?? ''));
         $oauthState = trim((string) ($cloud['oauth_state'] ?? 'zhpanel'));
         $presetAccessToken = trim((string) ($cloud['access_token'] ?? ''));
+        $runtimeOauthCode = trim((string) ($filters['code'] ?? ''));
+        $runtimeOauthState = trim((string) ($filters['state'] ?? ''));
 
-        if (!$result['cloud']['complete']) {
-            $result['error'] = 'Brak pelnej konfiguracji cloud API (APP_ID/APP_SECRET/EMAIL/PASSWORD).';
+        if ($runtimeOauthCode !== '') {
+            $oauthCode = $runtimeOauthCode;
+        }
+        if ($runtimeOauthState !== '') {
+            $oauthState = $runtimeOauthState;
+        }
+
+        $cachedAccessToken = $this->readCachedAccessToken($appId, $email);
+        if ($presetAccessToken === '' && $cachedAccessToken !== '') {
+            $presetAccessToken = $cachedAccessToken;
+        }
+
+        if (!$result['cloud']['app_id_configured'] || !$result['cloud']['app_secret_configured']) {
+            $result['error'] = 'Brak konfiguracji Cloud API (APP_ID/APP_SECRET).';
             return $result;
         }
 
@@ -103,8 +117,12 @@ class GetDevicesIndexQuery
             $baseCandidates = $this->buildCloudBaseCandidates($region, $appId, $manualBaseUrl, $result);
             $result['payloads']['cloud_base_candidates'] = $baseCandidates;
             $result['payloads']['cloud_oauth_authorize_url'] = $this->buildOauthAuthorizeUrl($appId, $redirectUrl, $oauthState);
+            $result['payloads']['cloud_oauth_callback'] = [
+                'code_present' => $runtimeOauthCode !== '',
+                'state' => $runtimeOauthState !== '' ? $runtimeOauthState : null,
+            ];
 
-            [$baseUrl, $tokenResponse, $tokenData, $accessToken] = $this->tryCloudAccessToken(
+            [$baseUrl, $_tokenResponse, $tokenData, $accessToken] = $this->tryCloudAccessToken(
                 $baseCandidates,
                 $appId,
                 $appSecret,
@@ -112,9 +130,6 @@ class GetDevicesIndexQuery
                 $oauthCode,
                 $redirectUrl,
                 $oauthState,
-                $email,
-                $password,
-                $areaCode,
                 $result
             );
             $result['payloads']['cloud_base_selected'] = $baseUrl;
@@ -124,13 +139,22 @@ class GetDevicesIndexQuery
                 $msg = (string) ($tokenData['msg'] ?? '');
                 if (str_contains(strtolower($msg), 'path of request is not allowed')) {
                     $result['error'] = 'APPID jest typu OAuth2 i nie ma dostepu do /v2/user/login. '
-                        . 'Modul uzywa teraz flow /v2/user/oauth/code -> /v2/user/oauth/token. '
+                        . 'Modul uzywa flow /v2/user/oauth/token. '
                         . 'Sprawdz uprawnienia API dla APPID.';
+                    return $result;
+                }
+
+                if ($oauthCode === '' && $presetAccessToken === '') {
+                    $result['error'] = 'Brak tokena. Otworz URL autoryzacji, zaloguj sie i wroc na /panel/urzadzenia z parametrem ?code=...';
                     return $result;
                 }
 
                 $result['error'] = 'Pobranie tokena Cloud API nie powiodlo sie.';
                 return $result;
+            }
+
+            if ($presetAccessToken === '') {
+                $this->storeCachedAccessToken($appId, $email, $accessToken, $tokenData);
             }
 
             $authHeaders = [
@@ -307,9 +331,6 @@ class GetDevicesIndexQuery
         string $oauthCode,
         string $redirectUrl,
         string $oauthState,
-        string $email,
-        string $password,
-        string $areaCode,
         array &$result
     ): array {
         if ($presetAccessToken !== '') {
@@ -349,7 +370,6 @@ class GetDevicesIndexQuery
                     $appSecret,
                     $oauthCode,
                     $redirectUrl,
-                    $oauthState,
                     $oauthState
                 );
 
@@ -441,6 +461,45 @@ class GetDevicesIndexQuery
             ?? $payload['accessToken']
             ?? ''
         ));
+    }
+
+    private function readCachedAccessToken(string $appId, string $email): string
+    {
+        $cached = Cache::get($this->accessTokenCacheKey($appId, $email));
+        if (!is_array($cached)) {
+            return '';
+        }
+
+        return trim((string) ($cached['token'] ?? ''));
+    }
+
+    /**
+     * @param array<string, mixed> $tokenPayload
+     */
+    private function storeCachedAccessToken(string $appId, string $email, string $accessToken, array $tokenPayload): void
+    {
+        if ($accessToken === '') {
+            return;
+        }
+
+        $expiresSeconds = $this->findFirstNumericByKeys(
+            [$tokenPayload],
+            ['expiresIn', 'expires_in', 'expireIn', 'expires', 'expiredIn']
+        );
+        $ttlSeconds = $expiresSeconds !== null && $expiresSeconds > 120
+            ? ((int) round($expiresSeconds) - 60)
+            : 60 * 60 * 24;
+
+        Cache::put(
+            $this->accessTokenCacheKey($appId, $email),
+            ['token' => $accessToken],
+            now()->addSeconds(max(300, $ttlSeconds))
+        );
+    }
+
+    private function accessTokenCacheKey(string $appId, string $email): string
+    {
+        return 'ewelink_cloud_access_token_' . sha1(strtolower($appId . '|' . $email));
     }
 
     private function buildOauthAuthorizeUrl(string $appId, string $redirectUrl, string $state): string
