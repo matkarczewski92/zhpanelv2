@@ -35,4 +35,21 @@ return [
         ],
     ],
 
+    'ewelink_cloud' => [
+        'region' => env('EWELINK_CLOUD_REGION', 'eu'),
+        'base_url' => env('EWELINK_CLOUD_BASE_URL', ''),
+        'device_serials' => array_values(array_filter(array_map(
+            static fn (string $value): string => trim($value),
+            explode(',', (string) env('EWELINK_CLOUD_DEVICE_SERIALS', '10024ff918'))
+        ))),
+        'app_id' => env('EWELINK_CLOUD_APP_ID', ''),
+        'app_secret' => env('EWELINK_CLOUD_APP_SECRET', ''),
+        'email' => env('EWELINK_CLOUD_EMAIL', ''),
+        'password' => env('EWELINK_CLOUD_PASSWORD', ''),
+        'oauth_code' => env('EWELINK_CLOUD_OAUTH_CODE', ''),
+        'redirect_url' => env('EWELINK_CLOUD_REDIRECT_URL', ''),
+        'access_token' => env('EWELINK_CLOUD_ACCESS_TOKEN', ''),
+        'area_code' => env('EWELINK_CLOUD_AREA_CODE', '+48'),
+    ],
+
 ];
