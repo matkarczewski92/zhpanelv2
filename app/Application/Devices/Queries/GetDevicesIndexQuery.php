@@ -116,7 +116,7 @@ class GetDevicesIndexQuery
         try {
             $baseCandidates = $this->buildCloudBaseCandidates($region, $appId, $manualBaseUrl, $result);
             $result['payloads']['cloud_base_candidates'] = $baseCandidates;
-            $result['payloads']['cloud_oauth_authorize_url'] = $this->buildOauthAuthorizeUrl($appId, $redirectUrl, $oauthState);
+            $result['payloads']['cloud_oauth_authorize_url'] = $this->buildOauthAuthorizeUrl($appId, $redirectUrl, $oauthState, $region);
             $result['payloads']['cloud_oauth_callback'] = [
                 'code_present' => $runtimeOauthCode !== '',
                 'state' => $runtimeOauthState !== '' ? $runtimeOauthState : null,
@@ -502,11 +502,18 @@ class GetDevicesIndexQuery
         return 'ewelink_cloud_access_token_' . sha1(strtolower($appId . '|' . $email));
     }
 
-    private function buildOauthAuthorizeUrl(string $appId, string $redirectUrl, string $state): string
+    private function buildOauthAuthorizeUrl(string $appId, string $redirectUrl, string $state, string $region): string
     {
         $base = 'https://c2ccdn.coolkit.cc/oauth/index.html';
+        $normalizedRegion = strtolower(trim($region));
+        if (!in_array($normalizedRegion, ['eu', 'us', 'as', 'cn'], true)) {
+            $normalizedRegion = 'eu';
+        }
+
         $query = http_build_query([
             'clientId' => $appId,
+            'grantType' => 'authorization_code',
+            'region' => $normalizedRegion,
             'redirectUrl' => $redirectUrl,
             'state' => $state,
         ]);
