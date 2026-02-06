@@ -12,6 +12,81 @@ class EwelinkCloudClient
 {
     private const TOKEN_CACHE_KEY = 'ewelink.oauth.tokens';
 
+    public function hasCredentialAuthConfig(): bool
+    {
+        return trim((string) env('EWELINK_CLOUD_EMAIL', '')) !== ''
+            && trim((string) env('EWELINK_CLOUD_PASSWORD', '')) !== '';
+    }
+
+    /**
+     * Backend OAuth flow without browser redirect.
+     *
+     * @return array{
+     *     region:string,
+     *     access_token:string,
+     *     refresh_token:string,
+     *     access_token_expires_at:int,
+     *     refresh_token_expires_at:int
+     * }
+     */
+    public function authorizeWithCredentials(?string $state = null): array
+    {
+        $email = trim((string) env('EWELINK_CLOUD_EMAIL', ''));
+        $password = (string) env('EWELINK_CLOUD_PASSWORD', '');
+        $areaCode = trim((string) env('EWELINK_CLOUD_AREA_CODE', ''));
+
+        if ($email === '' || $password === '') {
+            throw new RuntimeException('Brak konfiguracji EWELINK_CLOUD_EMAIL lub EWELINK_CLOUD_PASSWORD.');
+        }
+
+        $seq = (string) (int) floor(microtime(true) * 1000);
+        $nonce = $this->nonce();
+        $sign = $this->hmacBase64($this->appId() . '_' . $seq);
+        $resolvedState = trim((string) ($state ?: config('services.ewelink.oauth_state', 'panel')));
+
+        $payload = [
+            'authorization' => 'Sign ' . $sign,
+            'email' => $email,
+            'password' => $password,
+            'seq' => $seq,
+            'clientId' => $this->appId(),
+            'state' => $resolvedState,
+            'grantType' => 'authorization_code',
+            'redirectUrl' => $this->redirectUrl(),
+            'nonce' => $nonce,
+        ];
+
+        if ($areaCode !== '') {
+            $payload['countryCode'] = $areaCode;
+        }
+
+        $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($body === false) {
+            throw new RuntimeException('Nie udało się przygotować żądania kodu OAuth eWeLink.');
+        }
+
+        $response = Http::timeout(20)
+            ->withHeaders([
+                'X-CK-Appid' => $this->appId(),
+                'X-CK-Nonce' => $nonce,
+                'X-CK-Seq' => $seq,
+                'Authorization' => 'Sign ' . $sign,
+                'Content-Type' => 'application/json; charset=utf-8',
+            ])
+            ->withBody($body, 'application/json')
+            ->send('POST', 'https://apia.coolkit.cn/v2/user/oauth/code');
+
+        $data = $this->assertSuccess($response, 'Nie udało się uzyskać kodu OAuth z eWeLink.');
+        $code = trim((string) ($data['code'] ?? ''));
+        $region = trim((string) ($data['region'] ?? $data['regin'] ?? config('services.ewelink.region', 'eu')));
+
+        if ($code === '') {
+            throw new RuntimeException('eWeLink nie zwrócił kodu autoryzacyjnego.');
+        }
+
+        return $this->exchangeCodeForToken($code, $region);
+    }
+
     public function buildAuthorizationUrl(string $state): string
     {
         $appId = $this->appId();

@@ -22,8 +22,12 @@ class DevicesController extends Controller
     ) {
     }
 
-    public function index(): View
+    public function index(Request $request): View|RedirectResponse
     {
+        if (trim((string) $request->query('code', '')) !== '') {
+            return $this->handleOAuthCallback($request);
+        }
+
         $rows = EwelinkDevice::query()
             ->orderBy('id')
             ->get()
@@ -48,15 +52,45 @@ class DevicesController extends Controller
 
     public function authorize(Request $request): RedirectResponse
     {
+        $flow = trim((string) $request->query('flow', ''));
+
         try {
             $configuredState = trim((string) config('services.ewelink.oauth_state', ''));
             $state = $configuredState !== '' ? $configuredState : Str::random(32);
             $request->session()->put('ewelink.oauth_state', $state);
+        } catch (RuntimeException $exception) {
+            return redirect()->route('panel.devices.index')
+                ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
+        }
 
+        if ($flow !== 'oauth' && $this->cloudClient->hasCredentialAuthConfig()) {
+            try {
+                $this->cloudClient->authorizeWithCredentials($state);
+                $result = $this->syncService->syncAll();
+
+                return redirect()
+                    ->route('panel.devices.index')
+                    ->with('toast', [
+                        'type' => 'success',
+                        'message' => sprintf(
+                            'Połączono konto eWeLink (backend). Zaktualizowano: %d/%d.',
+                            $result['updated'],
+                            $result['total']
+                        ),
+                    ]);
+            } catch (RuntimeException $exception) {
+                return redirect()->route('panel.devices.index')
+                    ->with('toast', [
+                        'type' => 'error',
+                        'message' => 'Backend OAuth nie powiódł się: ' . $exception->getMessage(),
+                    ]);
+            }
+        }
+
+        try {
             return redirect()->away($this->cloudClient->buildAuthorizationUrl($state));
         } catch (RuntimeException $exception) {
-            return redirect()
-                ->route('panel.devices.index')
+            return redirect()->route('panel.devices.index')
                 ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
         }
     }
@@ -98,8 +132,15 @@ class DevicesController extends Controller
 
         $returnedState = trim((string) $request->query('state', ''));
         $sessionState = trim((string) $request->session()->pull('ewelink.oauth_state', ''));
+        $configuredState = trim((string) config('services.ewelink.oauth_state', ''));
 
-        if ($sessionState === '' || $returnedState !== $sessionState) {
+        if ($sessionState !== '' && $returnedState !== $sessionState) {
+            return redirect()
+                ->route('panel.devices.index')
+                ->with('toast', ['type' => 'error', 'message' => 'Niepoprawny parametr state w odpowiedzi OAuth eWeLink.']);
+        }
+
+        if ($sessionState === '' && $configuredState !== '' && $returnedState !== $configuredState) {
             return redirect()
                 ->route('panel.devices.index')
                 ->with('toast', ['type' => 'error', 'message' => 'Niepoprawny parametr state w odpowiedzi OAuth eWeLink.']);
