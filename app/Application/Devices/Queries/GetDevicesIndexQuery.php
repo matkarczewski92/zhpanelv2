@@ -116,7 +116,13 @@ class GetDevicesIndexQuery
         try {
             $baseCandidates = $this->buildCloudBaseCandidates($region, $appId, $manualBaseUrl, $result);
             $result['payloads']['cloud_base_candidates'] = $baseCandidates;
-            $result['payloads']['cloud_oauth_authorize_url'] = $this->buildOauthAuthorizeUrl($appId, $redirectUrl, $oauthState, $region);
+            $result['payloads']['cloud_oauth_authorize_url'] = $this->buildOauthAuthorizeUrl(
+                $appId,
+                $appSecret,
+                $redirectUrl,
+                $oauthState,
+                $region
+            );
             $result['payloads']['cloud_oauth_callback'] = [
                 'code_present' => $runtimeOauthCode !== '',
                 'state' => $runtimeOauthState !== '' ? $runtimeOauthState : null,
@@ -431,7 +437,7 @@ class GetDevicesIndexQuery
      */
     private function signedPost(string $url, string $appId, string $appSecret, array $body): mixed
     {
-        $timestamp = (string) ((int) round(microtime(true) * 1000));
+        $seq = (string) ((int) round(microtime(true) * 1000));
         $nonce = Str::lower(Str::random(8));
         $payload = (string) json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $signature = base64_encode(hash_hmac('sha256', $payload, $appSecret, true));
@@ -442,7 +448,8 @@ class GetDevicesIndexQuery
                 'Authorization' => 'Sign ' . $signature,
                 'X-CK-Appid' => $appId,
                 'X-CK-Nonce' => $nonce,
-                'X-CK-Timestamp' => $timestamp,
+                'X-CK-Seq' => $seq,
+                'X-CK-Timestamp' => $seq,
             ])
             ->post($url, $body);
     }
@@ -502,16 +509,29 @@ class GetDevicesIndexQuery
         return 'ewelink_cloud_access_token_' . sha1(strtolower($appId . '|' . $email));
     }
 
-    private function buildOauthAuthorizeUrl(string $appId, string $redirectUrl, string $state, string $region): string
+    private function buildOauthAuthorizeUrl(
+        string $appId,
+        string $appSecret,
+        string $redirectUrl,
+        string $state,
+        string $region
+    ): string
     {
         $base = 'https://c2ccdn.coolkit.cc/oauth/index.html';
         $normalizedRegion = strtolower(trim($region));
         if (!in_array($normalizedRegion, ['eu', 'us', 'as', 'cn'], true)) {
             $normalizedRegion = 'eu';
         }
+        $seq = (string) ((int) round(microtime(true) * 1000));
+        $nonce = Str::lower(Str::random(8));
+        $authPayload = $appId . '_' . $seq;
+        $authorization = base64_encode(hash_hmac('sha256', $authPayload, $appSecret, true));
 
         $query = http_build_query([
             'clientId' => $appId,
+            'seq' => $seq,
+            'nonce' => $nonce,
+            'authorization' => 'Sign ' . $authorization,
             'grantType' => 'authorization_code',
             'region' => $normalizedRegion,
             'redirectUrl' => $redirectUrl,
