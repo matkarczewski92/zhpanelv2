@@ -95,6 +95,7 @@
                     data-device-schedule
                     data-url="{{ route('panel.devices.schedule', $device) }}"
                     data-schedule="{{ $scheduleSeedBase64 }}"
+                    data-device-id="{{ $device->id }}"
                     data-device-name="{{ $device->name }}"
                     data-device-type="{{ $device->device_type }}"
                 >

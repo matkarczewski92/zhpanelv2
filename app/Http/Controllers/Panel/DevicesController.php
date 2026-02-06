@@ -94,14 +94,86 @@ class DevicesController extends Controller
         }
     }
 
+    public function toggleAllSwitches(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'state' => ['required', 'string', 'in:on,off'],
+        ]);
+
+        $state = strtolower((string) $validated['state']);
+        $switchDevices = EwelinkDevice::query()
+            ->where('device_type', 'switch')
+            ->orderBy('id')
+            ->get();
+
+        if ($switchDevices->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Brak urzadzen typu przelacznik.',
+            ], 422);
+        }
+
+        try {
+            $this->ensureAuthorized();
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'ok' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        $updated = 0;
+        $errors = [];
+
+        foreach ($switchDevices as $device) {
+            try {
+                $params = $this->buildToggleParams($device, $state);
+                $this->cloudClient->updateThingStatus($device->device_id, $params);
+                $updated++;
+            } catch (RuntimeException $exception) {
+                $errors[] = sprintf('%s: %s', $this->deviceDisplayName($device), $exception->getMessage());
+            }
+        }
+
+        if ($updated > 0) {
+            try {
+                $this->syncService->syncAll();
+            } catch (RuntimeException $exception) {
+                $errors[] = $exception->getMessage();
+            }
+        }
+
+        if ($updated === 0) {
+            return response()->json([
+                'ok' => false,
+                'message' => $errors[0] ?? 'Nie udalo sie zmienic stanu zadnego urzadzenia.',
+            ], 422);
+        }
+
+        $message = sprintf(
+            'Ustawiono stan %s dla %d/%d przelacznikow.',
+            strtoupper($state),
+            $updated,
+            $switchDevices->count()
+        );
+
+        if ($errors !== []) {
+            $message .= sprintf(' Bledy: %d.', count($errors));
+        }
+
+        return response()->json([
+            'ok' => true,
+            'partial' => $errors !== [],
+            'message' => $message,
+        ]);
+    }
+
     public function updateSchedule(Request $request, EwelinkDevice $device): JsonResponse
     {
         $validated = $request->validate([
             'schedule' => ['nullable'],
             'human_schedule' => ['nullable', 'array'],
         ]);
-
-        $deviceParamsBefore = $this->resolveDeviceParams($device);
 
         try {
             $humanSchedule = $validated['human_schedule'] ?? null;
@@ -121,24 +193,7 @@ class DevicesController extends Controller
 
         try {
             $this->ensureAuthorized();
-            $this->cloudClient->updateThingStatus($device->device_id, $scheduleParams);
-            $this->syncService->syncAll();
-
-            $fresh = EwelinkDevice::query()->find($device->id);
-            $deviceParamsAfter = $fresh ? $this->resolveDeviceParams($fresh) : [];
-
-            if ($this->scheduleWasUnexpectedlyRemoved($device, $deviceParamsBefore, $deviceParamsAfter)) {
-                $restorePayload = $this->buildScheduleRestorePayload($device, $deviceParamsBefore);
-                if ($restorePayload !== null) {
-                    $this->cloudClient->updateThingStatus($device->device_id, $restorePayload);
-                    $this->syncService->syncAll();
-                }
-
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Wykryto usuniecie harmonogramu po zapisie. Przywrocono poprzednie dane z API. Operacja anulowana.',
-                ], 422);
-            }
+            $this->updateDeviceScheduleWithSafety($device, $scheduleParams);
 
             return response()->json([
                 'ok' => true,
@@ -150,6 +205,75 @@ class DevicesController extends Controller
                 'message' => $exception->getMessage(),
             ], 422);
         }
+    }
+
+    public function updateScheduleForAll(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'device_type' => ['required', 'string', 'in:switch,thermostat'],
+            'device_ids' => ['required', 'array', 'min:1'],
+            'device_ids.*' => ['required', 'integer', 'min:1', 'distinct'],
+            'human_schedule' => ['required', 'array'],
+        ]);
+
+        $requestedType = strtolower((string) $validated['device_type']);
+        $deviceIds = array_values(array_unique(array_map('intval', $validated['device_ids'] ?? [])));
+        $devices = $this->devicesForBulkScheduleType($requestedType, $deviceIds);
+
+        if ($devices->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Brak wybranych urzadzen pasujacych do typu.',
+            ], 422);
+        }
+
+        try {
+            $this->ensureAuthorized();
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'ok' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        $updated = 0;
+        $errors = [];
+        $humanSchedule = $validated['human_schedule'];
+
+        foreach ($devices as $device) {
+            try {
+                $scheduleParams = $this->buildHumanScheduleParamsForDevice($device, $humanSchedule);
+                $this->updateDeviceScheduleWithSafety($device, $scheduleParams);
+                $updated++;
+            } catch (RuntimeException $exception) {
+                $errors[] = sprintf('%s: %s', $this->deviceDisplayName($device), $exception->getMessage());
+            }
+        }
+
+        if ($updated === 0) {
+            return response()->json([
+                'ok' => false,
+                'message' => $errors[0] ?? 'Nie udalo sie zapisac harmonogramu.',
+            ], 422);
+        }
+
+        $deviceLabel = $requestedType === 'switch' ? 'przelacznikach' : 'termostatach';
+        $message = sprintf(
+            'Zapisano harmonogram w %d/%d %s.',
+            $updated,
+            $devices->count(),
+            $deviceLabel
+        );
+
+        if ($errors !== []) {
+            $message .= sprintf(' Bledy: %d.', count($errors));
+        }
+
+        return response()->json([
+            'ok' => true,
+            'partial' => $errors !== [],
+            'message' => $message,
+        ]);
     }
 
     public function authorize(Request $request): RedirectResponse
@@ -321,6 +445,60 @@ class DevicesController extends Controller
         if (!$this->cloudClient->hasSavedToken()) {
             throw new RuntimeException('Brak autoryzacji eWeLink. Polacz konto i sprobuj ponownie.');
         }
+    }
+
+    /**
+     * @return Collection<int, EwelinkDevice>
+     */
+    private function devicesForBulkScheduleType(string $requestedType, array $ids = []): Collection
+    {
+        $query = EwelinkDevice::query()->orderBy('id');
+        if ($ids !== []) {
+            $query->whereIn('id', $ids);
+        }
+
+        if ($requestedType === 'switch') {
+            return $query->where('device_type', 'switch')->get();
+        }
+
+        return $query
+            ->whereIn('device_type', ['thermostat', 'thermostat_hygrostat'])
+            ->get();
+    }
+
+    /**
+     * @param array<string, mixed> $scheduleParams
+     */
+    private function updateDeviceScheduleWithSafety(EwelinkDevice $device, array $scheduleParams): void
+    {
+        $deviceParamsBefore = $this->resolveDeviceParams($device);
+
+        $this->cloudClient->updateThingStatus($device->device_id, $scheduleParams);
+        $this->syncService->syncAll();
+
+        $fresh = EwelinkDevice::query()->find($device->id);
+        $deviceParamsAfter = $fresh ? $this->resolveDeviceParams($fresh) : [];
+
+        if (!$this->scheduleWasUnexpectedlyRemoved($device, $deviceParamsBefore, $deviceParamsAfter)) {
+            return;
+        }
+
+        $restorePayload = $this->buildScheduleRestorePayload($device, $deviceParamsBefore);
+        if ($restorePayload !== null) {
+            $this->cloudClient->updateThingStatus($device->device_id, $restorePayload);
+            $this->syncService->syncAll();
+        }
+
+        throw new RuntimeException(
+            'Wykryto usuniecie harmonogramu po zapisie. Przywrocono poprzednie dane z API. Operacja anulowana.'
+        );
+    }
+
+    private function deviceDisplayName(EwelinkDevice $device): string
+    {
+        $name = trim((string) $device->name);
+
+        return $name !== '' ? $name : $device->device_id;
     }
 
     /**

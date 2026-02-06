@@ -25,8 +25,19 @@ class GetAnimalsIndexQuery
         $categoryId = $this->intOrNull($request->query('category_id'));
         $feedId = $this->intOrNull($request->query('feed_id'));
         $colorGroupIds = $this->normalizeIdList($request->query('color_groups', []));
-        $sort = $request->query('sort');
-        $direction = strtolower((string) $request->query('direction', 'asc'));
+        $sortMap = [
+            'id' => 'animals.id',
+            'name' => 'animals.name',
+            'sex' => 'animals.sex',
+            'weight' => 'latest_weight',
+            'feed' => 'feed_name',
+        ];
+        $sort = strtolower(trim((string) $request->query('sort', 'id')));
+        if (!array_key_exists($sort, $sortMap)) {
+            $sort = 'id';
+        }
+
+        $direction = strtolower(trim((string) $request->query('direction', 'asc')));
 
         if (!in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'asc';
@@ -109,18 +120,7 @@ class GetAnimalsIndexQuery
             $query->orderBy('animals.animal_type_id');
         }
 
-        $sortMap = [
-            'id' => 'animals.id',
-            'name' => 'animals.name',
-            'weight' => 'latest_weight',
-            'feed' => 'feed_name',
-        ];
-
-        if ($sort && isset($sortMap[$sort])) {
-            $query->orderBy($sortMap[$sort], $direction);
-        } else {
-            $query->orderBy('animals.id');
-        }
+        $query->orderBy($sortMap[$sort], $direction);
 
         $paginator = $query->paginate(50);
 
@@ -262,7 +262,7 @@ class GetAnimalsIndexQuery
 
     private function buildSortLinks(Request $request, ?string $sort, string $direction): array
     {
-        $fields = ['id', 'name', 'weight', 'feed'];
+        $fields = ['id', 'name', 'sex', 'weight', 'feed'];
         $baseQuery = $request->query();
         unset($baseQuery['page']);
 

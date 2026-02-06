@@ -9,6 +9,30 @@
             <p class="text-muted mb-0">Podglad danych z eWeLink dla urzadzen skonfigurowanych w Ustawieniach portalu.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
+            <button
+                type="button"
+                class="btn btn-outline-danger btn-sm"
+                id="toggleAllSwitchesOffButton"
+                data-url="{{ route('panel.devices.toggle-all-switches') }}"
+            >
+                Wylacz oswietlenie (wszystkie)
+            </button>
+            <button
+                type="button"
+                class="btn btn-outline-success btn-sm"
+                id="toggleAllSwitchesOnButton"
+                data-url="{{ route('panel.devices.toggle-all-switches') }}"
+            >
+                Wlacz oswietlenie (wszystkie)
+            </button>
+            <button
+                type="button"
+                class="btn btn-outline-info btn-sm"
+                id="scheduleAllDevicesButton"
+                data-url="{{ route('panel.devices.schedule-all') }}"
+            >
+                Wprowadz harmonogram do wybranych
+            </button>
             <form method="POST" action="{{ route('panel.devices.refresh') }}">
                 @csrf
                 <button type="submit" class="btn btn-success btn-sm">Odswiez dane</button>
@@ -134,6 +158,112 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="bulkScheduleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header">
+                    <h5 class="modal-title">Harmonogram dla wybranych urzadzen</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+                </div>
+                <form id="bulkScheduleForm">
+                    <div class="modal-body">
+                        <div id="bulkScheduleStepType">
+                            <div class="small text-muted mb-2">Krok 1/2: wybierz typ urzadzen</div>
+                            <div class="d-flex flex-column gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="bulkScheduleDeviceType" id="bulkScheduleTypeSwitch" value="switch" checked>
+                                    <label class="form-check-label" for="bulkScheduleTypeSwitch">Przelacznik</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="bulkScheduleDeviceType" id="bulkScheduleTypeThermostat" value="thermostat">
+                                    <label class="form-check-label" for="bulkScheduleTypeThermostat">Termostat</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="bulkScheduleStepForm" class="d-none">
+                            <div class="small text-muted mb-2">Krok 2/2: uzupelnij harmonogram</div>
+                            <p class="small text-muted mb-1">
+                                Typ: <strong id="bulkScheduleSelectedType">-</strong>
+                            </p>
+                            <p class="small text-muted mb-3">
+                                Dane startowe: <strong id="bulkScheduleSeedSource">pierwsze urzadzenie danego typu</strong>
+                            </p>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted mb-1">Wybierz urzadzenia</label>
+                                <div id="bulkScheduleDevicesList" class="border border-secondary rounded p-2 d-flex flex-column gap-2"></div>
+                            </div>
+
+                            <div id="bulkSwitchScheduleSection">
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label for="bulkScheduleOnTime" class="form-label small text-muted mb-1">Godzina wlaczenia</label>
+                                        <input id="bulkScheduleOnTime" type="time" class="form-control form-control-sm bg-dark text-light">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="bulkScheduleOffTime" class="form-label small text-muted mb-1">Godzina wylaczenia</label>
+                                        <input id="bulkScheduleOffTime" type="time" class="form-control form-control-sm bg-dark text-light">
+                                    </div>
+                                </div>
+                                <label class="form-label small text-muted mb-1">Dni tygodnia</label>
+                                <div class="d-flex flex-wrap gap-2 small" id="bulkScheduleDaysGroup">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="1" id="bulkDayPn">
+                                        <label class="form-check-label" for="bulkDayPn">Pn</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="2" id="bulkDayWt">
+                                        <label class="form-check-label" for="bulkDayWt">Wt</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="3" id="bulkDaySr">
+                                        <label class="form-check-label" for="bulkDaySr">Sr</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="4" id="bulkDayCz">
+                                        <label class="form-check-label" for="bulkDayCz">Cz</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="5" id="bulkDayPt">
+                                        <label class="form-check-label" for="bulkDayPt">Pt</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="6" id="bulkDaySb">
+                                        <label class="form-check-label" for="bulkDaySb">Sb</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="0" id="bulkDayNd">
+                                        <label class="form-check-label" for="bulkDayNd">Nd</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="bulkThermostatScheduleSection" class="d-none">
+                                <div class="small text-muted mb-2">
+                                    Auto #n: dni, zakres godzin, temperatura wlaczenia i wylaczenia.
+                                </div>
+                                <div id="bulkThermostatRulesContainer" class="d-flex flex-column gap-2"></div>
+                                <button type="button" class="btn btn-outline-info btn-sm mt-2" id="addBulkThermostatRule">
+                                    Dodaj Auto
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="bulkScheduleBackButton">Wstecz</button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Anuluj</button>
+                            <button type="button" class="btn btn-info btn-sm" id="bulkScheduleNextButton">Dalej</button>
+                            <button type="submit" class="btn btn-success btn-sm d-none" id="bulkScheduleSubmitButton">Zapisz harmonogram</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -158,6 +288,29 @@
             const thermostatRulesContainer = document.getElementById('thermostatRulesContainer');
             const addThermostatRuleButton = document.getElementById('addThermostatRule');
             const scheduleSubmitButton = document.getElementById('scheduleEditorSubmit');
+            const toggleAllSwitchesOffButton = document.getElementById('toggleAllSwitchesOffButton');
+            const toggleAllSwitchesOnButton = document.getElementById('toggleAllSwitchesOnButton');
+            const scheduleAllDevicesButton = document.getElementById('scheduleAllDevicesButton');
+            const bulkScheduleUrl = scheduleAllDevicesButton?.dataset.url || '';
+            const bulkScheduleModalEl = document.getElementById('bulkScheduleModal');
+            const bulkScheduleForm = document.getElementById('bulkScheduleForm');
+            const bulkScheduleStepType = document.getElementById('bulkScheduleStepType');
+            const bulkScheduleStepForm = document.getElementById('bulkScheduleStepForm');
+            const bulkScheduleTypeSwitch = document.getElementById('bulkScheduleTypeSwitch');
+            const bulkScheduleTypeThermostat = document.getElementById('bulkScheduleTypeThermostat');
+            const bulkScheduleSelectedType = document.getElementById('bulkScheduleSelectedType');
+            const bulkScheduleSeedSource = document.getElementById('bulkScheduleSeedSource');
+            const bulkScheduleDevicesList = document.getElementById('bulkScheduleDevicesList');
+            const bulkSwitchScheduleSection = document.getElementById('bulkSwitchScheduleSection');
+            const bulkThermostatScheduleSection = document.getElementById('bulkThermostatScheduleSection');
+            const bulkScheduleOnTimeInput = document.getElementById('bulkScheduleOnTime');
+            const bulkScheduleOffTimeInput = document.getElementById('bulkScheduleOffTime');
+            const bulkScheduleDaysGroup = document.getElementById('bulkScheduleDaysGroup');
+            const bulkThermostatRulesContainer = document.getElementById('bulkThermostatRulesContainer');
+            const addBulkThermostatRuleButton = document.getElementById('addBulkThermostatRule');
+            const bulkScheduleBackButton = document.getElementById('bulkScheduleBackButton');
+            const bulkScheduleNextButton = document.getElementById('bulkScheduleNextButton');
+            const bulkScheduleSubmitButton = document.getElementById('bulkScheduleSubmitButton');
             const intervalMs = 10000;
 
             if (!tableBody) return;
@@ -166,8 +319,12 @@
             let actionInFlight = false;
             let currentScheduleUrl = '';
             let currentScheduleKind = 'switch_window';
+            let bulkScheduleType = 'switch';
             const scheduleModal = scheduleModalEl && window.bootstrap
                 ? new window.bootstrap.Modal(scheduleModalEl)
+                : null;
+            const bulkScheduleModal = bulkScheduleModalEl && window.bootstrap
+                ? new window.bootstrap.Modal(bulkScheduleModalEl)
                 : null;
 
             const toastClass = (type) => {
@@ -332,22 +489,22 @@
                 return new Set(parsed);
             };
 
-            const applyDaysToForm = (days) => {
-                if (!scheduleDaysGroup) return;
+            const applyDaysToCheckboxGroup = (group, days) => {
+                if (!group) return;
                 const daySet = toDaySet(days);
 
-                scheduleDaysGroup.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+                group.querySelectorAll('input[type="checkbox"]').forEach((input) => {
                     const value = Number.parseInt(input.value, 10);
                     input.checked = daySet.has(value);
                 });
             };
 
-            const getSelectedDays = () => {
-                if (!scheduleDaysGroup) {
+            const getSelectedDaysFromGroup = (group) => {
+                if (!group) {
                     return [0, 1, 2, 3, 4, 5, 6];
                 }
 
-                const days = Array.from(scheduleDaysGroup.querySelectorAll('input[type="checkbox"]:checked'))
+                const days = Array.from(group.querySelectorAll('input[type="checkbox"]:checked'))
                     .map((input) => Number.parseInt(input.value, 10))
                     .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6)
                     .sort((a, b) => a - b);
@@ -358,6 +515,11 @@
 
                 return Array.from(new Set(days));
             };
+
+            const applyDaysToForm = (days) => applyDaysToCheckboxGroup(scheduleDaysGroup, days);
+            const applyDaysToBulkForm = (days) => applyDaysToCheckboxGroup(bulkScheduleDaysGroup, days);
+            const getSelectedDays = () => getSelectedDaysFromGroup(scheduleDaysGroup);
+            const getSelectedBulkDays = () => getSelectedDaysFromGroup(bulkScheduleDaysGroup);
 
             const isThermostatType = (deviceType) => {
                 return ['thermostat', 'thermostat_hygrostat'].includes((deviceType || '').toLowerCase());
@@ -381,8 +543,8 @@
                 { value: 0, label: 'Nd' },
             ];
 
-            const renderThermostatRules = (rules) => {
-                if (!thermostatRulesContainer) {
+            const renderThermostatRulesInContainer = (container, rules, idPrefix) => {
+                if (!container) {
                     return;
                 }
 
@@ -390,7 +552,7 @@
                     ? rules
                     : [getDefaultThermostatRule()];
 
-                thermostatRulesContainer.innerHTML = '';
+                container.innerHTML = '';
 
                 normalizedRules.forEach((rule, index) => {
                     const card = document.createElement('div');
@@ -408,14 +570,14 @@
                     removeButton.className = 'btn btn-outline-danger btn-sm';
                     removeButton.textContent = 'Usun';
                     removeButton.addEventListener('click', () => {
-                        const all = Array.from(thermostatRulesContainer.querySelectorAll('.thermostat-rule-item'));
+                        const all = Array.from(container.querySelectorAll('.thermostat-rule-item'));
                         if (all.length <= 1) {
                             showToast('Musi zostac przynajmniej jedna regula Auto.', 'warning');
                             return;
                         }
 
                         card.remove();
-                        const updated = Array.from(thermostatRulesContainer.querySelectorAll('.thermostat-rule-item'));
+                        const updated = Array.from(container.querySelectorAll('.thermostat-rule-item'));
                         updated.forEach((item, idx) => {
                             const heading = item.querySelector('.thermostat-rule-title');
                             if (heading) {
@@ -488,7 +650,7 @@
                         check.type = 'checkbox';
                         check.className = 'form-check-input thermostat-rule-day';
                         check.value = String(dayDef.value);
-                        check.id = `thermo-day-${index}-${dayIndex}`;
+                        check.id = `${idPrefix}-day-${index}-${dayIndex}`;
                         check.checked = daySet.has(dayDef.value);
 
                         const label = document.createElement('label');
@@ -502,16 +664,16 @@
                     });
 
                     card.appendChild(daysWrap);
-                    thermostatRulesContainer.appendChild(card);
+                    container.appendChild(card);
                 });
             };
 
-            const collectThermostatRules = () => {
-                if (!thermostatRulesContainer) {
+            const collectThermostatRulesFromContainer = (container) => {
+                if (!container) {
                     return [];
                 }
 
-                const items = Array.from(thermostatRulesContainer.querySelectorAll('.thermostat-rule-item'));
+                const items = Array.from(container.querySelectorAll('.thermostat-rule-item'));
                 if (!items.length) {
                     throw new Error('Dodaj przynajmniej jedna regule Auto.');
                 }
@@ -552,30 +714,57 @@
                 });
             };
 
+            const renderThermostatRules = (rules) => {
+                renderThermostatRulesInContainer(thermostatRulesContainer, rules, 'thermo');
+            };
+
+            const renderBulkThermostatRules = (rules) => {
+                renderThermostatRulesInContainer(bulkThermostatRulesContainer, rules, 'bulk-thermo');
+            };
+
+            const collectThermostatRules = () => collectThermostatRulesFromContainer(thermostatRulesContainer);
+            const collectBulkThermostatRules = () => collectThermostatRulesFromContainer(bulkThermostatRulesContainer);
+
+            const collectRawThermostatRulesFromContainer = (container) => {
+                const existing = [];
+                if (!container) {
+                    return existing;
+                }
+
+                container.querySelectorAll('.thermostat-rule-item').forEach((item) => {
+                    const from = item.querySelector('.thermostat-rule-from')?.value || '09:00';
+                    const to = item.querySelector('.thermostat-rule-to')?.value || '21:00';
+                    const onTemp = item.querySelector('.thermostat-rule-on-temp')?.value || '25.0';
+                    const offTemp = item.querySelector('.thermostat-rule-off-temp')?.value || '25.5';
+                    const days = Array.from(item.querySelectorAll('.thermostat-rule-day:checked'))
+                        .map((input) => Number.parseInt(input.value, 10))
+                        .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6);
+
+                    existing.push({
+                        from,
+                        to,
+                        on_temp: String(onTemp).replace(',', '.'),
+                        off_temp: String(offTemp).replace(',', '.'),
+                        days: days.length ? Array.from(new Set(days)) : [0, 1, 2, 3, 4, 5, 6],
+                    });
+                });
+
+                return existing;
+            };
+
             if (addThermostatRuleButton) {
                 addThermostatRuleButton.addEventListener('click', () => {
-                    const existing = [];
-                    if (thermostatRulesContainer) {
-                        thermostatRulesContainer.querySelectorAll('.thermostat-rule-item').forEach((item) => {
-                            const from = item.querySelector('.thermostat-rule-from')?.value || '09:00';
-                            const to = item.querySelector('.thermostat-rule-to')?.value || '21:00';
-                            const onTemp = item.querySelector('.thermostat-rule-on-temp')?.value || '25.0';
-                            const offTemp = item.querySelector('.thermostat-rule-off-temp')?.value || '25.5';
-                            const days = Array.from(item.querySelectorAll('.thermostat-rule-day:checked'))
-                                .map((input) => Number.parseInt(input.value, 10))
-                                .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6);
-
-                            existing.push({
-                                from,
-                                to,
-                                on_temp: String(onTemp).replace(',', '.'),
-                                off_temp: String(offTemp).replace(',', '.'),
-                                days: days.length ? Array.from(new Set(days)) : [0, 1, 2, 3, 4, 5, 6],
-                            });
-                        });
-                    }
+                    const existing = collectRawThermostatRulesFromContainer(thermostatRulesContainer);
                     existing.push(getDefaultThermostatRule());
                     renderThermostatRules(existing);
+                });
+            }
+
+            if (addBulkThermostatRuleButton) {
+                addBulkThermostatRuleButton.addEventListener('click', () => {
+                    const existing = collectRawThermostatRulesFromContainer(bulkThermostatRulesContainer);
+                    existing.push(getDefaultThermostatRule());
+                    renderBulkThermostatRules(existing);
                 });
             }
 
@@ -600,6 +789,244 @@
 
                 return json;
             };
+
+            const resolveBulkScheduleType = () => (bulkScheduleTypeThermostat?.checked ? 'thermostat' : 'switch');
+
+            const collectDevicesByType = (requestedType) => {
+                const buttons = Array.from(tableBody.querySelectorAll('[data-device-schedule]'));
+                const seen = new Set();
+                const devices = [];
+
+                buttons.forEach((button) => {
+                    const type = (button.dataset.deviceType || '').toLowerCase();
+                    const matchesType = requestedType === 'switch' ? type === 'switch' : isThermostatType(type);
+                    if (!matchesType) {
+                        return;
+                    }
+
+                    const id = Number.parseInt(button.dataset.deviceId || '', 10);
+                    if (!Number.isInteger(id) || id <= 0 || seen.has(id)) {
+                        return;
+                    }
+
+                    seen.add(id);
+                    devices.push({
+                        id,
+                        name: button.dataset.deviceName || `Urzadzenie #${id}`,
+                        seed: decodeScheduleSeed(button.dataset.schedule),
+                    });
+                });
+
+                return devices;
+            };
+
+            const renderBulkDevicesList = (devices) => {
+                if (!bulkScheduleDevicesList) {
+                    return;
+                }
+
+                bulkScheduleDevicesList.innerHTML = '';
+
+                if (!devices.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'small text-muted';
+                    empty.textContent = 'Brak urzadzen wybranego typu.';
+                    bulkScheduleDevicesList.appendChild(empty);
+                    return;
+                }
+
+                devices.forEach((device, index) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'form-check';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'form-check-input bulk-device-checkbox';
+                    checkbox.id = `bulk-device-${device.id}-${index}`;
+                    checkbox.value = String(device.id);
+                    checkbox.checked = true;
+
+                    const label = document.createElement('label');
+                    label.className = 'form-check-label';
+                    label.setAttribute('for', checkbox.id);
+                    label.textContent = device.name;
+
+                    wrap.appendChild(checkbox);
+                    wrap.appendChild(label);
+                    bulkScheduleDevicesList.appendChild(wrap);
+                });
+            };
+
+            const getSelectedBulkDeviceIds = () => {
+                if (!bulkScheduleDevicesList) {
+                    return [];
+                }
+
+                const selected = Array.from(bulkScheduleDevicesList.querySelectorAll('.bulk-device-checkbox:checked'))
+                    .map((input) => Number.parseInt(input.value, 10))
+                    .filter((value) => Number.isInteger(value) && value > 0);
+
+                if (!selected.length) {
+                    throw new Error('Wybierz przynajmniej jedno urzadzenie.');
+                }
+
+                return Array.from(new Set(selected));
+            };
+
+            const setBulkModalStep = (step) => {
+                const showTypeStep = step === 'type';
+                if (bulkScheduleStepType) {
+                    bulkScheduleStepType.classList.toggle('d-none', !showTypeStep);
+                }
+                if (bulkScheduleStepForm) {
+                    bulkScheduleStepForm.classList.toggle('d-none', showTypeStep);
+                }
+                if (bulkScheduleBackButton) {
+                    bulkScheduleBackButton.classList.toggle('d-none', showTypeStep);
+                }
+                if (bulkScheduleNextButton) {
+                    bulkScheduleNextButton.classList.toggle('d-none', !showTypeStep);
+                }
+                if (bulkScheduleSubmitButton) {
+                    bulkScheduleSubmitButton.classList.toggle('d-none', showTypeStep);
+                }
+            };
+
+            const fillBulkScheduleForm = (requestedType) => {
+                const devices = collectDevicesByType(requestedType);
+                const seed = devices[0]?.seed || {};
+                renderBulkDevicesList(devices);
+
+                if (bulkScheduleSelectedType) {
+                    bulkScheduleSelectedType.textContent = requestedType === 'switch' ? 'Przelacznik' : 'Termostat';
+                }
+                if (bulkScheduleSeedSource) {
+                    bulkScheduleSeedSource.textContent = devices[0]
+                        ? devices[0].name
+                        : 'Brak urzadzenia tego typu (wartosci domyslne)';
+                }
+                if (bulkScheduleSubmitButton) {
+                    bulkScheduleSubmitButton.disabled = devices.length === 0;
+                }
+
+                if (requestedType === 'thermostat') {
+                    if (bulkSwitchScheduleSection) {
+                        bulkSwitchScheduleSection.classList.add('d-none');
+                    }
+                    if (bulkThermostatScheduleSection) {
+                        bulkThermostatScheduleSection.classList.remove('d-none');
+                    }
+
+                    const rules = Array.isArray(seed.rules) ? seed.rules : [];
+                    renderBulkThermostatRules(rules);
+                    return;
+                }
+
+                if (bulkThermostatScheduleSection) {
+                    bulkThermostatScheduleSection.classList.add('d-none');
+                }
+                if (bulkSwitchScheduleSection) {
+                    bulkSwitchScheduleSection.classList.remove('d-none');
+                }
+
+                if (bulkScheduleOnTimeInput) {
+                    bulkScheduleOnTimeInput.value = typeof seed.on_time === 'string' ? seed.on_time : '09:00';
+                }
+                if (bulkScheduleOffTimeInput) {
+                    bulkScheduleOffTimeInput.value = typeof seed.off_time === 'string' ? seed.off_time : '21:00';
+                }
+                applyDaysToBulkForm(seed.days);
+            };
+
+            const resetBulkScheduleModal = () => {
+                bulkScheduleType = 'switch';
+                if (bulkScheduleTypeSwitch) {
+                    bulkScheduleTypeSwitch.checked = true;
+                }
+                if (bulkScheduleTypeThermostat) {
+                    bulkScheduleTypeThermostat.checked = false;
+                }
+                if (bulkScheduleDevicesList) {
+                    bulkScheduleDevicesList.innerHTML = '';
+                }
+                if (bulkScheduleSubmitButton) {
+                    bulkScheduleSubmitButton.disabled = false;
+                }
+                setBulkModalStep('type');
+            };
+
+            const runBulkSwitchToggle = async (state, triggerButton) => {
+                if (actionInFlight) return;
+                if (!triggerButton?.dataset.url) {
+                    showToast('Brak adresu akcji masowej.', 'danger');
+                    return;
+                }
+
+                actionInFlight = true;
+                if (toggleAllSwitchesOnButton) {
+                    toggleAllSwitchesOnButton.disabled = true;
+                }
+                if (toggleAllSwitchesOffButton) {
+                    toggleAllSwitchesOffButton.disabled = true;
+                }
+
+                try {
+                    const result = await postAction(triggerButton.dataset.url, { state });
+                    showError('');
+                    showToast(result.message || 'Zmieniono stan urzadzen.', result.partial ? 'warning' : 'success');
+                    await poll();
+                } catch (error) {
+                    const message = error && error.message ? error.message : 'blad sterowania';
+                    showToast(`Sterowanie nieudane: ${message}`, 'danger');
+                } finally {
+                    if (toggleAllSwitchesOnButton) {
+                        toggleAllSwitchesOnButton.disabled = false;
+                    }
+                    if (toggleAllSwitchesOffButton) {
+                        toggleAllSwitchesOffButton.disabled = false;
+                    }
+                    actionInFlight = false;
+                }
+            };
+
+            if (toggleAllSwitchesOnButton) {
+                toggleAllSwitchesOnButton.addEventListener('click', () => runBulkSwitchToggle('on', toggleAllSwitchesOnButton));
+            }
+
+            if (toggleAllSwitchesOffButton) {
+                toggleAllSwitchesOffButton.addEventListener('click', () => runBulkSwitchToggle('off', toggleAllSwitchesOffButton));
+            }
+
+            if (scheduleAllDevicesButton) {
+                scheduleAllDevicesButton.addEventListener('click', () => {
+                    if (actionInFlight) return;
+                    if (!bulkScheduleModal) {
+                        showToast('Brak modalu Bootstrap. Otworz strone ponownie.', 'danger');
+                        return;
+                    }
+
+                    resetBulkScheduleModal();
+                    bulkScheduleModal.show();
+                });
+            }
+
+            if (bulkScheduleNextButton) {
+                bulkScheduleNextButton.addEventListener('click', () => {
+                    bulkScheduleType = resolveBulkScheduleType();
+                    fillBulkScheduleForm(bulkScheduleType);
+                    setBulkModalStep('form');
+                });
+            }
+
+            if (bulkScheduleBackButton) {
+                bulkScheduleBackButton.addEventListener('click', () => {
+                    setBulkModalStep('type');
+                });
+            }
+
+            if (bulkScheduleModalEl) {
+                bulkScheduleModalEl.addEventListener('hidden.bs.modal', resetBulkScheduleModal);
+            }
 
             tableBody.addEventListener('click', async (event) => {
                 const toggleButton = event.target.closest('[data-device-toggle]');
@@ -749,6 +1176,92 @@
                     } finally {
                         if (scheduleSubmitButton) {
                             scheduleSubmitButton.disabled = false;
+                        }
+                        actionInFlight = false;
+                    }
+                });
+            }
+
+            if (bulkScheduleForm) {
+                bulkScheduleForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    if (actionInFlight) return;
+                    if (!bulkScheduleUrl) {
+                        showToast('Brak adresu zapisu harmonogramu masowego.', 'danger');
+                        return;
+                    }
+
+                    let payload = {
+                        device_type: bulkScheduleType,
+                        device_ids: [],
+                        human_schedule: {},
+                    };
+
+                    try {
+                        payload.device_ids = getSelectedBulkDeviceIds();
+                    } catch (error) {
+                        const message = error && error.message ? error.message : 'Wybierz urzadzenia.';
+                        showToast(message, 'warning');
+                        return;
+                    }
+
+                    if (bulkScheduleType === 'thermostat') {
+                        try {
+                            const rules = collectBulkThermostatRules();
+                            payload.human_schedule = {
+                                kind: 'thermostat_auto',
+                                rules,
+                            };
+                        } catch (error) {
+                            const message = error && error.message ? error.message : 'Niepoprawne reguly Auto.';
+                            showToast(message, 'warning');
+                            return;
+                        }
+                    } else {
+                        const onTime = bulkScheduleOnTimeInput ? bulkScheduleOnTimeInput.value : '';
+                        const offTime = bulkScheduleOffTimeInput ? bulkScheduleOffTimeInput.value : '';
+                        if (!onTime || !offTime) {
+                            showToast('Podaj godzine wlaczenia i wylaczenia.', 'warning');
+                            return;
+                        }
+
+                        let selectedDays = [];
+                        try {
+                            selectedDays = getSelectedBulkDays();
+                        } catch (error) {
+                            const message = error && error.message ? error.message : 'Niepoprawne dni tygodnia.';
+                            showToast(message, 'warning');
+                            return;
+                        }
+
+                        payload.human_schedule = {
+                            kind: 'switch_window',
+                            on_time: onTime,
+                            off_time: offTime,
+                            days: selectedDays,
+                        };
+                    }
+
+                    actionInFlight = true;
+                    if (bulkScheduleSubmitButton) {
+                        bulkScheduleSubmitButton.disabled = true;
+                    }
+
+                    try {
+                        const result = await postAction(bulkScheduleUrl, payload);
+                        showError('');
+                        showToast(result.message || 'Harmonogram zapisany.', result.partial ? 'warning' : 'success');
+                        if (bulkScheduleModal) {
+                            bulkScheduleModal.hide();
+                        }
+                        await poll();
+                    } catch (error) {
+                        const message = error && error.message ? error.message : 'blad zapisu harmonogramu';
+                        showToast(`Zapis harmonogramu nieudany: ${message}`, 'danger');
+                    } finally {
+                        if (bulkScheduleSubmitButton) {
+                            bulkScheduleSubmitButton.disabled = false;
                         }
                         actionInFlight = false;
                     }

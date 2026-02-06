@@ -122,7 +122,14 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th>Płeć</th>
+                                <th>
+                                    <a class="link-reset js-animals-sort" href="{{ $sortLinks['sex']['url'] }}">
+                                        Płeć
+                                        @if ($sortLinks['sex']['indicator'])
+                                            <span class="ms-1">{{ $sortLinks['sex']['indicator'] }}</span>
+                                        @endif
+                                    </a>
+                                </th>
                                 <th>
                                     <a class="link-reset js-animals-sort" href="{{ $sortLinks['weight']['url'] }}">
                                         Waga
