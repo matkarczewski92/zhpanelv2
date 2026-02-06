@@ -21,7 +21,9 @@ class EwelinkDeviceDataFormatter
      *     target_temperature:string,
      *     schedule:string,
      *     schedule_lines:array<int, string>,
+     *     auto_control_view:array{mode_line:string,lines:array<int, string>},
      *     schedule_edit_params:array<string, mixed>,
+     *     schedule_editor:array<string, mixed>,
      *     params_json:string
      * }
      */
@@ -45,7 +47,9 @@ class EwelinkDeviceDataFormatter
             'target_temperature' => $this->resolveTargetTemperature($params),
             'schedule' => $schedule['summary'],
             'schedule_lines' => $schedule['lines'],
+            'auto_control_view' => $this->resolveAutoControlView($params),
             'schedule_edit_params' => $this->resolveScheduleEditParams($params),
+            'schedule_editor' => $this->resolveScheduleEditor($params, (string) $device->device_type),
             'params_json' => $this->encodeParams($params),
         ];
     }
@@ -64,6 +68,119 @@ class EwelinkDeviceDataFormatter
         }
 
         return $result;
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function resolveScheduleEditor(array $params, string $deviceType): array
+    {
+        $normalizedDeviceType = strtolower(trim($deviceType));
+        $isThermostat = in_array($normalizedDeviceType, ['thermostat', 'thermostat_hygrostat'], true);
+
+        if ($isThermostat) {
+            $rules = $this->resolveAutoControlEditorRules($params);
+            if ($rules === []) {
+                $rules = [[
+                    'days' => [0, 1, 2, 3, 4, 5, 6],
+                    'from' => '09:00',
+                    'to' => '21:00',
+                    'on_temp' => '25.0',
+                    'off_temp' => '25.5',
+                ]];
+            }
+
+            return [
+                'kind' => 'thermostat_auto',
+                'rules' => $rules,
+            ];
+        }
+
+        $timers = $params['timers'] ?? null;
+        if (!is_array($timers) || $timers === []) {
+            $timers = $params['schedules'] ?? null;
+        }
+
+        $onTime = '';
+        $offTime = '';
+        $days = [0, 1, 2, 3, 4, 5, 6];
+
+        if (is_array($timers)) {
+            foreach ($timers as $timer) {
+                if (!is_array($timer)) {
+                    continue;
+                }
+
+                $type = strtolower((string) ($timer['coolkit_timer_type'] ?? $timer['type'] ?? ''));
+                if ($type !== 'repeat') {
+                    continue;
+                }
+
+                $at = trim((string) ($timer['at'] ?? ''));
+                $parsed = $this->parseRepeatAtToEditor($at);
+                if ($parsed === null) {
+                    continue;
+                }
+
+                $state = $this->extractSwitchStateForEditor($timer['do'] ?? null);
+                if ($state === null) {
+                    continue;
+                }
+
+                $days = $parsed['days'];
+                if ($state === 'on' && $onTime === '') {
+                    $onTime = $parsed['time'];
+                } elseif ($state === 'off' && $offTime === '') {
+                    $offTime = $parsed['time'];
+                }
+            }
+        }
+
+        return [
+            'kind' => 'switch_window',
+            'on_time' => $onTime !== '' ? $onTime : '09:00',
+            'off_time' => $offTime !== '' ? $offTime : '21:00',
+            'days' => $days,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<int, array{days:array<int, int>,from:string,to:string,on_temp:string,off_temp:string}>
+     */
+    private function resolveAutoControlEditorRules(array $params): array
+    {
+        $autoControl = $params['autoControl'] ?? null;
+        if (!is_array($autoControl) || $autoControl === []) {
+            return [];
+        }
+
+        $rules = [];
+        foreach ($autoControl as $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+
+            $effTime = is_array($rule['effTime'] ?? null) ? $rule['effTime'] : [];
+            $from = trim((string) ($effTime['fromLocal'] ?? $effTime['from'] ?? ''));
+            $to = trim((string) ($effTime['toLocal'] ?? $effTime['to'] ?? ''));
+            if ($from === '' || $to === '') {
+                continue;
+            }
+
+            [$onTemp, $offTemp] = $this->extractAutoOnOffThresholds($rule['targets'] ?? null);
+
+            $rules[] = [
+                'days' => $this->normalizeWeekdayArray($effTime['daysLocal'] ?? $effTime['days'] ?? null),
+                'from' => $this->normalizeTimeValue($from, '09:00'),
+                'to' => $this->normalizeTimeValue($to, '21:00'),
+                'on_temp' => $onTemp ?? '25.0',
+                'off_temp' => $offTemp ?? '25.5',
+            ];
+        }
+
+        return $rules;
     }
 
     /**
@@ -208,6 +325,10 @@ class EwelinkDeviceDataFormatter
             $lines[] = $line;
         }
 
+        foreach ($this->resolveAutoControlLines($params) as $line) {
+            $lines[] = $line;
+        }
+
         if ($lines === []) {
             return [
                 'summary' => '-',
@@ -223,6 +344,112 @@ class EwelinkDeviceDataFormatter
 
         return [
             'summary' => $summary,
+            'lines' => $lines,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<int, string>
+     */
+    private function resolveAutoControlLines(array $params): array
+    {
+        $autoControl = $params['autoControl'] ?? null;
+        if (!is_array($autoControl) || $autoControl === []) {
+            return [];
+        }
+
+        $lines = [];
+        foreach ($autoControl as $index => $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+
+            $enabled = !array_key_exists('enable', $rule) || (bool) $rule['enable'];
+            $prefix = $enabled ? '' : '[OFF] ';
+
+            $effTime = is_array($rule['effTime'] ?? null) ? $rule['effTime'] : [];
+            $window = $this->formatAutoControlWindow($effTime);
+            $conditions = $this->formatAutoControlConditions($rule['targets'] ?? null);
+
+            $parts = [];
+            if ($window !== '-') {
+                $parts[] = $window;
+            }
+            if ($conditions !== '-') {
+                $parts[] = $conditions;
+            }
+
+            if ($parts === []) {
+                continue;
+            }
+
+            $lines[] = $prefix . sprintf('Auto #%d: %s', ((int) $index) + 1, implode(' | ', $parts));
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array{mode_line:string,lines:array<int, string>}
+     */
+    private function resolveAutoControlView(array $params): array
+    {
+        $autoControl = $params['autoControl'] ?? null;
+        if (!is_array($autoControl) || $autoControl === []) {
+            return ['mode_line' => '', 'lines' => []];
+        }
+
+        $lines = [];
+        $dayLabels = [];
+
+        foreach ($autoControl as $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+
+            $enabled = !array_key_exists('enable', $rule) || (bool) $rule['enable'];
+            $effTime = is_array($rule['effTime'] ?? null) ? $rule['effTime'] : [];
+            $daysLabel = $this->formatWeekdaysFromArray($effTime['daysLocal'] ?? $effTime['days'] ?? null);
+            $dayLabels[] = $daysLabel;
+
+            $from = trim((string) ($effTime['fromLocal'] ?? $effTime['from'] ?? ''));
+            $to = trim((string) ($effTime['toLocal'] ?? $effTime['to'] ?? ''));
+            if ($from === '' || $to === '') {
+                continue;
+            }
+
+            $window = sprintf('%s-%s', $from, $to);
+
+            [$onTemp, $offTemp] = $this->extractAutoOnOffThresholds($rule['targets'] ?? null);
+            $line = $window;
+            if ($onTemp !== null || $offTemp !== null) {
+                $line .= sprintf(' On: %sstC - Off: %sstC', $onTemp ?? '-', $offTemp ?? '-');
+            }
+
+            if (!$enabled) {
+                $line = '[OFF] ' . $line;
+            }
+
+            $lines[] = $line;
+        }
+
+        if ($lines === []) {
+            return ['mode_line' => '', 'lines' => []];
+        }
+
+        $dayLabels = array_values(array_unique(array_map(static fn (string $label): string => trim($label), $dayLabels)));
+        if ($dayLabels === []) {
+            $modeLine = 'Tryb: Auto';
+        } elseif (count($dayLabels) === 1) {
+            $modeLine = 'Tryb: Auto, ' . ucfirst($dayLabels[0]);
+        } else {
+            $modeLine = 'Tryb: Auto, Rozne dni';
+        }
+
+        return [
+            'mode_line' => $modeLine,
             'lines' => $lines,
         ];
     }
@@ -275,6 +502,127 @@ class EwelinkDeviceDataFormatter
         }
 
         return '-';
+    }
+
+    /**
+     * @param array<string, mixed> $effTime
+     */
+    private function formatAutoControlWindow(array $effTime): string
+    {
+        $from = trim((string) ($effTime['fromLocal'] ?? $effTime['from'] ?? ''));
+        $to = trim((string) ($effTime['toLocal'] ?? $effTime['to'] ?? ''));
+
+        if ($from === '' || $to === '') {
+            return '-';
+        }
+
+        $daysRaw = $effTime['daysLocal'] ?? $effTime['days'] ?? null;
+        $daysLabel = $this->formatWeekdaysFromArray($daysRaw);
+        $crossMidnight = $this->isCrossMidnight($from, $to);
+
+        $timeWindow = $crossMidnight
+            ? sprintf('%s-%s (+1)', $from, $to)
+            : sprintf('%s-%s', $from, $to);
+
+        return trim($daysLabel . ' ' . $timeWindow);
+    }
+
+    private function formatAutoControlConditions(mixed $targets): string
+    {
+        if (!is_array($targets) || $targets === []) {
+            return '-';
+        }
+
+        $parts = [];
+        foreach ($targets as $target) {
+            if (!is_array($target)) {
+                continue;
+            }
+
+            $reaction = is_array($target['reaction'] ?? null) ? $target['reaction'] : [];
+            $switch = strtoupper(trim((string) ($reaction['switch'] ?? '')));
+
+            if ($switch === '') {
+                $switch = strtoupper(trim((string) ($target['switch'] ?? '')));
+            }
+
+            if ($this->isNumericValue($target['high'] ?? null)) {
+                $parts[] = sprintf('T > %s C -> %s', $this->formatFloat((float) $target['high']), $switch !== '' ? $switch : '-');
+            }
+
+            if ($this->isNumericValue($target['low'] ?? null)) {
+                $parts[] = sprintf('T < %s C -> %s', $this->formatFloat((float) $target['low']), $switch !== '' ? $switch : '-');
+            }
+        }
+
+        if ($parts === []) {
+            return '-';
+        }
+
+        return implode(' | ', $parts);
+    }
+
+    /**
+     * @return array{0:string|null,1:string|null}
+     */
+    private function extractAutoOnOffThresholds(mixed $targets): array
+    {
+        if (!is_array($targets) || $targets === []) {
+            return [null, null];
+        }
+
+        $onTemp = null;
+        $offTemp = null;
+
+        foreach ($targets as $target) {
+            if (!is_array($target)) {
+                continue;
+            }
+
+            $reaction = is_array($target['reaction'] ?? null) ? $target['reaction'] : [];
+            $switch = strtolower(trim((string) ($reaction['switch'] ?? $target['switch'] ?? '')));
+
+            $high = $this->formatThresholdValue($target['high'] ?? $target['targetHigh'] ?? null);
+            $low = $this->formatThresholdValue($target['low'] ?? $target['targetLow'] ?? null);
+
+            if ($switch === 'on') {
+                if ($onTemp === null && $low !== null) {
+                    $onTemp = $low;
+                    continue;
+                }
+
+                if ($onTemp === null && $high !== null) {
+                    $onTemp = $high;
+                }
+            }
+
+            if ($switch === 'off') {
+                if ($offTemp === null && $high !== null) {
+                    $offTemp = $high;
+                    continue;
+                }
+
+                if ($offTemp === null && $low !== null) {
+                    $offTemp = $low;
+                }
+            }
+        }
+
+        return [$onTemp, $offTemp];
+    }
+
+    private function formatThresholdValue(mixed $value): ?string
+    {
+        if (!$this->isNumericValue($value)) {
+            return null;
+        }
+
+        $raw = trim((string) $value);
+        if ($raw !== '' && is_numeric($raw)) {
+            return $raw;
+        }
+
+        return $this->formatFloat((float) $value);
     }
 
     /**
@@ -384,6 +732,31 @@ class EwelinkDeviceDataFormatter
         $dayLabel = $this->formatCronDays((string) $days);
 
         return trim($dayLabel . ' ' . $time);
+    }
+
+    /**
+     * @return array{time:string,days:array<int, int>}|null
+     */
+    private function parseRepeatAtToEditor(string $at): ?array
+    {
+        $parts = preg_split('/\s+/', trim($at));
+        if (!is_array($parts) || count($parts) < 5) {
+            return null;
+        }
+
+        $minute = $parts[0];
+        $hour = $parts[1];
+        $days = $parts[4];
+
+        [$displayHour, $displayMinute, $displayDays] = $this->convertCronUtcToDisplay($hour, $minute, $days);
+        if (!is_numeric($displayHour) || !is_numeric($displayMinute)) {
+            return null;
+        }
+
+        return [
+            'time' => sprintf('%02d:%02d', (int) $displayHour, (int) $displayMinute),
+            'days' => $this->parseCronDaysToArray($displayDays),
+        ];
     }
 
     private function formatOnceAt(string $at): string
@@ -501,6 +874,102 @@ class EwelinkDeviceDataFormatter
         return implode(',', $labels);
     }
 
+    private function formatWeekdaysFromArray(mixed $days): string
+    {
+        $normalized = $this->normalizeWeekdayArray($days);
+
+        if ($normalized === [0, 1, 2, 3, 4, 5, 6]) {
+            return 'codziennie';
+        }
+
+        if ($normalized === [1, 2, 3, 4, 5]) {
+            return 'pn-pt';
+        }
+
+        if ($normalized === [0, 6]) {
+            return 'weekend';
+        }
+
+        $labels = [
+            0 => 'nd',
+            1 => 'pn',
+            2 => 'wt',
+            3 => 'sr',
+            4 => 'cz',
+            5 => 'pt',
+            6 => 'sb',
+        ];
+
+        $result = [];
+        foreach ($normalized as $day) {
+            $result[] = $labels[$day] ?? (string) $day;
+        }
+
+        return implode(',', $result);
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function normalizeWeekdayArray(mixed $days): array
+    {
+        if (!is_array($days) || $days === []) {
+            return [0, 1, 2, 3, 4, 5, 6];
+        }
+
+        $normalized = [];
+        foreach ($days as $day) {
+            if (!is_numeric($day)) {
+                continue;
+            }
+
+            $num = (int) $day;
+            if ($num === 7) {
+                $num = 0;
+            }
+
+            if ($num < 0 || $num > 6) {
+                continue;
+            }
+
+            $normalized[] = $num;
+        }
+
+        if ($normalized === []) {
+            return [0, 1, 2, 3, 4, 5, 6];
+        }
+
+        $normalized = array_values(array_unique($normalized));
+        sort($normalized);
+
+        return $normalized;
+    }
+
+    private function normalizeTimeValue(string $value, string $fallback): string
+    {
+        $trimmed = trim($value);
+        if (preg_match('/^\d{2}:\d{2}$/', $trimmed) === 1) {
+            return $trimmed;
+        }
+
+        return $fallback;
+    }
+
+    private function isCrossMidnight(string $from, string $to): bool
+    {
+        if (preg_match('/^\d{2}:\d{2}$/', $from) !== 1 || preg_match('/^\d{2}:\d{2}$/', $to) !== 1) {
+            return false;
+        }
+
+        [$fromHour, $fromMinute] = array_map('intval', explode(':', $from));
+        [$toHour, $toMinute] = array_map('intval', explode(':', $to));
+
+        $fromTotal = ($fromHour * 60) + $fromMinute;
+        $toTotal = ($toHour * 60) + $toMinute;
+
+        return $toTotal <= $fromTotal;
+    }
+
     /**
      * @return array{0:string,1:string,2:string}
      */
@@ -556,6 +1025,45 @@ class EwelinkDeviceDataFormatter
         sort($shifted);
 
         return implode(',', $shifted);
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function parseCronDaysToArray(string $days): array
+    {
+        $value = trim($days);
+        if ($value === '' || $value === '*') {
+            return [0, 1, 2, 3, 4, 5, 6];
+        }
+
+        $result = [];
+        foreach (explode(',', $value) as $chunk) {
+            $chunk = trim($chunk);
+            if ($chunk === '' || !is_numeric($chunk)) {
+                continue;
+            }
+
+            $day = (int) $chunk;
+            if ($day === 7) {
+                $day = 0;
+            }
+
+            if ($day < 0 || $day > 6) {
+                continue;
+            }
+
+            $result[] = $day;
+        }
+
+        if ($result === []) {
+            return [0, 1, 2, 3, 4, 5, 6];
+        }
+
+        $result = array_values(array_unique($result));
+        sort($result);
+
+        return $result;
     }
 
     private function parseUtcToDisplay(string $value): ?CarbonImmutable
@@ -643,6 +1151,44 @@ class EwelinkDeviceDataFormatter
         }
 
         return $parts === [] ? '-' : implode(', ', $parts);
+    }
+
+    private function extractSwitchStateForEditor(mixed $payload): ?string
+    {
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        $single = strtolower(trim((string) ($payload['switch'] ?? '')));
+        if (in_array($single, ['on', 'off'], true)) {
+            return $single;
+        }
+
+        if (!is_array($payload['switches'] ?? null)) {
+            return null;
+        }
+
+        $states = [];
+        foreach ($payload['switches'] as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $state = strtolower(trim((string) ($item['switch'] ?? '')));
+            if (!in_array($state, ['on', 'off'], true)) {
+                continue;
+            }
+
+            $states[] = $state;
+        }
+
+        if ($states === []) {
+            return null;
+        }
+
+        $states = array_values(array_unique($states));
+
+        return count($states) === 1 ? $states[0] : null;
     }
 
     private function formatNumericWithUnit(mixed $value, string $unit): string

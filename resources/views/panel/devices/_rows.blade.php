@@ -4,7 +4,7 @@
         $device = $row['device'];
         $snapshot = $row['snapshot'];
         $scheduleSeedJson = json_encode(
-            $snapshot['schedule_edit_params'] ?? [],
+            $snapshot['schedule_editor'] ?? ['kind' => 'switch_window', 'on_time' => '09:00', 'off_time' => '21:00', 'days' => [0, 1, 2, 3, 4, 5, 6]],
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
         );
         $scheduleSeedBase64 = base64_encode($scheduleSeedJson !== false ? $scheduleSeedJson : '{}');
@@ -17,7 +17,18 @@
                 <small class="text-muted">{{ $device->description }}</small>
             @endif
         </td>
-        <td>{{ $device->device_type }}</td>
+        <td>
+            @php
+                $deviceType = strtolower((string) $device->device_type);
+                $deviceTypeLabel = match ($deviceType) {
+                    'thermostat' => 'T',
+                    'switch' => 'P',
+                    'thermostat_hygrostat' => 'T+H',
+                    default => strtoupper((string) $device->device_type),
+                };
+            @endphp
+            {{ $deviceTypeLabel }}
+        </td>
         <td>{{ $snapshot['online'] }}</td>
         <td>{{ $snapshot['temperature'] }}</td>
         <td>{{ $snapshot['humidity'] }}</td>
@@ -34,27 +45,12 @@
             @endif
         </td>
         <td class="text-break">
-            @if (!empty($snapshot['switch_states']))
-                @foreach ($snapshot['switch_states'] as $channel => $state)
-                    @php $stateValue = strtolower((string) $state); @endphp
-                    <span class="me-2">
-                        <span class="text-muted">ch{{ $channel }}:</span>
-                        @if ($stateValue === 'on')
-                            <span class="fw-bold text-success">ON</span>
-                        @elseif ($stateValue === 'off')
-                            <span class="fw-bold text-danger">OFF</span>
-                        @else
-                            <span class="fw-bold text-warning">{{ strtoupper($stateValue) }}</span>
-                        @endif
-                    </span>
+            @if (!empty($snapshot['auto_control_view']['lines'] ?? []))
+                <div class="small fw-semibold">{{ $snapshot['auto_control_view']['mode_line'] }}</div>
+                @foreach (($snapshot['auto_control_view']['lines'] ?? []) as $line)
+                    <div class="small">{{ $line }}</div>
                 @endforeach
-            @else
-                {{ $snapshot['switches'] }}
-            @endif
-        </td>
-        <td>{{ $snapshot['target_temperature'] }}</td>
-        <td class="text-break">
-            @if (!empty($snapshot['schedule_lines']))
+            @elseif (!empty($snapshot['schedule_lines']))
                 @foreach (array_slice($snapshot['schedule_lines'], 0, 4) as $line)
                     <div class="small">{{ $line }}</div>
                 @endforeach
@@ -99,6 +95,8 @@
                     data-device-schedule
                     data-url="{{ route('panel.devices.schedule', $device) }}"
                     data-schedule="{{ $scheduleSeedBase64 }}"
+                    data-device-name="{{ $device->name }}"
+                    data-device-type="{{ $device->device_type }}"
                 >
                     Edytuj harmonogram
                 </button>
@@ -107,6 +105,6 @@
     </tr>
 @empty
     <tr>
-        <td colspan="12" class="text-center text-muted">Brak skonfigurowanych urzadzen. Dodaj je w Ustawieniach portalu.</td>
+        <td colspan="10" class="text-center text-muted">Brak skonfigurowanych urzadzen. Dodaj je w Ustawieniach portalu.</td>
     </tr>
 @endforelse
