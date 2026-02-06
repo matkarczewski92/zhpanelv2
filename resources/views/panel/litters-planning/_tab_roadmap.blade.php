@@ -63,9 +63,22 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-12 col-lg-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-grow-1">Buduj</button>
-                    <a href="{{ route('panel.litters-planning.index', ['tab' => 'roadmap']) }}" class="btn btn-outline-light">Wyczysc</a>
+                <div class="col-12 col-lg-2 d-flex flex-column gap-2">
+                    <label class="form-check-label small">
+                        <input type="hidden" name="strict_visual_only" value="0">
+                        <input
+                            type="checkbox"
+                            class="form-check-input me-1"
+                            name="strict_visual_only"
+                            value="1"
+                            @checked($page->connectionStrictVisualOnly)
+                        >
+                        Bez dodatkowych genow wizualnych
+                    </label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">Buduj</button>
+                        <a href="{{ route('panel.litters-planning.index', ['tab' => 'roadmap']) }}" class="btn btn-outline-light">Wyczysc</a>
+                    </div>
                 </div>
             </form>
         @endif
@@ -80,6 +93,9 @@
 
             <div class="small text-muted">
                 Pokryte cele: {{ count($page->roadmapMatchedTraits) }} / {{ count($page->roadmapExpectedTraits) }}.
+                @if ($page->connectionStrictVisualOnly)
+                    Wlaczony filtr: bez dodatkowych genow wizualnych.
+                @endif
                 @if ($page->roadmapTargetReachable)
                     <span class="text-success">Cel mozliwy do osiagniecia w zaproponowanym roadmap.</span>
                 @else

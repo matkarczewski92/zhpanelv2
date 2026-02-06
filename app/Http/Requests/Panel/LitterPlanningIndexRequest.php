@@ -17,7 +17,9 @@ class LitterPlanningIndexRequest extends FormRequest
             'tab' => $this->normalizeText($this->input('tab')),
             'season' => $this->normalizeInt($this->input('season')),
             'expected_genes' => $this->normalizeText($this->input('expected_genes')),
-            'strict_visual_only' => $this->normalizeBoolean($this->input('strict_visual_only')),
+            'strict_visual_only' => $this->has('strict_visual_only')
+                ? $this->normalizeBoolean($this->input('strict_visual_only'))
+                : null,
             'roadmap_expected_genes' => $this->normalizeText($this->input('roadmap_expected_genes')),
             'roadmap_generations' => $this->normalizeInt($this->input('roadmap_generations')),
             'roadmap_id' => $this->normalizeInt($this->input('roadmap_id')),

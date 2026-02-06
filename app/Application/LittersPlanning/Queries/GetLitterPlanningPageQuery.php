@@ -39,7 +39,10 @@ class GetLitterPlanningPageQuery
         $connectionSearchInput = trim((string) ($filters['expected_genes'] ?? ''));
         $traitGeneAliasMap = $this->buildTraitGeneAliasMap();
         $connectionExpectedTraits = $this->parseExpectedTraits($connectionSearchInput, $traitGeneAliasMap);
-        $connectionStrictVisualOnly = (bool) ($filters['strict_visual_only'] ?? false);
+        $strictVisualOnlyFilter = $filters['strict_visual_only'] ?? null;
+        $connectionStrictVisualOnly = $strictVisualOnlyFilter === null
+            ? true
+            : (bool) $strictVisualOnlyFilter;
         $connectionGeneSuggestions = $this->buildConnectionGeneSuggestions($traitGeneAliasMap);
         $hasRoadmapManualInput = isset($filters['roadmap_expected_genes'])
             && trim((string) ($filters['roadmap_expected_genes'] ?? '')) !== '';
@@ -146,7 +149,11 @@ class GetLitterPlanningPageQuery
                 $completedGenerations
             );
         } elseif (!empty($roadmapExpectedTraits)) {
-            $roadmap = $this->buildRoadmapSnapshot($roadmapSearchInput, $roadmapGenerations);
+            $roadmap = $this->buildRoadmapSnapshot(
+                $roadmapSearchInput,
+                $roadmapGenerations,
+                $connectionStrictVisualOnly
+            );
             $roadmapTargetReachable = $roadmap['target_reachable'];
             $roadmapMatchedTraits = $roadmap['matched_traits'];
             $roadmapMissingTraits = $roadmap['missing_traits'];
@@ -193,7 +200,7 @@ class GetLitterPlanningPageQuery
      *     steps:array<int, array<string, mixed>>
      * }
      */
-    public function buildRoadmapSnapshot(string $searchInput, int $generations = 0): array
+    public function buildRoadmapSnapshot(string $searchInput, int $generations = 0, bool $strictVisualOnly = true): array
     {
         $normalizedSearch = trim($searchInput);
         $traitGeneAliasMap = $this->buildTraitGeneAliasMap();
@@ -202,7 +209,7 @@ class GetLitterPlanningPageQuery
         $generationsLimit = $generationsNormalized > 0 ? $generationsNormalized : 5;
 
         $roadmap = !empty($expectedTraits)
-            ? $this->buildRoadmap($expectedTraits, $generationsLimit)
+            ? $this->buildRoadmap($expectedTraits, $generationsLimit, $strictVisualOnly)
             : [
                 'target_reachable' => false,
                 'matched_traits' => [],
@@ -993,7 +1000,7 @@ class GetLitterPlanningPageQuery
      *     }>
      * }
      */
-    private function buildRoadmap(array $expectedTraits, int $maxGenerations): array
+    private function buildRoadmap(array $expectedTraits, int $maxGenerations, bool $strictVisualOnly): array
     {
         $breeders = Animal::query()
             ->where('animal_category_id', 1)
@@ -1206,10 +1213,10 @@ class GetLitterPlanningPageQuery
                             continue;
                         }
 
-                        $offspringRows = $this->buildRoadmapOffspringRows($rows, $expectedTraits);
+                        $offspringRows = $this->buildRoadmapOffspringRows($rows, $expectedTraits, $strictVisualOnly);
                         $offspringRows = array_slice($offspringRows, 0, $maxRowsPerStep);
                         $fullTargetRows = collect($rows)
-                            ->filter(fn (array $row): bool => $this->rowMatchesExpectedTraits($row, $expectedTraits, false))
+                            ->filter(fn (array $row): bool => $this->rowMatchesExpectedTraits($row, $expectedTraits, $strictVisualOnly))
                             ->values()
                             ->all();
                         $fullTargetProbability = collect($fullTargetRows)->sum(fn (array $row): float => (float) ($row['percentage'] ?? 0));
@@ -1219,12 +1226,12 @@ class GetLitterPlanningPageQuery
                             ->first();
 
                         $matchedUnion = collect($rows)
-                            ->flatMap(fn (array $row): array => $this->extractSupportedTargetsForRow($row, $expectedTraits))
+                            ->flatMap(fn (array $row): array => $this->extractSupportedTargetsForRow($row, $expectedTraits, $strictVisualOnly))
                             ->unique()
                             ->values()
                             ->all();
                         $bestRowSupport = (int) collect($rows)
-                            ->map(fn (array $row): int => count($this->extractSupportedTargetsForRow($row, $expectedTraits)))
+                            ->map(fn (array $row): int => count($this->extractSupportedTargetsForRow($row, $expectedTraits, $strictVisualOnly)))
                             ->max();
 
                         $stepId = ++$stepCounter;
@@ -1290,9 +1297,9 @@ class GetLitterPlanningPageQuery
                         }
 
                         $keeperCandidates = collect($rows)
-                            ->map(function (array $row) use ($expectedTraits): array {
-                                $matched = $this->extractMatchedTargetsForRow($row, $expectedTraits, false);
-                                $supported = $this->extractSupportedTargetsForRow($row, $expectedTraits);
+                            ->map(function (array $row) use ($expectedTraits, $strictVisualOnly): array {
+                                $matched = $this->extractMatchedTargetsForRow($row, $expectedTraits, $strictVisualOnly);
+                                $supported = $this->extractSupportedTargetsForRow($row, $expectedTraits, $strictVisualOnly);
 
                                 return [
                                     'row' => $row,
@@ -1520,7 +1527,8 @@ class GetLitterPlanningPageQuery
             $maxMalesPerType,
             $maxFemalesPerType,
             $maxPairChecksPerType,
-            $maxRowsPerStep
+            $maxRowsPerStep,
+            $strictVisualOnly
         );
 
         if ($shortcut !== null) {
@@ -1585,7 +1593,8 @@ class GetLitterPlanningPageQuery
         int $maxMalesPerType,
         int $maxFemalesPerType,
         int $maxPairChecksPerType,
-        int $maxRowsPerStep
+        int $maxRowsPerStep,
+        bool $strictVisualOnly
     ): ?array {
         if (empty($expectedTraits)) {
             return null;
@@ -1633,8 +1642,8 @@ class GetLitterPlanningPageQuery
                     }
 
                     $keeperCandidates = collect($rows1)
-                        ->map(function (array $row) use ($expectedTraits): array {
-                            $supported = $this->extractSupportedTargetsForRow($row, $expectedTraits);
+                        ->map(function (array $row) use ($expectedTraits, $strictVisualOnly): array {
+                            $supported = $this->extractSupportedTargetsForRow($row, $expectedTraits, $strictVisualOnly);
 
                             return [
                                 'row' => $row,
@@ -1674,7 +1683,7 @@ class GetLitterPlanningPageQuery
                     }
 
                     $targetRows2 = collect($rows2)
-                        ->filter(fn (array $row): bool => $this->rowMatchesExpectedTraits($row, $expectedTraits, false))
+                        ->filter(fn (array $row): bool => $this->rowMatchesExpectedTraits($row, $expectedTraits, $strictVisualOnly))
                         ->values()
                         ->all();
                     $targetProbability2 = (float) collect($targetRows2)->sum(fn (array $row): float => (float) ($row['percentage'] ?? 0));
@@ -1692,15 +1701,15 @@ class GetLitterPlanningPageQuery
                         'g1_parent_male_id' => (int) $male->id,
                         'g1_parent_female_id' => (int) $female->id,
                         'g1_rows' => $this->markRoadmapKeeperRows(
-                            array_slice($this->buildRoadmapOffspringRows($rows1, $expectedTraits), 0, $maxRowsPerStep),
+                            array_slice($this->buildRoadmapOffspringRows($rows1, $expectedTraits, $strictVisualOnly), 0, $maxRowsPerStep),
                             [(string) $keeper['signature']]
                         ),
                         'g1_keeper_label' => $this->formatRoadmapKeeperLabel((array) $keeper['row']),
                         'g1_probability' => (float) $keeper['percentage'],
-                        'g1_matched' => $this->extractSupportedTargetsForRow((array) $keeper['row'], $expectedTraits),
+                        'g1_matched' => $this->extractSupportedTargetsForRow((array) $keeper['row'], $expectedTraits, $strictVisualOnly),
                         'g2_pairing' => '[G1] ' . $this->formatRoadmapKeeperLabel((array) $keeper['row']) . ' x [G1] ' . $this->formatRoadmapKeeperLabel((array) $keeper['row']),
                         'g2_rows' => $this->markRoadmapKeeperRows(
-                            array_slice($this->buildRoadmapOffspringRows($rows2, $expectedTraits), 0, $maxRowsPerStep),
+                            array_slice($this->buildRoadmapOffspringRows($rows2, $expectedTraits, $strictVisualOnly), 0, $maxRowsPerStep),
                             [],
                             (string) ($targetSignature2 ?? '')
                         ),
@@ -1957,7 +1966,7 @@ class GetLitterPlanningPageQuery
      * @param array<int, string> $expectedTraits
      * @return array<int, string>
      */
-    private function extractSupportedTargetsForRow(array $row, array $expectedTraits): array
+    private function extractSupportedTargetsForRow(array $row, array $expectedTraits, bool $strictVisualOnly): array
     {
         $supported = [];
 
@@ -1979,7 +1988,7 @@ class GetLitterPlanningPageQuery
                 continue;
             }
 
-            if ($this->rowMatchesExpectedTraits($row, [$expectedTrait], false)) {
+            if ($this->rowMatchesExpectedTraits($row, [$expectedTrait], $strictVisualOnly)) {
                 $supported[] = $expectedTrait;
                 continue;
             }
@@ -2048,10 +2057,10 @@ class GetLitterPlanningPageQuery
      *     matched_targets:array<int, string>
      * }>
      */
-    private function buildRoadmapOffspringRows(array $rows, array $expectedTraits): array
+    private function buildRoadmapOffspringRows(array $rows, array $expectedTraits, bool $strictVisualOnly): array
     {
         return collect($rows)
-            ->map(function (array $row) use ($expectedTraits): array {
+            ->map(function (array $row) use ($expectedTraits, $strictVisualOnly): array {
                 $percentage = (float) ($row['percentage'] ?? 0);
 
                 return [
@@ -2070,7 +2079,7 @@ class GetLitterPlanningPageQuery
                         ->filter()
                         ->values()
                         ->all()),
-                    'matched_targets' => $this->extractMatchedTargetsForRow($row, $expectedTraits, false),
+                    'matched_targets' => $this->extractMatchedTargetsForRow($row, $expectedTraits, $strictVisualOnly),
                 ];
             })
             ->sortByDesc('percentage')

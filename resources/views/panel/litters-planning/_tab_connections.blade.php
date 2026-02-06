@@ -25,6 +25,7 @@
             </div>
             <div class="col-12 col-lg-3 d-flex flex-column gap-2">
                 <label class="form-check-label small">
+                    <input type="hidden" name="strict_visual_only" value="0">
                     <input
                         type="checkbox"
                         class="form-check-input me-1"
