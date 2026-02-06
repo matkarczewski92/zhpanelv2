@@ -37,6 +37,7 @@
                 </div>
             </form>
             <div class="small text-muted mt-2">Nazwa przy dodawaniu pobiera sie automatycznie z eWeLink API.</div>
+            <div class="small text-muted">Nazwa jest traktowana jako pole tylko do odczytu i synchronizowana z eWeLink API.</div>
         </div>
         <div class="table-responsive">
             <table class="table table-dark table-sm align-middle mb-0">
@@ -142,16 +143,13 @@
                                         <input type="text" name="device_id" class="form-control form-control-sm bg-dark text-light" value="{{ $device->device_id }}" required>
                                     </div>
                                     <div class="col-md-2">
-                                        <input type="text" name="name" class="form-control form-control-sm bg-dark text-light" value="{{ $device->name }}" required>
-                                    </div>
-                                    <div class="col-md-2">
                                         <select name="device_type" class="form-select form-select-sm bg-dark text-light">
                                             <option value="switch" @selected($device->device_type === 'switch')>Przelacznik</option>
                                             <option value="thermostat" @selected($device->device_type === 'thermostat')>Termostat</option>
                                             <option value="thermostat_hygrostat" @selected($device->device_type === 'thermostat_hygrostat')>Termostat + Higrostat</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <input type="text" name="description" class="form-control form-control-sm bg-dark text-light" value="{{ $device->description }}">
                                     </div>
                                     <div class="col-md-2 text-end">

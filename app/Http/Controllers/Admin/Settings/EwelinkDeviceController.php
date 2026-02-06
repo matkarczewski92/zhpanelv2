@@ -39,19 +39,16 @@ class EwelinkDeviceController extends Controller
     public function update(EwelinkDeviceRequest $request, EwelinkDevice $device): RedirectResponse
     {
         $payload = $request->validated();
-        $newDeviceId = trim((string) ($payload['device_id'] ?? $device->device_id));
-        $newName = trim((string) ($payload['name'] ?? ''));
-        $nameChanged = $newName !== '' && ($newName !== trim((string) $device->name) || $newDeviceId !== (string) $device->device_id);
+        unset($payload['name']);
 
-        if ($nameChanged) {
+        $newDeviceId = trim((string) ($payload['device_id'] ?? $device->device_id));
+        if ($newDeviceId !== (string) $device->device_id) {
             try {
-                $this->runCloudOperation(function () use ($newDeviceId, $newName): void {
-                    $this->cloudClient->updateDeviceInfo($newDeviceId, $newName);
-                });
+                $payload['name'] = $this->resolveDeviceNameFromCloud($newDeviceId);
             } catch (RuntimeException $exception) {
                 return $this->redirectToTab()->with('toast', [
                     'type' => 'error',
-                    'message' => 'Nie udalo sie zaktualizowac nazwy w eWeLink: ' . $exception->getMessage(),
+                    'message' => 'Nie udalo sie pobrac nazwy urzadzenia z eWeLink API: ' . $exception->getMessage(),
                 ]);
             }
         }
