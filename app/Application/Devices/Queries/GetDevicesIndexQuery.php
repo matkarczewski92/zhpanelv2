@@ -62,6 +62,7 @@ class GetDevicesIndexQuery
                 'cloud_dispatch' => null,
                 'cloud_base_candidates' => [],
                 'cloud_base_selected' => null,
+                'cloud_oauth_authorize_url' => null,
                 'cloud_login_attempts' => [],
                 'cloud_login' => null,
                 'cloud_devices' => null,
@@ -101,6 +102,7 @@ class GetDevicesIndexQuery
         try {
             $baseCandidates = $this->buildCloudBaseCandidates($region, $appId, $manualBaseUrl, $result);
             $result['payloads']['cloud_base_candidates'] = $baseCandidates;
+            $result['payloads']['cloud_oauth_authorize_url'] = $this->buildOauthAuthorizeUrl($appId, $redirectUrl, $oauthState);
 
             [$baseUrl, $tokenResponse, $tokenData, $accessToken] = $this->tryCloudAccessToken(
                 $baseCandidates,
@@ -321,6 +323,20 @@ class GetDevicesIndexQuery
             return [$baseCandidates[0] ?? '', null, ['mode' => 'preset_access_token'], $presetAccessToken];
         }
 
+        if ($oauthCode === '') {
+            $result['payloads']['cloud_login_attempts'] = [[
+                'base_url' => '(oauth)',
+                'status' => null,
+                'mode' => 'oauth_token',
+                'error' => 'Brak EWELINK_CLOUD_OAUTH_CODE lub EWELINK_CLOUD_ACCESS_TOKEN.',
+            ]];
+
+            return ['', null, [
+                'error' => 400,
+                'msg' => 'Brak kodu OAuth. Otworz URL autoryzacji i wklej parametr code do EWELINK_CLOUD_OAUTH_CODE.',
+            ], ''];
+        }
+
         $attempts = [];
         $lastResponse = null;
         $lastData = [];
@@ -334,9 +350,7 @@ class GetDevicesIndexQuery
                     $oauthCode,
                     $redirectUrl,
                     $oauthState,
-                    $email,
-                    $password,
-                    $areaCode
+                    $oauthState
                 );
 
                 $attempts[] = [
@@ -376,40 +390,8 @@ class GetDevicesIndexQuery
         string $appSecret,
         string $oauthCode,
         string $redirectUrl,
-        string $oauthState,
-        string $email,
-        string $password,
-        string $areaCode
+        string $oauthState
     ): array {
-        if ($oauthCode === '' && $email !== '' && $password !== '') {
-            $codeResponse = $this->signedPost($baseUrl . '/v2/user/oauth/code', $appId, $appSecret, [
-                'countryCode' => $areaCode,
-                'account' => $email,
-                'password' => $password,
-                'redirectUrl' => $redirectUrl,
-                'state' => $oauthState,
-            ]);
-            $codeData = (array) ($codeResponse->json() ?? []);
-            $resolvedCode = $this->extractOauthCode($codeData);
-
-            if ($resolvedCode !== '') {
-                $tokenBody = array_filter([
-                    'grantType' => 'authorization_code',
-                    'code' => $resolvedCode,
-                    'redirectUrl' => $redirectUrl !== '' ? $redirectUrl : null,
-                    'state' => $oauthState,
-                ], static fn (mixed $v): bool => $v !== null && $v !== '');
-
-                $tokenResponse = $this->signedPost($baseUrl . '/v2/user/oauth/token', $appId, $appSecret, $tokenBody);
-                $tokenData = (array) ($tokenResponse->json() ?? []);
-                $tokenData['_oauth_code_response'] = $codeData;
-
-                return [$tokenResponse, $tokenData, 'oauth_code_password'];
-            }
-
-            return [$codeResponse, $codeData, 'oauth_code_password'];
-        }
-
         if ($oauthCode !== '') {
             $body = array_filter([
                 'grantType' => 'authorization_code',
@@ -421,15 +403,7 @@ class GetDevicesIndexQuery
             $response = $this->signedPost($baseUrl . '/v2/user/oauth/token', $appId, $appSecret, $body);
             return [$response, (array) ($response->json() ?? []), 'oauth_token'];
         }
-
-        $body = [
-            'countryCode' => $areaCode,
-            'account' => $email,
-            'password' => $password,
-        ];
-        $response = $this->signedPost($baseUrl . '/v2/user/login', $appId, $appSecret, $body);
-
-        return [$response, (array) ($response->json() ?? []), 'legacy_login'];
+        return [Http::response([], 400), ['error' => 400, 'msg' => 'Brak oauth code.'], 'oauth_token'];
     }
 
     /**
@@ -469,38 +443,16 @@ class GetDevicesIndexQuery
         ));
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
-    private function extractOauthCode(array $payload): string
+    private function buildOauthAuthorizeUrl(string $appId, string $redirectUrl, string $state): string
     {
-        $code = trim((string) (
-            $payload['data']['code']
-            ?? $payload['code']
-            ?? ''
-        ));
-        if ($code !== '') {
-            return $code;
-        }
+        $base = 'https://c2ccdn.coolkit.cc/oauth/index.html';
+        $query = http_build_query([
+            'clientId' => $appId,
+            'redirectUrl' => $redirectUrl,
+            'state' => $state,
+        ]);
 
-        $redirect = trim((string) (
-            $payload['data']['redirectUrl']
-            ?? $payload['data']['redirect_url']
-            ?? $payload['redirectUrl']
-            ?? $payload['redirect_url']
-            ?? ''
-        ));
-        if ($redirect === '') {
-            return '';
-        }
-
-        $parts = parse_url($redirect);
-        if (!isset($parts['query'])) {
-            return '';
-        }
-
-        parse_str((string) $parts['query'], $params);
-        return trim((string) ($params['code'] ?? ''));
+        return $base . '?' . $query;
     }
 
     /**
@@ -610,7 +562,7 @@ class GetDevicesIndexQuery
         $passwordConfigured = trim((string) ($cloud['password'] ?? '')) !== '';
         $oauthCodeConfigured = trim((string) ($cloud['oauth_code'] ?? '')) !== '';
         $accessTokenConfigured = trim((string) ($cloud['access_token'] ?? '')) !== '';
-        $hasCredential = $accessTokenConfigured || $oauthCodeConfigured || ($email !== '' && $passwordConfigured);
+        $hasCredential = $accessTokenConfigured || $oauthCodeConfigured;
 
         return [
             'region' => trim((string) ($cloud['region'] ?? 'eu')),

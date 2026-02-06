@@ -45,6 +45,9 @@
                     <div><span class="text-muted">Haslo Cloud:</span> @if($page['cloud']['password_configured']) <span class="badge text-bg-success">ustawione</span> @else <span class="badge text-bg-warning text-dark">brak</span> @endif</div>
                     <div><span class="text-muted">OAuth code:</span> @if($page['cloud']['oauth_code_configured']) <span class="badge text-bg-success">ustawiony</span> @else <span class="badge text-bg-warning text-dark">brak</span> @endif</div>
                     <div><span class="text-muted">Access token:</span> @if($page['cloud']['access_token_configured']) <span class="badge text-bg-success">ustawiony</span> @else <span class="badge text-bg-warning text-dark">brak</span> @endif</div>
+                    @if (!empty($page['payloads']['cloud_oauth_authorize_url']))
+                        <div class="mt-2"><span class="text-muted">URL autoryzacji:</span> <a href="{{ $page['payloads']['cloud_oauth_authorize_url'] }}" target="_blank" rel="noopener">otworz</a></div>
+                    @endif
                     <div><span class="text-muted">Cloud gotowy:</span> @if($page['cloud']['complete']) <span class="badge text-bg-success">tak</span> @else <span class="badge text-bg-warning text-dark">nie</span> @endif</div>
                     @if ($page['error'] !== '')
                         <div class="text-warning mt-2">{{ $page['error'] }}</div>
