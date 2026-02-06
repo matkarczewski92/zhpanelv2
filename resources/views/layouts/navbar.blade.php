@@ -39,9 +39,6 @@
                     <a class="nav-link {{ request()->routeIs('panel.massdata.*') ? 'active' : '' }}" href="{{ route('panel.massdata.index') }}">Masowe Dane</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}" href="{{ route('panel.devices.index') }}">Urzadzenia</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="{{ route('web.home') }}">Web</a>
                 </li>
                 {{-- placeholder for future links --}}
@@ -183,12 +180,6 @@
                 href="{{ route('panel.massdata.index') }}"
             >
                 Masowe Dane
-            </a>
-            <a
-                class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}"
-                href="{{ route('panel.devices.index') }}"
-            >
-                Urzadzenia
             </a>
             <a
                 class="nav-link"
