@@ -37,9 +37,26 @@ class AnimalController extends Controller
 
     public function show(Animal $animal, Request $request, GetAnimalProfileQuery $query)
     {
+        $sessionKey = 'animal_nav_context';
+        $navIdsFromQuery = trim((string) $request->query('nav_ids', ''));
+        $navBackFromQuery = trim((string) $request->query('nav_back', ''));
+
+        if ($navIdsFromQuery !== '') {
+            $request->session()->put($sessionKey, [
+                'nav_ids' => $navIdsFromQuery,
+                'nav_back' => $navBackFromQuery,
+            ]);
+        }
+
+        /** @var array{nav_ids?:string,nav_back?:string}|null $storedNav */
+        $storedNav = $request->session()->get($sessionKey);
         $navigationInput = [
-            'nav_ids' => (string) $request->query('nav_ids', ''),
-            'nav_back' => (string) $request->query('nav_back', ''),
+            'nav_ids' => $navIdsFromQuery !== ''
+                ? $navIdsFromQuery
+                : (string) ($storedNav['nav_ids'] ?? ''),
+            'nav_back' => $navIdsFromQuery !== ''
+                ? $navBackFromQuery
+                : (string) ($storedNav['nav_back'] ?? ''),
         ];
         $profile = $query->handle($animal->id, $navigationInput);
 

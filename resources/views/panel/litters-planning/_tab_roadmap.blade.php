@@ -35,8 +35,9 @@
                 @csrf
             </form>
         @else
-            <form method="GET" action="{{ route('panel.litters-planning.index') }}" class="row g-2 align-items-end">
+            <form method="GET" action="{{ route('panel.litters-planning.index') }}" class="row g-2 align-items-start">
                 <input type="hidden" name="tab" value="roadmap">
+                <input type="hidden" name="roadmap_excluded_root_pairs" value="{{ implode(',', $page->roadmapExcludedRootPairs) }}">
                 <div class="col-12 col-lg-8">
                     <label class="form-label small text-muted mb-1" for="roadmapExpectedGenes">Docelowe geny / traity</label>
                     <div class="position-relative">
@@ -63,20 +64,41 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-12 col-lg-2 d-flex flex-column gap-2">
-                    <label class="form-check-label small">
-                        <input type="hidden" name="strict_visual_only" value="0">
+                <div class="col-12 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Priorytet roadmapy">
                         <input
-                            type="checkbox"
-                            class="form-check-input me-1"
-                            name="strict_visual_only"
-                            value="1"
-                            @checked($page->connectionStrictVisualOnly)
+                            type="radio"
+                            class="btn-check"
+                            name="roadmap_priority_mode"
+                            id="roadmapPriorityFastest"
+                            value="fastest"
+                            @checked($page->roadmapPriorityMode === 'fastest')
                         >
-                        Bez dodatkowych genow wizualnych
-                    </label>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-grow-1">Buduj</button>
+                        <label class="btn btn-outline-light" for="roadmapPriorityFastest">Najszybszy</label>
+
+                        <input
+                            type="radio"
+                            class="btn-check"
+                            name="roadmap_priority_mode"
+                            id="roadmapPriorityBestPercent"
+                            value="highest_probability"
+                            @checked($page->roadmapPriorityMode === 'highest_probability')
+                        >
+                        <label class="btn btn-outline-light" for="roadmapPriorityBestPercent">Najwiekszy % celu</label>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2 ms-lg-auto">
+                        <label class="form-check-label small text-nowrap">
+                            <input type="hidden" name="strict_visual_only" value="0">
+                            <input
+                                type="checkbox"
+                                class="form-check-input me-1"
+                                name="strict_visual_only"
+                                value="1"
+                                @checked($page->connectionStrictVisualOnly)
+                            >
+                            Bez dodatkowych genow wizualnych
+                        </label>
+                        <button type="submit" class="btn btn-primary">Buduj</button>
                         <a href="{{ route('panel.litters-planning.index', ['tab' => 'roadmap']) }}" class="btn btn-outline-light">Wyczysc</a>
                     </div>
                 </div>
@@ -96,12 +118,44 @@
                 @if ($page->connectionStrictVisualOnly)
                     Wlaczony filtr: bez dodatkowych genow wizualnych.
                 @endif
+                Tryb: {{ $page->roadmapPriorityMode === 'highest_probability' ? 'najwiekszy % celu' : 'najszybszy' }}.
                 @if ($page->roadmapTargetReachable)
                     <span class="text-success">Cel mozliwy do osiagniecia w zaproponowanym roadmap.</span>
                 @else
                     <span class="text-warning">Nie pokryto calego celu w limicie pokolen.</span>
                 @endif
             </div>
+
+            @if (
+                empty($activeRoadmap)
+                && $page->roadmapPriorityMode === 'fastest'
+                && $page->roadmapTargetReachable
+                && $page->roadmapRootPairKey !== ''
+            )
+                @php
+                    $excludedForAlternative = collect($page->roadmapExcludedRootPairs)
+                        ->merge([$page->roadmapRootPairKey])
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->implode(',');
+                @endphp
+                <div class="d-flex justify-content-end">
+                    <a
+                        href="{{ route('panel.litters-planning.index', [
+                            'tab' => 'roadmap',
+                            'roadmap_expected_genes' => $page->roadmapSearchInput,
+                            'roadmap_priority_mode' => $page->roadmapPriorityMode,
+                            'roadmap_generations' => $page->roadmapGenerations > 0 ? $page->roadmapGenerations : null,
+                            'strict_visual_only' => $page->connectionStrictVisualOnly ? 1 : 0,
+                            'roadmap_excluded_root_pairs' => $excludedForAlternative,
+                        ]) }}"
+                        class="btn btn-sm btn-outline-warning"
+                    >
+                        Pokaz inna mozliwosc
+                    </a>
+                </div>
+            @endif
 
             @if (empty($activeRoadmap))
                 <form method="POST" action="{{ route('panel.litters-planning.roadmaps.store') }}" class="row g-2 align-items-end">
@@ -121,6 +175,7 @@
                         <label class="form-label small text-muted mb-1">Zapisywany cel</label>
                         <input class="form-control" value="{{ $page->roadmapSearchInput }}" readonly>
                         <input type="hidden" name="roadmap_expected_genes" value="{{ $page->roadmapSearchInput }}">
+                        <input type="hidden" name="roadmap_priority_mode" value="{{ $page->roadmapPriorityMode }}">
                         <input type="hidden" name="roadmap_generations" value="{{ $page->roadmapGenerations > 0 ? $page->roadmapGenerations : '' }}">
                     </div>
                     <div class="col-12 col-lg-3 d-grid">

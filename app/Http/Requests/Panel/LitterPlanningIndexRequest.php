@@ -21,6 +21,8 @@ class LitterPlanningIndexRequest extends FormRequest
                 ? $this->normalizeBoolean($this->input('strict_visual_only'))
                 : null,
             'roadmap_expected_genes' => $this->normalizeText($this->input('roadmap_expected_genes')),
+            'roadmap_priority_mode' => $this->normalizeRoadmapPriorityMode($this->input('roadmap_priority_mode')),
+            'roadmap_excluded_root_pairs' => $this->normalizeText($this->input('roadmap_excluded_root_pairs')),
             'roadmap_generations' => $this->normalizeInt($this->input('roadmap_generations')),
             'roadmap_id' => $this->normalizeInt($this->input('roadmap_id')),
             'roadmap_open_id' => $this->normalizeInt($this->input('roadmap_open_id')),
@@ -35,6 +37,8 @@ class LitterPlanningIndexRequest extends FormRequest
             'expected_genes' => ['nullable', 'string', 'max:500'],
             'strict_visual_only' => ['nullable', 'boolean'],
             'roadmap_expected_genes' => ['nullable', 'string', 'max:500'],
+            'roadmap_priority_mode' => ['nullable', 'in:fastest,highest_probability'],
+            'roadmap_excluded_root_pairs' => ['nullable', 'string', 'max:500'],
             'roadmap_generations' => ['nullable', 'integer', 'min:2', 'max:5'],
             'roadmap_id' => ['nullable', 'integer', 'exists:litter_roadmaps,id'],
             'roadmap_open_id' => ['nullable', 'integer', 'exists:litter_roadmaps,id'],
@@ -78,5 +82,19 @@ class LitterPlanningIndexRequest extends FormRequest
         }
 
         return in_array(strtolower(trim($value)), ['1', 'true', 'on', 'yes'], true);
+    }
+
+    private function normalizeRoadmapPriorityMode(mixed $value): ?string
+    {
+        $normalized = $this->normalizeText($value);
+        if ($normalized === null) {
+            return null;
+        }
+
+        $normalized = strtolower($normalized);
+
+        return in_array($normalized, ['fastest', 'highest_probability'], true)
+            ? $normalized
+            : null;
     }
 }

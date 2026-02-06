@@ -16,6 +16,7 @@ class StoreLitterRoadmapRequest extends FormRequest
         $this->merge([
             'name' => trim((string) $this->input('name')),
             'roadmap_expected_genes' => $this->normalizeText($this->input('roadmap_expected_genes')),
+            'roadmap_priority_mode' => $this->normalizeRoadmapPriorityMode($this->input('roadmap_priority_mode')),
             'roadmap_generations' => $this->normalizeInt($this->input('roadmap_generations')),
         ]);
     }
@@ -25,6 +26,7 @@ class StoreLitterRoadmapRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'min:3', 'max:255'],
             'roadmap_expected_genes' => ['required', 'string', 'max:500'],
+            'roadmap_priority_mode' => ['nullable', 'in:fastest,highest_probability'],
             'roadmap_generations' => ['nullable', 'integer', 'min:2', 'max:5'],
         ];
     }
@@ -59,5 +61,18 @@ class StoreLitterRoadmapRequest extends FormRequest
 
         return $int > 0 ? $int : null;
     }
-}
 
+    private function normalizeRoadmapPriorityMode(mixed $value): ?string
+    {
+        $normalized = $this->normalizeText($value);
+        if ($normalized === null) {
+            return null;
+        }
+
+        $normalized = strtolower($normalized);
+
+        return in_array($normalized, ['fastest', 'highest_probability'], true)
+            ? $normalized
+            : null;
+    }
+}

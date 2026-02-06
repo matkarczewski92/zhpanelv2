@@ -47,6 +47,11 @@ class GetLitterPlanningPageQuery
         $hasRoadmapManualInput = isset($filters['roadmap_expected_genes'])
             && trim((string) ($filters['roadmap_expected_genes'] ?? '')) !== '';
         $roadmapSearchInput = trim((string) ($filters['roadmap_expected_genes'] ?? ''));
+        $roadmapPriorityMode = (string) ($filters['roadmap_priority_mode'] ?? 'fastest');
+        if (!in_array($roadmapPriorityMode, ['fastest', 'highest_probability'], true)) {
+            $roadmapPriorityMode = 'fastest';
+        }
+        $roadmapExcludedRootPairs = $this->parseRootPairKeys((string) ($filters['roadmap_excluded_root_pairs'] ?? ''));
         $roadmapGenerations = isset($filters['roadmap_generations']) && is_numeric($filters['roadmap_generations'])
             ? (int) $filters['roadmap_generations']
             : 0; // 0 = dowolny
@@ -124,6 +129,7 @@ class GetLitterPlanningPageQuery
         $roadmapMatchedTraits = [];
         $roadmapMissingTraits = $roadmapExpectedTraits;
         $roadmapSteps = [];
+        $roadmapRootPairKey = '';
 
         if (!empty($connectionExpectedTraits)) {
             $connectionSearchRows = $this->buildConnectionSearchRows(
@@ -148,16 +154,20 @@ class GetLitterPlanningPageQuery
                 array_values((array) ($selectedRoadmap->steps ?? [])),
                 $completedGenerations
             );
+            $roadmapRootPairKey = $this->extractRootPairKeyFromSteps($roadmapSteps);
         } elseif (!empty($roadmapExpectedTraits)) {
             $roadmap = $this->buildRoadmapSnapshot(
                 $roadmapSearchInput,
                 $roadmapGenerations,
-                $connectionStrictVisualOnly
+                $connectionStrictVisualOnly,
+                $roadmapPriorityMode,
+                $roadmapExcludedRootPairs
             );
             $roadmapTargetReachable = $roadmap['target_reachable'];
             $roadmapMatchedTraits = $roadmap['matched_traits'];
             $roadmapMissingTraits = $roadmap['missing_traits'];
             $roadmapSteps = $roadmap['steps'];
+            $roadmapRootPairKey = trim((string) ($roadmap['root_pair_key'] ?? ''));
         }
 
         $roadmapSteps = $this->normalizeRoadmapStepsForDisplay($roadmapSteps);
@@ -177,6 +187,9 @@ class GetLitterPlanningPageQuery
             connectionCheckedPairs: $connectionCheckedPairs,
             connectionSearchRows: $connectionSearchRows,
             roadmapSearchInput: $roadmapSearchInput,
+            roadmapPriorityMode: $roadmapPriorityMode,
+            roadmapExcludedRootPairs: $roadmapExcludedRootPairs,
+            roadmapRootPairKey: $roadmapRootPairKey,
             roadmapGenerations: $roadmapGenerations,
             roadmapExpectedTraits: $roadmapExpectedTraits,
             roadmapTargetReachable: $roadmapTargetReachable,
@@ -200,21 +213,37 @@ class GetLitterPlanningPageQuery
      *     steps:array<int, array<string, mixed>>
      * }
      */
-    public function buildRoadmapSnapshot(string $searchInput, int $generations = 0, bool $strictVisualOnly = true): array
+    public function buildRoadmapSnapshot(
+        string $searchInput,
+        int $generations = 0,
+        bool $strictVisualOnly = true,
+        string $priorityMode = 'fastest',
+        array $excludedGenerationOnePairs = []
+    ): array
     {
         $normalizedSearch = trim($searchInput);
         $traitGeneAliasMap = $this->buildTraitGeneAliasMap();
         $expectedTraits = $this->parseExpectedTraits($normalizedSearch, $traitGeneAliasMap);
         $generationsNormalized = $generations >= 2 && $generations <= 5 ? $generations : 0;
         $generationsLimit = $generationsNormalized > 0 ? $generationsNormalized : 5;
+        if (!in_array($priorityMode, ['fastest', 'highest_probability'], true)) {
+            $priorityMode = 'fastest';
+        }
 
         $roadmap = !empty($expectedTraits)
-            ? $this->buildRoadmap($expectedTraits, $generationsLimit, $strictVisualOnly)
+            ? $this->buildRoadmap(
+                $expectedTraits,
+                $generationsLimit,
+                $strictVisualOnly,
+                $priorityMode,
+                $excludedGenerationOnePairs
+            )
             : [
                 'target_reachable' => false,
                 'matched_traits' => [],
                 'missing_traits' => [],
                 'steps' => [],
+                'root_pair_key' => '',
             ];
 
         return [
@@ -225,6 +254,7 @@ class GetLitterPlanningPageQuery
             'matched_traits' => array_values((array) ($roadmap['matched_traits'] ?? [])),
             'missing_traits' => array_values((array) ($roadmap['missing_traits'] ?? [])),
             'steps' => array_values((array) ($roadmap['steps'] ?? [])),
+            'root_pair_key' => trim((string) ($roadmap['root_pair_key'] ?? '')),
         ];
     }
 
@@ -1000,7 +1030,14 @@ class GetLitterPlanningPageQuery
      *     }>
      * }
      */
-    private function buildRoadmap(array $expectedTraits, int $maxGenerations, bool $strictVisualOnly): array
+    private function buildRoadmap(
+        array $expectedTraits,
+        int $maxGenerations,
+        bool $strictVisualOnly,
+        string $priorityMode,
+        array $excludedGenerationOnePairs = [],
+        bool $allowDiversification = true
+    ): array
     {
         $breeders = Animal::query()
             ->where('animal_category_id', 1)
@@ -1015,6 +1052,7 @@ class GetLitterPlanningPageQuery
                 'matched_traits' => [],
                 'missing_traits' => $expectedTraits,
                 'steps' => [],
+                'root_pair_key' => '',
             ];
         }
 
@@ -1107,6 +1145,7 @@ class GetLitterPlanningPageQuery
         $stepRecords = [];
         $stepCounter = 0;
         $bestGoal = null;
+        $firstGoalGeneration = null;
         $bestProgress = null;
         $steps = [];
 
@@ -1176,11 +1215,10 @@ class GetLitterPlanningPageQuery
                 $femaleIds = array_values(array_unique(array_merge($femaleFocus, array_slice($femaleIds, 0, $maxFemalesPerType))));
                 $checkedPairs = 0;
 
+                $focusMap = array_fill_keys($focusBreederIds, true);
+                $pairCandidates = [];
                 foreach ($maleIds as $maleId) {
                     foreach ($femaleIds as $femaleId) {
-                        if ($checkedPairs >= $maxPairChecksPerType) {
-                            break;
-                        }
                         if ($maleId === $femaleId) {
                             $sameBreederId = (string) ($allBreeders[$maleId]['id'] ?? '');
                             $isVirtualSiblingCross = str_starts_with($sameBreederId, 'v:');
@@ -1189,18 +1227,85 @@ class GetLitterPlanningPageQuery
                             }
                         }
 
+                        $maleInFocus = isset($focusMap[$maleId]);
+                        $femaleInFocus = isset($focusMap[$femaleId]);
+                        if ($generation > 1 && !$maleInFocus && !$femaleInFocus) {
+                            continue;
+                        }
+
+                        $maleBreederId = (string) ($allBreeders[$maleId]['id'] ?? '');
+                        $femaleBreederId = (string) ($allBreeders[$femaleId]['id'] ?? '');
+                        $maleIsReal = str_starts_with($maleBreederId, 'a:');
+                        $femaleIsReal = str_starts_with($femaleBreederId, 'a:');
+
+                        $priority = 0;
                         if ($generation > 1) {
-                            $maleInFocus = in_array($maleId, $focusBreederIds, true);
-                            $femaleInFocus = in_array($femaleId, $focusBreederIds, true);
-                            if (!$maleInFocus && !$femaleInFocus) {
-                                continue;
+                            $isRealMix = $maleIsReal xor $femaleIsReal;
+                            if ($isRealMix) {
+                                $priority = 0; // najpierw Gx z realnym osobnikiem
+                            } elseif ($maleInFocus && $femaleInFocus) {
+                                $priority = 1; // potem Gx x Gx
+                            } else {
+                                $priority = 2; // na koniec pozostale
                             }
                         }
 
-                        $checkedPairs++;
+                        $pairCandidates[] = [
+                            'male_id' => $maleId,
+                            'female_id' => $femaleId,
+                            'priority' => $priority,
+                        ];
+                    }
+                }
 
-                        $male = $allBreeders[$maleId];
-                        $female = $allBreeders[$femaleId];
+                usort($pairCandidates, function (array $a, array $b) use ($allBreeders): int {
+                    $prioCompare = (int) $a['priority'] <=> (int) $b['priority'];
+                    if ($prioCompare !== 0) {
+                        return $prioCompare;
+                    }
+
+                    $aRel = (float) (($allBreeders[(string) $a['male_id']]['relevance'] ?? 0) + ($allBreeders[(string) $a['female_id']]['relevance'] ?? 0));
+                    $bRel = (float) (($allBreeders[(string) $b['male_id']]['relevance'] ?? 0) + ($allBreeders[(string) $b['female_id']]['relevance'] ?? 0));
+                    if ($aRel === $bRel) {
+                        $aKey = (string) $a['female_id'] . ':' . (string) $a['male_id'];
+                        $bKey = (string) $b['female_id'] . ':' . (string) $b['male_id'];
+
+                        return strcmp($aKey, $bKey);
+                    }
+
+                    return $aRel < $bRel ? 1 : -1;
+                });
+
+                $pairCheckLimit = $maxPairChecksPerType;
+                if (
+                    $priorityMode === 'highest_probability'
+                    && $firstGoalGeneration !== null
+                    && $generation === (int) $firstGoalGeneration
+                ) {
+                    // Compare all available pairs in the first generation where
+                    // target appears to pick the true highest probability.
+                    $pairCheckLimit = count($pairCandidates);
+                }
+
+                foreach ($pairCandidates as $pairCandidate) {
+                    if ($checkedPairs >= $pairCheckLimit) {
+                        break;
+                    }
+                    $checkedPairs++;
+
+                    $maleId = (string) $pairCandidate['male_id'];
+                    $femaleId = (string) $pairCandidate['female_id'];
+                    if ($generation === 1) {
+                        $rootFemaleId = $this->extractAnimalIdFromBreederKey($femaleId);
+                        $rootMaleId = $this->extractAnimalIdFromBreederKey($maleId);
+                        $rootPairKey = ($rootFemaleId ?? 0) . ':' . ($rootMaleId ?? 0);
+                        if ($rootFemaleId !== null && $rootMaleId !== null && in_array($rootPairKey, $excludedGenerationOnePairs, true)) {
+                            continue;
+                        }
+                    }
+
+                    $male = $allBreeders[$maleId];
+                    $female = $allBreeders[$femaleId];
                         $rows = $this->genotypeCalculator
                             ->setParentsTypeIds($male['type_id'], $female['type_id'])
                             ->getGenotypeFinale(
@@ -1279,12 +1384,26 @@ class GetLitterPlanningPageQuery
                         }
 
                         if ($fullTargetProbability > 0) {
+                            if ($firstGoalGeneration === null) {
+                                $firstGoalGeneration = $generation;
+                            }
                             if (
                                 $bestGoal === null
-                                || $generation < (int) $bestGoal['generation']
                                 || (
-                                    $generation === (int) $bestGoal['generation']
-                                    && $fullTargetProbability > (float) $bestGoal['probability']
+                                    $priorityMode === 'fastest'
+                                    && (
+                                        $generation < (int) $bestGoal['generation']
+                                    )
+                                )
+                                || (
+                                    $priorityMode === 'highest_probability'
+                                    && (
+                                        $generation === (int) $firstGoalGeneration
+                                        && (
+                                            (int) ($bestGoal['generation'] ?? 0) !== (int) $firstGoalGeneration
+                                            || $fullTargetProbability > (float) $bestGoal['probability']
+                                        )
+                                    )
                                 )
                             ) {
                                 $bestGoal = [
@@ -1348,9 +1467,11 @@ class GetLitterPlanningPageQuery
                         }
                     }
                 }
-            }
 
-            if ($bestGoal !== null && (int) $bestGoal['generation'] === $generation) {
+            if (
+                ($priorityMode === 'fastest' && $bestGoal !== null && (int) $bestGoal['generation'] === $generation)
+                || ($priorityMode === 'highest_probability' && $firstGoalGeneration !== null && (int) $firstGoalGeneration === $generation)
+            ) {
                 break;
             }
 
@@ -1400,6 +1521,7 @@ class GetLitterPlanningPageQuery
                 'matched_traits' => [],
                 'missing_traits' => $expectedTraits,
                 'steps' => [],
+                'root_pair_key' => '',
             ];
         }
 
@@ -1531,9 +1653,24 @@ class GetLitterPlanningPageQuery
             $strictVisualOnly
         );
 
-        if ($shortcut !== null) {
+        if ($shortcut !== null && $priorityMode === 'fastest') {
             $currentBestGeneration = $bestGoal !== null ? (int) ($bestGoal['generation'] ?? PHP_INT_MAX) : PHP_INT_MAX;
-            if ($currentBestGeneration > 2) {
+            $shortcutProbability = (float) ($shortcut['best_probability'] ?? 0);
+            $currentBestProbability = (float) ($bestGoal['probability'] ?? 0);
+            if (
+                ($priorityMode === 'fastest' && $currentBestGeneration > 2)
+                || (
+                    $priorityMode === 'highest_probability'
+                    && (
+                        $bestGoal === null
+                        || $shortcutProbability > $currentBestProbability
+                        || (
+                            $shortcutProbability === $currentBestProbability
+                            && 2 < $currentBestGeneration
+                        )
+                    )
+                )
+            ) {
                 return $shortcut;
             }
         }
@@ -1545,12 +1682,76 @@ class GetLitterPlanningPageQuery
             ->values()
             ->all();
 
-        return [
+        $rootPairKey = collect($steps)
+            ->first(function (array $step): bool {
+                return (int) ($step['generation'] ?? 0) === 1
+                    && !empty($step['parent_female_id'])
+                    && !empty($step['parent_male_id']);
+            });
+        $rootPairKey = is_array($rootPairKey)
+            ? ((int) ($rootPairKey['parent_female_id'] ?? 0)) . ':' . ((int) ($rootPairKey['parent_male_id'] ?? 0))
+            : '';
+
+        $result = [
             'target_reachable' => $targetReachable,
             'matched_traits' => $matchedTraits,
             'missing_traits' => $missingTraits,
             'steps' => $steps,
+            'best_goal_probability' => (float) ($bestGoal['probability'] ?? 0),
+            'best_goal_generation' => (int) ($bestGoal['generation'] ?? 0),
+            'root_pair_key' => $rootPairKey,
         ];
+
+        if ($priorityMode === 'highest_probability' && $allowDiversification && $targetReachable) {
+            $excluded = array_values(array_unique(array_filter(array_merge(
+                $excludedGenerationOnePairs,
+                $rootPairKey !== '' ? [$rootPairKey] : []
+            ))));
+            $bestResult = $result;
+
+            // 1 base run + max 4 additional runs = max 5 iterations.
+            for ($iteration = 2; $iteration <= 5; $iteration++) {
+                $candidate = $this->buildRoadmap(
+                    $expectedTraits,
+                    $maxGenerations,
+                    $strictVisualOnly,
+                    $priorityMode,
+                    $excluded,
+                    false
+                );
+
+                if (!(bool) ($candidate['target_reachable'] ?? false)) {
+                    break;
+                }
+
+                $candidateRootPairKey = trim((string) ($candidate['root_pair_key'] ?? ''));
+                if ($candidateRootPairKey === '' || in_array($candidateRootPairKey, $excluded, true)) {
+                    break;
+                }
+
+                $candidateProbability = (float) ($candidate['best_goal_probability'] ?? 0);
+                $bestProbability = (float) ($bestResult['best_goal_probability'] ?? 0);
+                $candidateGeneration = (int) ($candidate['best_goal_generation'] ?? PHP_INT_MAX);
+                $bestGeneration = (int) ($bestResult['best_goal_generation'] ?? PHP_INT_MAX);
+
+                if (
+                    $candidateProbability > $bestProbability
+                    || (
+                        $candidateProbability === $bestProbability
+                        && $candidateGeneration < $bestGeneration
+                    )
+                ) {
+                    $bestResult = $candidate;
+                }
+
+                $excluded[] = $candidateRootPairKey;
+                $excluded = array_values(array_unique($excluded));
+            }
+
+            return $bestResult;
+        }
+
+        return $result;
     }
 
     /**
@@ -1770,6 +1971,10 @@ class GetLitterPlanningPageQuery
             'target_reachable' => true,
             'matched_traits' => $expectedTraits,
             'missing_traits' => [],
+            'best_probability' => (float) ($best['g2_probability'] ?? 0),
+            'root_pair_key' => $g1ParentFemaleId > 0 && $g1ParentMaleId > 0
+                ? ($g1ParentFemaleId . ':' . $g1ParentMaleId)
+                : '',
             'steps' => $steps,
         ];
     }
@@ -2307,6 +2512,48 @@ class GetLitterPlanningPageQuery
         $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
 
         return trim($normalized);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function parseRootPairKeys(string $value): array
+    {
+        if (trim($value) === '') {
+            return [];
+        }
+
+        return collect(explode(',', $value))
+            ->map(fn (string $part): string => trim($part))
+            ->filter(fn (string $part): bool => preg_match('/^\d+:\d+$/', $part) === 1)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $steps
+     */
+    private function extractRootPairKeyFromSteps(array $steps): string
+    {
+        $step = collect($steps)
+            ->first(function (array $row): bool {
+                return (int) ($row['generation'] ?? 0) === 1
+                    && !empty($row['parent_female_id'])
+                    && !empty($row['parent_male_id']);
+            });
+
+        if (!is_array($step)) {
+            return '';
+        }
+
+        $femaleId = (int) ($step['parent_female_id'] ?? 0);
+        $maleId = (int) ($step['parent_male_id'] ?? 0);
+        if ($femaleId <= 0 || $maleId <= 0) {
+            return '';
+        }
+
+        return $femaleId . ':' . $maleId;
     }
 
     private function matchesWholeTrait(string $haystack, string $needle): bool

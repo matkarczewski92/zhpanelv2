@@ -119,7 +119,8 @@ class LittersPlanningController extends Controller
         $snapshot = $query->buildRoadmapSnapshot(
             (string) ($validated['roadmap_expected_genes'] ?? ''),
             (int) ($validated['roadmap_generations'] ?? 0),
-            true
+            true,
+            (string) ($validated['roadmap_priority_mode'] ?? 'fastest')
         );
 
         $roadmap = $service->store([
@@ -167,7 +168,8 @@ class LittersPlanningController extends Controller
         $snapshot = $query->buildRoadmapSnapshot(
             (string) ($roadmap->search_input ?? ''),
             (int) ($roadmap->generations ?? 0),
-            true
+            true,
+            'fastest'
         );
 
         $service->refresh($roadmap, $snapshot);
