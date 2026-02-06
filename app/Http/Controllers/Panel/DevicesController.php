@@ -22,13 +22,8 @@ class DevicesController extends Controller
     ) {
     }
 
-    public function index(Request $request): View|RedirectResponse
+    public function index(): View
     {
-        $oauthResult = $this->handleOAuthCallback($request);
-        if ($oauthResult instanceof RedirectResponse) {
-            return $oauthResult;
-        }
-
         $rows = EwelinkDevice::query()
             ->orderBy('id')
             ->get()
@@ -44,6 +39,11 @@ class DevicesController extends Controller
             'hasToken' => $this->cloudClient->hasSavedToken(),
             'savedRegion' => $this->cloudClient->getSavedRegion(),
         ]);
+    }
+
+    public function callback(Request $request): RedirectResponse
+    {
+        return $this->handleOAuthCallback($request);
     }
 
     public function authorize(Request $request): RedirectResponse
@@ -87,24 +87,19 @@ class DevicesController extends Controller
             ->with('toast', ['type' => 'success', 'message' => $message]);
     }
 
-    private function handleOAuthCallback(Request $request): ?RedirectResponse
+    private function handleOAuthCallback(Request $request): RedirectResponse
     {
         $code = trim((string) $request->query('code', ''));
         if ($code === '') {
-            return null;
+            return redirect()
+                ->route('panel.devices.index')
+                ->with('toast', ['type' => 'error', 'message' => 'Brak kodu OAuth w odpowiedzi eWeLink.']);
         }
 
         $returnedState = trim((string) $request->query('state', ''));
         $sessionState = trim((string) $request->session()->pull('ewelink.oauth_state', ''));
-        $configuredState = trim((string) config('services.ewelink.oauth_state', ''));
 
-        if ($sessionState !== '' && $returnedState !== $sessionState) {
-            return redirect()
-                ->route('panel.devices.index')
-                ->with('toast', ['type' => 'error', 'message' => 'Niepoprawny parametr state w odpowiedzi OAuth eWeLink.']);
-        }
-
-        if ($sessionState === '' && $configuredState !== '' && $returnedState !== $configuredState) {
+        if ($sessionState === '' || $returnedState !== $sessionState) {
             return redirect()
                 ->route('panel.devices.index')
                 ->with('toast', ['type' => 'error', 'message' => 'Niepoprawny parametr state w odpowiedzi OAuth eWeLink.']);

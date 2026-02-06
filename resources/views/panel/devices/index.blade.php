@@ -27,6 +27,9 @@
                 <span class="text-muted">Region:</span>
                 <strong>{{ $savedRegion ?: '-' }}</strong>
             </div>
+            <div class="w-100 text-muted">
+                Callback OAuth: <code>{{ config('services.ewelink.redirect_url') ?: route('panel.devices.callback') }}</code>
+            </div>
         </div>
     </div>
 

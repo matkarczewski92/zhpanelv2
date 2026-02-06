@@ -11,6 +11,10 @@
             </div>
         </div>
         <div class="card-body border-bottom border-secondary-subtle">
+            <div class="small text-muted mb-2">
+                Callback OAuth do ustawienia w eWeLink Developer Center:
+                <code>{{ config('services.ewelink.redirect_url') ?: route('panel.devices.callback') }}</code>
+            </div>
             <form class="row g-2 align-items-end" method="POST" action="{{ route('admin.settings.ewelink-devices.store') }}">
                 @csrf
                 <div class="col-md-2">
