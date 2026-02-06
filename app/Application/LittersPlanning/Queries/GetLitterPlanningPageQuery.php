@@ -382,29 +382,7 @@ class GetLitterPlanningPageQuery
 
                 $keeperLabels = collect($offspringRows)
                     ->filter(fn (array $row): bool => (bool) ($row['is_keeper'] ?? false))
-                    ->map(function (array $row): string {
-                        $name = trim((string) ($row['traits_name'] ?? ''));
-                        if ($name !== '') {
-                            return $name;
-                        }
-
-                        $visual = collect((array) ($row['visual_traits'] ?? []))
-                            ->map(fn (mixed $trait): string => trim((string) $trait))
-                            ->filter()
-                            ->values()
-                            ->all();
-                        $carrier = $this->sortCarrierTraitsForDisplay(
-                            collect((array) ($row['carrier_traits'] ?? []))
-                                ->map(fn (mixed $trait): string => trim((string) $trait))
-                                ->filter()
-                                ->values()
-                                ->all()
-                        );
-
-                        $parts = array_merge($visual, $carrier);
-
-                        return !empty($parts) ? implode(', ', $parts) : '-';
-                    })
+                    ->map(fn (array $row): string => $this->formatRoadmapKeeperLabel($row))
                     ->filter()
                     ->unique()
                     ->values()
@@ -1219,12 +1197,15 @@ class GetLitterPlanningPageQuery
                 $pairCandidates = [];
                 foreach ($maleIds as $maleId) {
                     foreach ($femaleIds as $femaleId) {
+                        $isSelfVirtual = false;
                         if ($maleId === $femaleId) {
                             $sameBreederId = (string) ($allBreeders[$maleId]['id'] ?? '');
                             $isVirtualSiblingCross = str_starts_with($sameBreederId, 'v:');
                             if (!$isVirtualSiblingCross) {
                                 continue;
                             }
+
+                            $isSelfVirtual = true;
                         }
 
                         $maleInFocus = isset($focusMap[$maleId]);
@@ -1236,11 +1217,25 @@ class GetLitterPlanningPageQuery
                         $pairCandidates[] = [
                             'male_id' => $maleId,
                             'female_id' => $femaleId,
+                            'is_self_virtual' => $isSelfVirtual,
+                            'focus_count' => ($maleInFocus ? 1 : 0) + ($femaleInFocus ? 1 : 0),
                         ];
                     }
                 }
 
                 usort($pairCandidates, function (array $a, array $b) use ($allBreeders): int {
+                    $aSelfVirtual = (bool) ($a['is_self_virtual'] ?? false);
+                    $bSelfVirtual = (bool) ($b['is_self_virtual'] ?? false);
+                    if ($aSelfVirtual !== $bSelfVirtual) {
+                        return $aSelfVirtual ? -1 : 1;
+                    }
+
+                    $aFocusCount = (int) ($a['focus_count'] ?? 0);
+                    $bFocusCount = (int) ($b['focus_count'] ?? 0);
+                    if ($aFocusCount !== $bFocusCount) {
+                        return $aFocusCount < $bFocusCount ? 1 : -1;
+                    }
+
                     $aRel = (float) (($allBreeders[(string) $a['male_id']]['relevance'] ?? 0) + ($allBreeders[(string) $a['female_id']]['relevance'] ?? 0));
                     $bRel = (float) (($allBreeders[(string) $b['male_id']]['relevance'] ?? 0) + ($allBreeders[(string) $b['female_id']]['relevance'] ?? 0));
                     if ($aRel === $bRel) {
@@ -1563,25 +1558,7 @@ class GetLitterPlanningPageQuery
 
             $keeperLabels = collect($offspringRows)
                 ->filter(fn (array $row): bool => (bool) ($row['is_keeper'] ?? false))
-                ->map(function (array $row): string {
-                    $name = trim((string) ($row['traits_name'] ?? ''));
-                    if ($name !== '') {
-                        return $name;
-                    }
-
-                    $vis = collect((array) ($row['visual_traits'] ?? []))->implode(', ');
-                    if ($vis !== '') {
-                        return $vis;
-                    }
-
-                    $carrier = collect((array) ($row['carrier_traits'] ?? []))
-                        ->filter(fn (string $label): bool => !str_starts_with(strtolower(trim($label)), '50%'))
-                        ->filter(fn (string $label): bool => !str_starts_with(strtolower(trim($label)), '66%'))
-                        ->values()
-                        ->implode(', ');
-
-                    return $carrier !== '' ? $carrier : '-';
-                })
+                ->map(fn (array $row): string => $this->formatRoadmapKeeperLabel($row))
                 ->filter()
                 ->unique()
                 ->values()
@@ -2200,7 +2177,18 @@ class GetLitterPlanningPageQuery
     private function formatRoadmapKeeperLabel(array $row): string
     {
         $name = trim((string) ($row['traits_name'] ?? ''));
+        $carrier = collect((array) ($row['carrier_traits'] ?? []))
+            ->map(fn (mixed $trait): string => trim((string) $trait))
+            ->filter()
+            ->values()
+            ->all();
+        $carrier = $this->sortCarrierTraitsForDisplay($carrier);
+
         if ($name !== '') {
+            if (!empty($carrier)) {
+                return $name . ' (' . implode(', ', $carrier) . ')';
+            }
+
             return $name;
         }
 
@@ -2209,13 +2197,6 @@ class GetLitterPlanningPageQuery
             ->filter()
             ->values()
             ->all();
-
-        $carrier = collect((array) ($row['carrier_traits'] ?? []))
-            ->map(fn (mixed $trait): string => trim((string) $trait))
-            ->filter()
-            ->values()
-            ->all();
-        $carrier = $this->sortCarrierTraitsForDisplay($carrier);
 
         $parts = array_merge($visual, $carrier);
         if (empty($parts)) {
