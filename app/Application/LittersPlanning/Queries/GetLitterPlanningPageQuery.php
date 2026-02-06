@@ -1254,13 +1254,9 @@ class GetLitterPlanningPageQuery
                 });
 
                 $pairCheckLimit = $maxPairChecksPerType;
-                if (
-                    $priorityMode === 'highest_probability'
-                    && $firstGoalGeneration !== null
-                    && $generation === (int) $firstGoalGeneration
-                ) {
-                    // Compare all available pairs in the first generation where
-                    // target appears to pick the true highest probability.
+                if ($priorityMode === 'highest_probability') {
+                    // W trybie "Najwiekszy % celu" sprawdzamy wszystkie pary
+                    // (bez priorytetow), zeby nie gubic rozwiazan przez limit.
                     $pairCheckLimit = count($pairCandidates);
                 }
 
