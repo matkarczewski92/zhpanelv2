@@ -40,11 +40,14 @@ class EwelinkDeviceSyncService
             $itemData = $byDeviceId[$device->device_id] ?? null;
             $statusPayload = [];
             $lastError = null;
+            $apiName = '';
 
             if (!is_array($itemData)) {
                 $missing++;
-                $lastError = 'Nie znaleziono urządzenia w aktualnej liście eWeLink.';
+                $lastError = 'Nie znaleziono urzadzenia w aktualnej liscie eWeLink.';
             } else {
+                $apiName = trim((string) ($itemData['name'] ?? ''));
+
                 if ($needsDelay) {
                     usleep(550000);
                 }
@@ -64,6 +67,7 @@ class EwelinkDeviceSyncService
             }
 
             $device->update([
+                'name' => $apiName !== '' ? $apiName : $device->name,
                 'thing_payload' => $itemData,
                 'status_payload' => $statusPayload,
                 'last_synced_at' => now(),

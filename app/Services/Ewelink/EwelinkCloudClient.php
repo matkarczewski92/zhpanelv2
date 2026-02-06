@@ -186,6 +186,36 @@ class EwelinkCloudClient
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function findThingByDeviceId(string $deviceId): ?array
+    {
+        $needle = trim($deviceId);
+        if ($needle === '') {
+            return null;
+        }
+
+        foreach ($this->getThingList() as $thing) {
+            if (!is_array($thing)) {
+                continue;
+            }
+
+            $itemData = $thing['itemData'] ?? null;
+            if (!is_array($itemData)) {
+                continue;
+            }
+
+            if ((string) ($itemData['deviceid'] ?? '') !== $needle) {
+                continue;
+            }
+
+            return $itemData;
+        }
+
+        return null;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function getThingStatus(string $deviceId): array
@@ -220,6 +250,30 @@ class EwelinkCloudClient
             ]);
 
         $this->assertSuccess($response, sprintf('Nie udalo sie ustawic statusu urzadzenia %s.', $deviceId));
+    }
+
+    public function updateDeviceInfo(string $deviceId, ?string $name = null, ?string $roomId = null): void
+    {
+        [$accessToken, $region] = $this->getValidAccessTokenAndRegion();
+        $domain = $this->resolveApiDomain($region);
+
+        $payload = [
+            'deviceid' => trim($deviceId),
+        ];
+
+        if ($name !== null) {
+            $payload['name'] = trim($name);
+        }
+
+        if ($roomId !== null) {
+            $payload['roomid'] = trim($roomId);
+        }
+
+        $response = Http::timeout(20)
+            ->withHeaders($this->bearerHeaders($accessToken))
+            ->post(sprintf('https://%s/v2/device/update-info', $domain), $payload);
+
+        $this->assertSuccess($response, sprintf('Nie udalo sie zaktualizowac danych urzadzenia %s.', $deviceId));
     }
 
     /**

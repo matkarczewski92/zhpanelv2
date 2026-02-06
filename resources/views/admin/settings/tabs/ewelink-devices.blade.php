@@ -16,15 +16,11 @@
             </div>
             <form class="row g-2 align-items-end" method="POST" action="{{ route('admin.settings.ewelink-devices.store') }}">
                 @csrf
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label small text-muted mb-1">Device ID</label>
                     <input type="text" name="device_id" class="form-control form-control-sm bg-dark text-light" required>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small text-muted mb-1">Nazwa</label>
-                    <input type="text" name="name" class="form-control form-control-sm bg-dark text-light" required>
-                </div>
-                <div class="col-md-2">
                     <label class="form-label small text-muted mb-1">Typ</label>
                     <select name="device_type" class="form-select form-select-sm bg-dark text-light">
                         <option value="switch">Przelacznik</option>
@@ -32,7 +28,7 @@
                         <option value="thermostat_hygrostat">Termostat + Higrostat</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label class="form-label small text-muted mb-1">Opis</label>
                     <input type="text" name="description" class="form-control form-control-sm bg-dark text-light">
                 </div>
@@ -40,6 +36,7 @@
                     <button class="btn btn-sm btn-primary w-100" type="submit">Dodaj</button>
                 </div>
             </form>
+            <div class="small text-muted mt-2">Nazwa przy dodawaniu pobiera sie automatycznie z eWeLink API.</div>
         </div>
         <div class="table-responsive">
             <table class="table table-dark table-sm align-middle mb-0">

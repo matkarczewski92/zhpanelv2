@@ -22,18 +22,44 @@ class EwelinkDeviceController extends Controller
 
     public function store(EwelinkDeviceRequest $request): RedirectResponse
     {
-        $this->service->store($request->validated());
+        $payload = $request->validated();
+
+        try {
+            $payload['name'] = $this->resolveDeviceNameFromCloud((string) ($payload['device_id'] ?? ''));
+            $this->service->store($payload);
+        } catch (RuntimeException $exception) {
+            return $this->redirectToTab()
+                ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
+        }
 
         return $this->redirectToTab()
-            ->with('toast', ['type' => 'success', 'message' => 'Urządzenie eWeLink dodane.']);
+            ->with('toast', ['type' => 'success', 'message' => 'Urzadzenie eWeLink dodane.']);
     }
 
     public function update(EwelinkDeviceRequest $request, EwelinkDevice $device): RedirectResponse
     {
-        $this->service->update($device, $request->validated());
+        $payload = $request->validated();
+        $newDeviceId = trim((string) ($payload['device_id'] ?? $device->device_id));
+        $newName = trim((string) ($payload['name'] ?? ''));
+        $nameChanged = $newName !== '' && ($newName !== trim((string) $device->name) || $newDeviceId !== (string) $device->device_id);
+
+        if ($nameChanged) {
+            try {
+                $this->runCloudOperation(function () use ($newDeviceId, $newName): void {
+                    $this->cloudClient->updateDeviceInfo($newDeviceId, $newName);
+                });
+            } catch (RuntimeException $exception) {
+                return $this->redirectToTab()->with('toast', [
+                    'type' => 'error',
+                    'message' => 'Nie udalo sie zaktualizowac nazwy w eWeLink: ' . $exception->getMessage(),
+                ]);
+            }
+        }
+
+        $this->service->update($device, $payload);
 
         return $this->redirectToTab()
-            ->with('toast', ['type' => 'success', 'message' => 'Urządzenie eWeLink zaktualizowane.']);
+            ->with('toast', ['type' => 'success', 'message' => 'Urzadzenie eWeLink zaktualizowane.']);
     }
 
     public function destroy(EwelinkDevice $device): RedirectResponse
@@ -41,7 +67,7 @@ class EwelinkDeviceController extends Controller
         $this->service->destroy($device);
 
         return $this->redirectToTab()
-            ->with('toast', ['type' => 'success', 'message' => 'Urządzenie eWeLink usunięte.']);
+            ->with('toast', ['type' => 'success', 'message' => 'Urzadzenie eWeLink usuniete.']);
     }
 
     public function sync(): RedirectResponse
@@ -54,14 +80,14 @@ class EwelinkDeviceController extends Controller
         }
 
         $message = sprintf(
-            'Synchronizacja zakończona. Zaktualizowano: %d/%d, brak w chmurze: %d.',
+            'Synchronizacja zakonczona. Zaktualizowano: %d/%d, brak w chmurze: %d.',
             $result['updated'],
             $result['total'],
             $result['missing']
         );
 
         if ($result['errors'] > 0) {
-            $message .= sprintf(' Ostrzeżenia: %d.', $result['errors']);
+            $message .= sprintf(' Ostrzezenia: %d.', $result['errors']);
         }
 
         return $this->redirectToTab()
@@ -73,6 +99,34 @@ class EwelinkDeviceController extends Controller
      */
     private function syncWithAutoAuthorization(): array
     {
+        return $this->runCloudOperation(fn (): array => $this->syncService->syncAll());
+    }
+
+    private function resolveDeviceNameFromCloud(string $deviceId): string
+    {
+        $resolvedDeviceId = trim($deviceId);
+        if ($resolvedDeviceId === '') {
+            throw new RuntimeException('Brak device_id.');
+        }
+
+        $itemData = $this->runCloudOperation(
+            fn (): ?array => $this->cloudClient->findThingByDeviceId($resolvedDeviceId)
+        );
+
+        if (!is_array($itemData)) {
+            throw new RuntimeException(sprintf('Nie znaleziono urzadzenia %s na koncie eWeLink.', $resolvedDeviceId));
+        }
+
+        $name = trim((string) ($itemData['name'] ?? ''));
+        if ($name === '') {
+            throw new RuntimeException(sprintf('Urzadzenie %s nie ma nazwy w eWeLink.', $resolvedDeviceId));
+        }
+
+        return $name;
+    }
+
+    private function runCloudOperation(callable $callback): mixed
+    {
         $state = trim((string) config('services.ewelink.oauth_state', 'panel'));
 
         if (!$this->cloudClient->hasSavedToken() && $this->cloudClient->hasCredentialAuthConfig()) {
@@ -80,7 +134,7 @@ class EwelinkDeviceController extends Controller
         }
 
         try {
-            return $this->syncService->syncAll();
+            return $callback();
         } catch (RuntimeException $exception) {
             if (!$this->cloudClient->hasCredentialAuthConfig()) {
                 throw $exception;
@@ -88,7 +142,7 @@ class EwelinkDeviceController extends Controller
 
             $this->cloudClient->authorizeWithCredentials($state);
 
-            return $this->syncService->syncAll();
+            return $callback();
         }
     }
 
