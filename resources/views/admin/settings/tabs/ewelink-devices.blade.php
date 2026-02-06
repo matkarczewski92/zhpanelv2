@@ -54,7 +54,7 @@
                         <th>ON/OFF</th>
                         <th>Przelaczniki</th>
                         <th>Zakres / cel</th>
-                        <th>Harmonogram</th>
+                        <th>Harmonogram (Warszawa)</th>
                         <th>Ostatnia synchronizacja</th>
                         <th class="text-end">Opcje</th>
                     </tr>
@@ -78,8 +78,37 @@
                             <td>{{ $snapshot['online'] }}</td>
                             <td>{{ $snapshot['temperature'] }}</td>
                             <td>{{ $snapshot['humidity'] }}</td>
-                            <td>{{ $snapshot['switch'] }}</td>
-                            <td class="text-break">{{ $snapshot['switches'] }}</td>
+                            <td>
+                                @php $switchState = strtolower((string) $snapshot['switch']); @endphp
+                                @if ($switchState === 'on')
+                                    <span class="fw-bold text-success">ON</span>
+                                @elseif ($switchState === 'off')
+                                    <span class="fw-bold text-danger">OFF</span>
+                                @elseif ($switchState === 'mixed')
+                                    <span class="fw-bold text-warning">MIXED</span>
+                                @else
+                                    <span class="text-muted">{{ $snapshot['switch'] }}</span>
+                                @endif
+                            </td>
+                            <td class="text-break">
+                                @if (!empty($snapshot['switch_states']))
+                                    @foreach ($snapshot['switch_states'] as $channel => $state)
+                                        @php $stateValue = strtolower((string) $state); @endphp
+                                        <span class="me-2">
+                                            <span class="text-muted">ch{{ $channel }}:</span>
+                                            @if ($stateValue === 'on')
+                                                <span class="fw-bold text-success">ON</span>
+                                            @elseif ($stateValue === 'off')
+                                                <span class="fw-bold text-danger">OFF</span>
+                                            @else
+                                                <span class="fw-bold text-warning">{{ strtoupper($stateValue) }}</span>
+                                            @endif
+                                        </span>
+                                    @endforeach
+                                @else
+                                    {{ $snapshot['switches'] }}
+                                @endif
+                            </td>
                             <td>{{ $snapshot['target_temperature'] }}</td>
                             <td class="text-break">
                                 @if (!empty($snapshot['schedule_lines']))

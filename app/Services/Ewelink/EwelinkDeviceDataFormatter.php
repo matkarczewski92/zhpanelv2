@@ -3,9 +3,13 @@
 namespace App\Services\Ewelink;
 
 use App\Models\EwelinkDevice;
+use Carbon\CarbonImmutable;
 
 class EwelinkDeviceDataFormatter
 {
+    private const SOURCE_TIMEZONE = 'UTC';
+    private const DISPLAY_TIMEZONE = 'Europe/Warsaw';
+
     /**
      * @return array{
      *     online:string,
@@ -357,8 +361,9 @@ class EwelinkDeviceDataFormatter
         $hour = $parts[1];
         $days = $parts[4];
 
-        $time = $this->formatHourMinute($hour, $minute);
-        $dayLabel = $this->formatCronDays($days);
+        [$hour, $minute, $days] = $this->convertCronUtcToDisplay($hour, $minute, $days);
+        $time = $this->formatHourMinute((string) $hour, (string) $minute);
+        $dayLabel = $this->formatCronDays((string) $days);
 
         return trim($dayLabel . ' ' . $time);
     }
@@ -367,6 +372,11 @@ class EwelinkDeviceDataFormatter
     {
         if ($at === '') {
             return '-';
+        }
+
+        $local = $this->parseUtcToDisplay($at);
+        if ($local !== null) {
+            return $local->format('Y-m-d H:i');
         }
 
         $ts = strtotime($at);
@@ -381,8 +391,14 @@ class EwelinkDeviceDataFormatter
             return '-';
         }
 
-        $startTs = strtotime((string) $parts[0]);
-        $start = $startTs === false ? (string) $parts[0] : date('Y-m-d H:i', $startTs);
+        $startRaw = (string) $parts[0];
+        $localStart = $this->parseUtcToDisplay($startRaw);
+        if ($localStart !== null) {
+            $start = $localStart->format('Y-m-d H:i');
+        } else {
+            $startTs = strtotime($startRaw);
+            $start = $startTs === false ? $startRaw : date('Y-m-d H:i', $startTs);
+        }
 
         $firstDelay = isset($parts[1]) && is_numeric($parts[1]) ? (int) $parts[1] : null;
         $secondDelay = isset($parts[2]) && is_numeric($parts[2]) ? (int) $parts[2] : null;
@@ -465,6 +481,81 @@ class EwelinkDeviceDataFormatter
         }
 
         return implode(',', $labels);
+    }
+
+    /**
+     * @return array{0:string,1:string,2:string}
+     */
+    private function convertCronUtcToDisplay(string $hour, string $minute, string $days): array
+    {
+        if (!is_numeric($hour) || !is_numeric($minute)) {
+            return [$hour, $minute, $days];
+        }
+
+        $source = CarbonImmutable::now(self::SOURCE_TIMEZONE)
+            ->startOfDay()
+            ->setTime((int) $hour, (int) $minute);
+        $local = $source->setTimezone(self::DISPLAY_TIMEZONE);
+        $dayShift = (int) $source->diffInDays($local, false);
+
+        $shiftedDays = $this->shiftCronDays($days, $dayShift);
+
+        return [$local->format('H'), $local->format('i'), $shiftedDays];
+    }
+
+    private function shiftCronDays(string $days, int $shift): string
+    {
+        $value = trim($days);
+        if ($value === '' || $value === '*' || $shift === 0) {
+            return $days;
+        }
+
+        $shifted = [];
+        foreach (explode(',', $value) as $chunk) {
+            $chunk = trim($chunk);
+            if ($chunk === '' || !is_numeric($chunk)) {
+                return $days;
+            }
+
+            $day = (int) $chunk;
+            if ($day === 7) {
+                $day = 0;
+            }
+
+            if ($day < 0 || $day > 6) {
+                return $days;
+            }
+
+            $newDay = ($day + $shift) % 7;
+            if ($newDay < 0) {
+                $newDay += 7;
+            }
+
+            $shifted[] = $newDay;
+        }
+
+        $shifted = array_values(array_unique($shifted));
+        sort($shifted);
+
+        return implode(',', $shifted);
+    }
+
+    private function parseUtcToDisplay(string $value): ?CarbonImmutable
+    {
+        $raw = trim($value);
+        if ($raw === '') {
+            return null;
+        }
+
+        try {
+            if (preg_match('/(Z|z|[+-]\d{2}:\d{2})$/', $raw) === 1) {
+                return CarbonImmutable::parse($raw)->setTimezone(self::DISPLAY_TIMEZONE);
+            }
+
+            return CarbonImmutable::parse($raw, self::SOURCE_TIMEZONE)->setTimezone(self::DISPLAY_TIMEZONE);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

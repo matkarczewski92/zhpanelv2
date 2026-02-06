@@ -20,15 +20,19 @@
         <div class="card-body d-flex flex-wrap align-items-center gap-3 small">
             <div>
                 <span class="text-muted">Stan autoryzacji:</span>
-                <strong>{{ $hasToken ? 'polaczono' : 'brak tokenu' }}</strong>
+                <strong id="devicesAuthState">{{ $hasToken ? 'polaczono' : 'brak tokenu' }}</strong>
             </div>
             <div>
                 <span class="text-muted">Region:</span>
-                <strong>{{ $savedRegion ?: '-' }}</strong>
+                <strong id="devicesRegion">{{ $savedRegion ?: '-' }}</strong>
             </div>
             <div class="w-100 text-muted">
                 Redirect URL (musi byc 1:1 w eWeLink): <code>{{ config('services.ewelink.redirect_url') ?: route('panel.devices.callback') }}</code>
             </div>
+            <div class="w-100 text-muted">
+                Auto-odswiezanie: co 10s. Ostatnia aktualizacja: <strong id="devicesAutoRefreshTime">-</strong>
+            </div>
+            <div id="devicesAutoRefreshError" class="w-100 text-warning d-none"></div>
         </div>
     </div>
 
@@ -49,58 +53,100 @@
                         <th>Stan ON/OFF</th>
                         <th>Przelaczniki</th>
                         <th>Zakres / cel</th>
-                        <th>Harmonogram</th>
+                        <th>Harmonogram (Warszawa)</th>
                         <th>Ostatnia synchronizacja</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse($rows as $row)
-                        @php
-                            /** @var \App\Models\EwelinkDevice $device */
-                            $device = $row['device'];
-                            $snapshot = $row['snapshot'];
-                        @endphp
-                        <tr>
-                            <td class="text-break">{{ $device->device_id }}</td>
-                            <td>
-                                <div>{{ $device->name }}</div>
-                                @if($device->description)
-                                    <small class="text-muted">{{ $device->description }}</small>
-                                @endif
-                            </td>
-                            <td>{{ $device->device_type }}</td>
-                            <td>{{ $snapshot['online'] }}</td>
-                            <td>{{ $snapshot['temperature'] }}</td>
-                            <td>{{ $snapshot['humidity'] }}</td>
-                            <td>{{ $snapshot['switch'] }}</td>
-                            <td class="text-break">{{ $snapshot['switches'] }}</td>
-                            <td>{{ $snapshot['target_temperature'] }}</td>
-                            <td class="text-break">
-                                @if (!empty($snapshot['schedule_lines']))
-                                    @foreach (array_slice($snapshot['schedule_lines'], 0, 4) as $line)
-                                        <div class="small">{{ $line }}</div>
-                                    @endforeach
-                                    @if (count($snapshot['schedule_lines']) > 4)
-                                        <div class="small text-muted">+{{ count($snapshot['schedule_lines']) - 4 }} wiecej</div>
-                                    @endif
-                                @else
-                                    {{ $snapshot['schedule'] }}
-                                @endif
-                            </td>
-                            <td>
-                                {{ $device->last_synced_at?->format('Y-m-d H:i:s') ?? '-' }}
-                                @if($device->last_error)
-                                    <div class="small text-warning mt-1">{{ $device->last_error }}</div>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="11" class="text-center text-muted">Brak skonfigurowanych urzadzen. Dodaj je w Ustawieniach portalu.</td>
-                        </tr>
-                    @endforelse
+                <tbody id="devicesTableBody">
+                    @include('panel.devices._rows', ['rows' => $rows])
                 </tbody>
             </table>
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        (() => {
+            const pollUrl = @json(route('panel.devices.data'));
+            const tableBody = document.getElementById('devicesTableBody');
+            const authState = document.getElementById('devicesAuthState');
+            const region = document.getElementById('devicesRegion');
+            const refreshTime = document.getElementById('devicesAutoRefreshTime');
+            const refreshError = document.getElementById('devicesAutoRefreshError');
+            const intervalMs = 10000;
+
+            if (!tableBody) return;
+
+            let inFlight = false;
+
+            const showError = (message) => {
+                if (!refreshError) return;
+
+                if (!message) {
+                    refreshError.textContent = '';
+                    refreshError.classList.add('d-none');
+                    return;
+                }
+
+                refreshError.textContent = message;
+                refreshError.classList.remove('d-none');
+            };
+
+            const applyPayload = (payload) => {
+                if (typeof payload.rows_html === 'string') {
+                    tableBody.innerHTML = payload.rows_html;
+                }
+
+                if (authState) {
+                    authState.textContent = payload.has_token ? 'polaczono' : 'brak tokenu';
+                }
+
+                if (region) {
+                    region.textContent = payload.saved_region || '-';
+                }
+
+                if (refreshTime) {
+                    refreshTime.textContent = payload.server_time || new Date().toLocaleString();
+                }
+
+                showError(payload.warning || '');
+            };
+
+            const poll = async () => {
+                if (inFlight) return;
+                inFlight = true;
+
+                try {
+                    const response = await fetch(pollUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        cache: 'no-store',
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const payload = await response.json();
+                    applyPayload(payload);
+                } catch (error) {
+                    const message = error && error.message ? error.message : 'blad polaczenia';
+                    showError(`Auto-odswiezanie nieudane: ${message}`);
+                } finally {
+                    inFlight = false;
+                }
+            };
+
+            if (refreshTime) {
+                refreshTime.textContent = new Date().toLocaleString();
+            }
+
+            setInterval(poll, intervalMs);
+            poll();
+        })();
+    </script>
+@endpush

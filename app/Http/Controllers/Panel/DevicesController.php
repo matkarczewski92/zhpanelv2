@@ -7,9 +7,11 @@ use App\Models\EwelinkDevice;
 use App\Services\Ewelink\EwelinkCloudClient;
 use App\Services\Ewelink\EwelinkDeviceDataFormatter;
 use App\Services\Ewelink\EwelinkDeviceSyncService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -28,20 +30,34 @@ class DevicesController extends Controller
             return $this->handleOAuthCallback($request);
         }
 
-        $rows = EwelinkDevice::query()
-            ->orderBy('id')
-            ->get()
-            ->map(function (EwelinkDevice $device): array {
-                return [
-                    'device' => $device,
-                    'snapshot' => $this->dataFormatter->formatForDevice($device),
-                ];
-            });
+        $rows = $this->buildRows();
 
         return view('panel.devices.index', [
             'rows' => $rows,
             'hasToken' => $this->cloudClient->hasSavedToken(),
             'savedRegion' => $this->cloudClient->getSavedRegion(),
+        ]);
+    }
+
+    public function data(): JsonResponse
+    {
+        $warning = null;
+
+        try {
+            $this->syncWithAutoAuthorization();
+        } catch (RuntimeException $exception) {
+            $warning = $exception->getMessage();
+        }
+
+        $rows = $this->buildRows();
+        $rowsHtml = view('panel.devices._rows', ['rows' => $rows])->render();
+
+        return response()->json([
+            'rows_html' => $rowsHtml,
+            'warning' => $warning,
+            'has_token' => $this->cloudClient->hasSavedToken(),
+            'saved_region' => $this->cloudClient->getSavedRegion(),
+            'server_time' => now()->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -190,5 +206,21 @@ class DevicesController extends Controller
                 ->route('panel.devices.index')
                 ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
         }
+    }
+
+    /**
+     * @return Collection<int, array{device:EwelinkDevice, snapshot:array<string, mixed>}>
+     */
+    private function buildRows(): Collection
+    {
+        return EwelinkDevice::query()
+            ->orderBy('id')
+            ->get()
+            ->map(function (EwelinkDevice $device): array {
+                return [
+                    'device' => $device,
+                    'snapshot' => $this->dataFormatter->formatForDevice($device),
+                ];
+            });
     }
 }
