@@ -1255,9 +1255,13 @@ class GetLitterPlanningPageQuery
 
                 $pairCheckLimit = $maxPairChecksPerType;
                 if ($priorityMode === 'highest_probability') {
-                    // W trybie "Najwiekszy % celu" sprawdzamy wszystkie pary
-                    // (bez priorytetow), zeby nie gubic rozwiazan przez limit.
-                    $pairCheckLimit = count($pairCandidates);
+                    // Iteracje sprawdzajace: 1..5 (roundy po maxPairChecksPerType).
+                    // Pozwala uniknac timeoutu przy bardzo duzej liczbie par.
+                    $candidateCount = count($pairCandidates);
+                    $checksPerRound = max(1, $maxPairChecksPerType);
+                    $roundsNeeded = (int) ceil($candidateCount / $checksPerRound);
+                    $rounds = max(1, min(5, $roundsNeeded));
+                    $pairCheckLimit = min($candidateCount, $checksPerRound * $rounds);
                 }
 
                 foreach ($pairCandidates as $pairCandidate) {
