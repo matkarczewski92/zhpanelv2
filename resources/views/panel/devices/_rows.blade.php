@@ -3,6 +3,11 @@
         /** @var \App\Models\EwelinkDevice $device */
         $device = $row['device'];
         $snapshot = $row['snapshot'];
+        $scheduleSeedJson = json_encode(
+            $snapshot['schedule_edit_params'] ?? [],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+        );
+        $scheduleSeedBase64 = base64_encode($scheduleSeedJson !== false ? $scheduleSeedJson : '{}');
     @endphp
     <tr>
         <td class="text-break">{{ $device->device_id }}</td>
@@ -66,9 +71,42 @@
                 <div class="small text-warning mt-1">{{ $device->last_error }}</div>
             @endif
         </td>
+        <td class="text-nowrap">
+            <div class="btn-group btn-group-sm mb-1" role="group" aria-label="Sterowanie urzadzeniem">
+                <button
+                    type="button"
+                    class="btn btn-outline-success"
+                    data-device-toggle
+                    data-url="{{ route('panel.devices.toggle', $device) }}"
+                    data-state="on"
+                >
+                    Wlacz
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-outline-danger"
+                    data-device-toggle
+                    data-url="{{ route('panel.devices.toggle', $device) }}"
+                    data-state="off"
+                >
+                    Wylacz
+                </button>
+            </div>
+            <div>
+                <button
+                    type="button"
+                    class="btn btn-outline-info btn-sm"
+                    data-device-schedule
+                    data-url="{{ route('panel.devices.schedule', $device) }}"
+                    data-schedule="{{ $scheduleSeedBase64 }}"
+                >
+                    Edytuj harmonogram
+                </button>
+            </div>
+        </td>
     </tr>
 @empty
     <tr>
-        <td colspan="11" class="text-center text-muted">Brak skonfigurowanych urzadzen. Dodaj je w Ustawieniach portalu.</td>
+        <td colspan="12" class="text-center text-muted">Brak skonfigurowanych urzadzen. Dodaj je w Ustawieniach portalu.</td>
     </tr>
 @endforelse

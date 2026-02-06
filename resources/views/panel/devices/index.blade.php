@@ -55,6 +55,7 @@
                         <th>Zakres / cel</th>
                         <th>Harmonogram (Warszawa)</th>
                         <th>Ostatnia synchronizacja</th>
+                        <th>Sterowanie</th>
                     </tr>
                 </thead>
                 <tbody id="devicesTableBody">
@@ -74,11 +75,13 @@
             const region = document.getElementById('devicesRegion');
             const refreshTime = document.getElementById('devicesAutoRefreshTime');
             const refreshError = document.getElementById('devicesAutoRefreshError');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const intervalMs = 10000;
 
             if (!tableBody) return;
 
             let inFlight = false;
+            let actionInFlight = false;
 
             const showError = (message) => {
                 if (!refreshError) return;
@@ -113,6 +116,22 @@
                 showError(payload.warning || '');
             };
 
+            const parseJsonResponse = async (response) => {
+                const raw = await response.text();
+                const cleaned = raw.replace(/^\uFEFF/, '').trim();
+
+                if (!cleaned) {
+                    return {};
+                }
+
+                try {
+                    return JSON.parse(cleaned);
+                } catch (error) {
+                    const message = error && error.message ? error.message : 'invalid JSON';
+                    throw new Error(`Niepoprawna odpowiedz JSON: ${message}`);
+                }
+            };
+
             const poll = async () => {
                 if (inFlight) return;
                 inFlight = true;
@@ -131,7 +150,7 @@
                         throw new Error(`HTTP ${response.status}`);
                     }
 
-                    const payload = await response.json();
+                    const payload = await parseJsonResponse(response);
                     applyPayload(payload);
                 } catch (error) {
                     const message = error && error.message ? error.message : 'blad polaczenia';
@@ -144,6 +163,92 @@
             if (refreshTime) {
                 refreshTime.textContent = new Date().toLocaleString();
             }
+
+            const decodeScheduleSeed = (seed) => {
+                if (!seed) {
+                    return {};
+                }
+
+                try {
+                    return JSON.parse(atob(seed));
+                } catch (_) {
+                    return {};
+                }
+            };
+
+            const postAction = async (url, payload) => {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify(payload),
+                    cache: 'no-store',
+                });
+
+                const json = await parseJsonResponse(response);
+
+                if (!response.ok || json.ok === false) {
+                    throw new Error(json.message || `HTTP ${response.status}`);
+                }
+
+                return json;
+            };
+
+            tableBody.addEventListener('click', async (event) => {
+                const toggleButton = event.target.closest('[data-device-toggle]');
+                if (toggleButton) {
+                    if (actionInFlight) return;
+                    actionInFlight = true;
+                    toggleButton.disabled = true;
+
+                    try {
+                        await postAction(toggleButton.dataset.url, { state: toggleButton.dataset.state });
+                        showError('');
+                        await poll();
+                    } catch (error) {
+                        const message = error && error.message ? error.message : 'blad sterowania';
+                        showError(`Sterowanie nieudane: ${message}`);
+                    } finally {
+                        toggleButton.disabled = false;
+                        actionInFlight = false;
+                    }
+                    return;
+                }
+
+                const scheduleButton = event.target.closest('[data-device-schedule]');
+                if (!scheduleButton) return;
+                if (actionInFlight) return;
+
+                const seed = decodeScheduleSeed(scheduleButton.dataset.schedule);
+                const defaultValue = Object.keys(seed).length > 0
+                    ? JSON.stringify(seed, null, 2)
+                    : JSON.stringify({ timers: [] }, null, 2);
+                const entered = window.prompt(
+                    'Wklej JSON harmonogramu (timers/schedules/targets/workMode/workState):',
+                    defaultValue
+                );
+
+                if (entered === null) return;
+
+                actionInFlight = true;
+                scheduleButton.disabled = true;
+
+                try {
+                    await postAction(scheduleButton.dataset.url, { schedule: entered });
+                    showError('');
+                    await poll();
+                } catch (error) {
+                    const message = error && error.message ? error.message : 'blad zapisu harmonogramu';
+                    showError(`Zapis harmonogramu nieudany: ${message}`);
+                } finally {
+                    scheduleButton.disabled = false;
+                    actionInFlight = false;
+                }
+            });
 
             setInterval(poll, intervalMs);
             poll();

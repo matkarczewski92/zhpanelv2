@@ -204,6 +204,25 @@ class EwelinkCloudClient
     }
 
     /**
+     * @param array<string, mixed> $params
+     */
+    public function updateThingStatus(string $deviceId, array $params): void
+    {
+        [$accessToken, $region] = $this->getValidAccessTokenAndRegion();
+        $domain = $this->resolveApiDomain($region);
+
+        $response = Http::timeout(20)
+            ->withHeaders($this->bearerHeaders($accessToken))
+            ->post(sprintf('https://%s/v2/device/thing/status', $domain), [
+                'type' => 1,
+                'id' => $deviceId,
+                'params' => $params,
+            ]);
+
+        $this->assertSuccess($response, sprintf('Nie udalo sie ustawic statusu urzadzenia %s.', $deviceId));
+    }
+
+    /**
      * @return array{0:string, 1:string}
      */
     private function getValidAccessTokenAndRegion(): array

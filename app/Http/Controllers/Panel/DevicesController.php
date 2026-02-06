@@ -66,6 +66,64 @@ class DevicesController extends Controller
         return $this->handleOAuthCallback($request);
     }
 
+    public function toggle(Request $request, EwelinkDevice $device): JsonResponse
+    {
+        $validated = $request->validate([
+            'state' => ['required', 'string', 'in:on,off'],
+        ]);
+
+        $state = strtolower((string) $validated['state']);
+
+        try {
+            $this->ensureAuthorized();
+            $params = $this->buildToggleParams($device, $state);
+            $this->cloudClient->updateThingStatus($device->device_id, $params);
+            $this->syncService->syncAll();
+
+            return response()->json([
+                'ok' => true,
+                'message' => sprintf('Urzadzenie %s ustawione na %s.', $device->name, strtoupper($state)),
+            ]);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'ok' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function updateSchedule(Request $request, EwelinkDevice $device): JsonResponse
+    {
+        $validated = $request->validate([
+            'schedule' => ['required'],
+        ]);
+
+        try {
+            $scheduleParams = $this->normalizeScheduleParams($validated['schedule']);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'ok' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        try {
+            $this->ensureAuthorized();
+            $this->cloudClient->updateThingStatus($device->device_id, $scheduleParams);
+            $this->syncService->syncAll();
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Harmonogram zapisany.',
+            ]);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'ok' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
     public function authorize(Request $request): RedirectResponse
     {
         $flow = trim((string) $request->query('flow', ''));
@@ -222,5 +280,107 @@ class DevicesController extends Controller
                     'snapshot' => $this->dataFormatter->formatForDevice($device),
                 ];
             });
+    }
+
+    private function ensureAuthorized(): void
+    {
+        $state = trim((string) config('services.ewelink.oauth_state', 'panel'));
+
+        if (!$this->cloudClient->hasSavedToken() && $this->cloudClient->hasCredentialAuthConfig()) {
+            $this->cloudClient->authorizeWithCredentials($state);
+        }
+
+        if (!$this->cloudClient->hasSavedToken()) {
+            throw new RuntimeException('Brak autoryzacji eWeLink. Polacz konto i sprobuj ponownie.');
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     */
+    private function hasMultiSwitches(array $params): bool
+    {
+        return is_array($params['switches'] ?? null) && $params['switches'] !== [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildToggleParams(EwelinkDevice $device, string $state): array
+    {
+        $thingPayload = is_array($device->thing_payload) ? $device->thing_payload : [];
+        $statusPayload = is_array($device->status_payload) ? $device->status_payload : [];
+        $thingParams = is_array($thingPayload['params'] ?? null) ? $thingPayload['params'] : [];
+        $params = array_replace_recursive($thingParams, $statusPayload);
+
+        if (!$this->hasMultiSwitches($params)) {
+            return ['switch' => $state];
+        }
+
+        $switches = $params['switches'];
+        $normalized = [];
+
+        foreach ($switches as $index => $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $outlet = isset($item['outlet']) && is_numeric($item['outlet'])
+                ? (int) $item['outlet']
+                : (int) $index;
+
+            $normalized[] = [
+                'outlet' => $outlet,
+                'switch' => $state,
+            ];
+        }
+
+        if ($normalized === []) {
+            return ['switch' => $state];
+        }
+
+        return ['switches' => $normalized];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function normalizeScheduleParams(mixed $input): array
+    {
+        $decoded = $input;
+
+        if (is_string($input)) {
+            $json = trim($input);
+            if ($json === '') {
+                throw new RuntimeException('Puste dane harmonogramu.');
+            }
+
+            $decoded = json_decode($json, true);
+            if (!is_array($decoded)) {
+                throw new RuntimeException('Niepoprawny JSON harmonogramu.');
+            }
+        }
+
+        if (!is_array($decoded)) {
+            throw new RuntimeException('Niepoprawny format harmonogramu.');
+        }
+
+        if (array_is_list($decoded)) {
+            return ['timers' => $decoded];
+        }
+
+        $allowedKeys = ['timers', 'schedules', 'targets', 'workMode', 'workmode', 'workState', 'workstate'];
+        $filtered = [];
+        foreach ($allowedKeys as $key) {
+            if (array_key_exists($key, $decoded)) {
+                $filtered[$key] = $decoded[$key];
+            }
+        }
+
+        if ($filtered !== []) {
+            return $filtered;
+        }
+
+        return $decoded;
     }
 }

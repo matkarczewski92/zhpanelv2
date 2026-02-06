@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\OffersController;
 use Illuminate\Support\Facades\Route;

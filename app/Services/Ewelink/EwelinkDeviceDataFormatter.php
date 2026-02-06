@@ -21,6 +21,7 @@ class EwelinkDeviceDataFormatter
      *     target_temperature:string,
      *     schedule:string,
      *     schedule_lines:array<int, string>,
+     *     schedule_edit_params:array<string, mixed>,
      *     params_json:string
      * }
      */
@@ -44,8 +45,25 @@ class EwelinkDeviceDataFormatter
             'target_temperature' => $this->resolveTargetTemperature($params),
             'schedule' => $schedule['summary'],
             'schedule_lines' => $schedule['lines'],
+            'schedule_edit_params' => $this->resolveScheduleEditParams($params),
             'params_json' => $this->encodeParams($params),
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function resolveScheduleEditParams(array $params): array
+    {
+        $result = [];
+        foreach (['timers', 'schedules', 'targets', 'workMode', 'workmode', 'workState', 'workstate'] as $key) {
+            if (array_key_exists($key, $params)) {
+                $result[$key] = $params[$key];
+            }
+        }
+
+        return $result;
     }
 
     /**
