@@ -120,7 +120,8 @@ class GetDevicesIndexQuery
                 $msg = (string) ($tokenData['msg'] ?? '');
                 if (str_contains(strtolower($msg), 'path of request is not allowed')) {
                     $result['error'] = 'APPID jest typu OAuth2 i nie ma dostepu do /v2/user/login. '
-                        . 'Uzyj OAuth code flow (/v2/user/oauth/token) i ustaw EWELINK_CLOUD_OAUTH_CODE.';
+                        . 'Modul uzywa teraz flow /v2/user/oauth/code -> /v2/user/oauth/token. '
+                        . 'Sprawdz uprawnienia API dla APPID.';
                     return $result;
                 }
 
@@ -375,6 +376,33 @@ class GetDevicesIndexQuery
         string $password,
         string $areaCode
     ): array {
+        if ($oauthCode === '' && $email !== '' && $password !== '') {
+            $codeResponse = $this->signedPost($baseUrl . '/v2/user/oauth/code', $appId, $appSecret, [
+                'countryCode' => $areaCode,
+                'account' => $email,
+                'password' => $password,
+                'redirectUrl' => $redirectUrl,
+            ]);
+            $codeData = (array) ($codeResponse->json() ?? []);
+            $resolvedCode = $this->extractOauthCode($codeData);
+
+            if ($resolvedCode !== '') {
+                $tokenBody = array_filter([
+                    'grantType' => 'authorization_code',
+                    'code' => $resolvedCode,
+                    'redirectUrl' => $redirectUrl !== '' ? $redirectUrl : null,
+                ], static fn (mixed $v): bool => $v !== null && $v !== '');
+
+                $tokenResponse = $this->signedPost($baseUrl . '/v2/user/oauth/token', $appId, $appSecret, $tokenBody);
+                $tokenData = (array) ($tokenResponse->json() ?? []);
+                $tokenData['_oauth_code_response'] = $codeData;
+
+                return [$tokenResponse, $tokenData, 'oauth_code_password'];
+            }
+
+            return [$codeResponse, $codeData, 'oauth_code_password'];
+        }
+
         if ($oauthCode !== '') {
             $body = array_filter([
                 'grantType' => 'authorization_code',
@@ -431,6 +459,40 @@ class GetDevicesIndexQuery
             ?? $payload['accessToken']
             ?? ''
         ));
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function extractOauthCode(array $payload): string
+    {
+        $code = trim((string) (
+            $payload['data']['code']
+            ?? $payload['code']
+            ?? ''
+        ));
+        if ($code !== '') {
+            return $code;
+        }
+
+        $redirect = trim((string) (
+            $payload['data']['redirectUrl']
+            ?? $payload['data']['redirect_url']
+            ?? $payload['redirectUrl']
+            ?? $payload['redirect_url']
+            ?? ''
+        ));
+        if ($redirect === '') {
+            return '';
+        }
+
+        $parts = parse_url($redirect);
+        if (!isset($parts['query'])) {
+            return '';
+        }
+
+        parse_str((string) $parts['query'], $params);
+        return trim((string) ($params['code'] ?? ''));
     }
 
     /**
