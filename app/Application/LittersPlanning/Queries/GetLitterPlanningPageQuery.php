@@ -1241,12 +1241,15 @@ class GetLitterPlanningPageQuery
                         $priority = 0;
                         if ($generation > 1) {
                             $isRealMix = $maleIsReal xor $femaleIsReal;
-                            if ($isRealMix) {
-                                $priority = 0; // najpierw Gx z realnym osobnikiem
-                            } elseif ($maleInFocus && $femaleInFocus) {
-                                $priority = 1; // potem Gx x Gx
+                            if ($maleInFocus && $femaleInFocus) {
+                                // Dla kolejnych pokolen roadmap preferujemy Gx x Gx
+                                // (w tym rodzenstwo / self-cross virtual keepera),
+                                // aby nie pomijac tej sciezki przez limit pairCheck.
+                                $priority = 0;
+                            } elseif ($isRealMix) {
+                                $priority = 1;
                             } else {
-                                $priority = 2; // na koniec pozostale
+                                $priority = 2;
                             }
                         }
 
