@@ -1233,40 +1233,14 @@ class GetLitterPlanningPageQuery
                             continue;
                         }
 
-                        $maleBreederId = (string) ($allBreeders[$maleId]['id'] ?? '');
-                        $femaleBreederId = (string) ($allBreeders[$femaleId]['id'] ?? '');
-                        $maleIsReal = str_starts_with($maleBreederId, 'a:');
-                        $femaleIsReal = str_starts_with($femaleBreederId, 'a:');
-
-                        $priority = 0;
-                        if ($generation > 1) {
-                            $isRealMix = $maleIsReal xor $femaleIsReal;
-                            if ($maleInFocus && $femaleInFocus) {
-                                // Dla kolejnych pokolen roadmap preferujemy Gx x Gx
-                                // (w tym rodzenstwo / self-cross virtual keepera),
-                                // aby nie pomijac tej sciezki przez limit pairCheck.
-                                $priority = 0;
-                            } elseif ($isRealMix) {
-                                $priority = 1;
-                            } else {
-                                $priority = 2;
-                            }
-                        }
-
                         $pairCandidates[] = [
                             'male_id' => $maleId,
                             'female_id' => $femaleId,
-                            'priority' => $priority,
                         ];
                     }
                 }
 
                 usort($pairCandidates, function (array $a, array $b) use ($allBreeders): int {
-                    $prioCompare = (int) $a['priority'] <=> (int) $b['priority'];
-                    if ($prioCompare !== 0) {
-                        return $prioCompare;
-                    }
-
                     $aRel = (float) (($allBreeders[(string) $a['male_id']]['relevance'] ?? 0) + ($allBreeders[(string) $a['female_id']]['relevance'] ?? 0));
                     $bRel = (float) (($allBreeders[(string) $b['male_id']]['relevance'] ?? 0) + ($allBreeders[(string) $b['female_id']]['relevance'] ?? 0));
                     if ($aRel === $bRel) {
