@@ -98,7 +98,7 @@ class DevicesController extends Controller
     public function refresh(): RedirectResponse
     {
         try {
-            $result = $this->syncService->syncAll();
+            $result = $this->syncWithAutoAuthorization();
         } catch (RuntimeException $exception) {
             return redirect()
                 ->route('panel.devices.index')
@@ -119,6 +119,30 @@ class DevicesController extends Controller
         return redirect()
             ->route('panel.devices.index')
             ->with('toast', ['type' => 'success', 'message' => $message]);
+    }
+
+    /**
+     * @return array{total:int, updated:int, missing:int, errors:int}
+     */
+    private function syncWithAutoAuthorization(): array
+    {
+        $state = trim((string) config('services.ewelink.oauth_state', 'panel'));
+
+        if (!$this->cloudClient->hasSavedToken() && $this->cloudClient->hasCredentialAuthConfig()) {
+            $this->cloudClient->authorizeWithCredentials($state);
+        }
+
+        try {
+            return $this->syncService->syncAll();
+        } catch (RuntimeException $exception) {
+            if (!$this->cloudClient->hasCredentialAuthConfig()) {
+                throw $exception;
+            }
+
+            $this->cloudClient->authorizeWithCredentials($state);
+
+            return $this->syncService->syncAll();
+        }
     }
 
     private function handleOAuthCallback(Request $request): RedirectResponse

@@ -3,7 +3,6 @@
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
             <span>eWeLink: konfiguracja urządzeń</span>
             <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-sm btn-outline-light" href="{{ route('panel.devices.authorize') }}">Połącz konto eWeLink</a>
                 <form method="POST" action="{{ route('admin.settings.ewelink-devices.sync') }}">
                     @csrf
                     <button class="btn btn-sm btn-success" type="submit">Pobierz dane z API</button>

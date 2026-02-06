@@ -9,8 +9,6 @@
             <p class="text-muted mb-0">Podglad danych z eWeLink dla urzadzen skonfigurowanych w Ustawieniach portalu.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('panel.devices.authorize') }}" class="btn btn-outline-light btn-sm">Polacz konto eWeLink (backend)</a>
-            <a href="{{ route('panel.devices.authorize', ['flow' => 'oauth']) }}" class="btn btn-outline-secondary btn-sm">Polacz przez strone OAuth</a>
             <form method="POST" action="{{ route('panel.devices.refresh') }}">
                 @csrf
                 <button type="submit" class="btn btn-success btn-sm">Odswiez dane</button>

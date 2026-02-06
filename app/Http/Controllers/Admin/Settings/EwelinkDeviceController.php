@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Settings\EwelinkDeviceRequest;
 use App\Models\EwelinkDevice;
 use App\Services\Admin\Settings\EwelinkDeviceService;
+use App\Services\Ewelink\EwelinkCloudClient;
 use App\Services\Ewelink\EwelinkDeviceSyncService;
 use Illuminate\Http\RedirectResponse;
 use RuntimeException;
@@ -14,6 +15,7 @@ class EwelinkDeviceController extends Controller
 {
     public function __construct(
         private readonly EwelinkDeviceService $service,
+        private readonly EwelinkCloudClient $cloudClient,
         private readonly EwelinkDeviceSyncService $syncService
     ) {
     }
@@ -45,7 +47,7 @@ class EwelinkDeviceController extends Controller
     public function sync(): RedirectResponse
     {
         try {
-            $result = $this->syncService->syncAll();
+            $result = $this->syncWithAutoAuthorization();
         } catch (RuntimeException $exception) {
             return $this->redirectToTab()
                 ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
@@ -64,6 +66,30 @@ class EwelinkDeviceController extends Controller
 
         return $this->redirectToTab()
             ->with('toast', ['type' => 'success', 'message' => $message]);
+    }
+
+    /**
+     * @return array{total:int, updated:int, missing:int, errors:int}
+     */
+    private function syncWithAutoAuthorization(): array
+    {
+        $state = trim((string) config('services.ewelink.oauth_state', 'panel'));
+
+        if (!$this->cloudClient->hasSavedToken() && $this->cloudClient->hasCredentialAuthConfig()) {
+            $this->cloudClient->authorizeWithCredentials($state);
+        }
+
+        try {
+            return $this->syncService->syncAll();
+        } catch (RuntimeException $exception) {
+            if (!$this->cloudClient->hasCredentialAuthConfig()) {
+                throw $exception;
+            }
+
+            $this->cloudClient->authorizeWithCredentials($state);
+
+            return $this->syncService->syncAll();
+        }
     }
 
     private function redirectToTab(): RedirectResponse
