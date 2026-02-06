@@ -47,6 +47,7 @@ return [
         'email' => env('EWELINK_CLOUD_EMAIL', ''),
         'password' => env('EWELINK_CLOUD_PASSWORD', ''),
         'oauth_code' => env('EWELINK_CLOUD_OAUTH_CODE', ''),
+        'oauth_state' => env('EWELINK_CLOUD_OAUTH_STATE', 'zhpanel'),
         'redirect_url' => env('EWELINK_CLOUD_REDIRECT_URL', ''),
         'access_token' => env('EWELINK_CLOUD_ACCESS_TOKEN', ''),
         'area_code' => env('EWELINK_CLOUD_AREA_CODE', '+48'),

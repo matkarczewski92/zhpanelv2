@@ -90,6 +90,7 @@ class GetDevicesIndexQuery
         $manualBaseUrl = trim((string) ($cloud['base_url'] ?? ''));
         $oauthCode = trim((string) ($cloud['oauth_code'] ?? ''));
         $redirectUrl = trim((string) ($cloud['redirect_url'] ?? ''));
+        $oauthState = trim((string) ($cloud['oauth_state'] ?? 'zhpanel'));
         $presetAccessToken = trim((string) ($cloud['access_token'] ?? ''));
 
         if (!$result['cloud']['complete']) {
@@ -108,6 +109,7 @@ class GetDevicesIndexQuery
                 $presetAccessToken,
                 $oauthCode,
                 $redirectUrl,
+                $oauthState,
                 $email,
                 $password,
                 $areaCode,
@@ -302,6 +304,7 @@ class GetDevicesIndexQuery
         string $presetAccessToken,
         string $oauthCode,
         string $redirectUrl,
+        string $oauthState,
         string $email,
         string $password,
         string $areaCode,
@@ -330,6 +333,7 @@ class GetDevicesIndexQuery
                     $appSecret,
                     $oauthCode,
                     $redirectUrl,
+                    $oauthState,
                     $email,
                     $password,
                     $areaCode
@@ -372,6 +376,7 @@ class GetDevicesIndexQuery
         string $appSecret,
         string $oauthCode,
         string $redirectUrl,
+        string $oauthState,
         string $email,
         string $password,
         string $areaCode
@@ -382,6 +387,7 @@ class GetDevicesIndexQuery
                 'account' => $email,
                 'password' => $password,
                 'redirectUrl' => $redirectUrl,
+                'state' => $oauthState,
             ]);
             $codeData = (array) ($codeResponse->json() ?? []);
             $resolvedCode = $this->extractOauthCode($codeData);
@@ -391,6 +397,7 @@ class GetDevicesIndexQuery
                     'grantType' => 'authorization_code',
                     'code' => $resolvedCode,
                     'redirectUrl' => $redirectUrl !== '' ? $redirectUrl : null,
+                    'state' => $oauthState,
                 ], static fn (mixed $v): bool => $v !== null && $v !== '');
 
                 $tokenResponse = $this->signedPost($baseUrl . '/v2/user/oauth/token', $appId, $appSecret, $tokenBody);
@@ -408,6 +415,7 @@ class GetDevicesIndexQuery
                 'grantType' => 'authorization_code',
                 'code' => $oauthCode,
                 'redirectUrl' => $redirectUrl !== '' ? $redirectUrl : null,
+                'state' => $oauthState,
             ], static fn (mixed $v): bool => $v !== null && $v !== '');
 
             $response = $this->signedPost($baseUrl . '/v2/user/oauth/token', $appId, $appSecret, $body);
