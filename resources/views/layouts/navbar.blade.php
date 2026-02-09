@@ -103,9 +103,9 @@
                 @endif
 
                 @php
-                    $navbarSearchScope = request()->query('scope', 'id');
-                    if (!in_array($navbarSearchScope, ['id', 'public_tag', 'litter_id', 'litter_code'], true)) {
-                        $navbarSearchScope = 'id';
+                    $navbarSearchScope = request()->query('scope', 'animals');
+                    if (!in_array($navbarSearchScope, ['animals', 'litters'], true)) {
+                        $navbarSearchScope = 'animals';
                     }
                     $navbarSearchQuery = trim((string) request()->query('q', ''));
                 @endphp
@@ -119,10 +119,8 @@
                 >
                     <div class="input-group input-group-sm navbar-quick-search-group">
                         <select class="form-select navbar-quick-search-scope" name="scope" data-role="navbar-quick-search-scope" aria-label="Zakres wyszukiwania">
-                            <option value="id" @selected($navbarSearchScope === 'id')>ID</option>
-                            <option value="public_tag" @selected($navbarSearchScope === 'public_tag')>Public tag</option>
-                            <option value="litter_id" @selected($navbarSearchScope === 'litter_id')>ID Miotu</option>
-                            <option value="litter_code" @selected($navbarSearchScope === 'litter_code')>Kod miotu</option>
+                            <option value="animals" @selected($navbarSearchScope === 'animals')>Zwierze</option>
+                            <option value="litters" @selected($navbarSearchScope === 'litters')>Mioty</option>
                         </select>
                         <input
                             type="text"

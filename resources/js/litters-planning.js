@@ -121,43 +121,43 @@ const initGeneAutocomplete = (app, inputRole, suggestionsRole) => {
         suggestionsBox.innerHTML = '';
     };
 
-    const getCurrentToken = () => {
+    const getCurrentTokenContext = () => {
         const raw = input.value ?? '';
-        const parts = raw.split(',');
+        const cursor = typeof input.selectionStart === 'number' ? input.selectionStart : raw.length;
+        const left = raw.slice(0, cursor);
+        const right = raw.slice(cursor);
+        const tokenStart = left.lastIndexOf(',') + 1;
+        const rightCommaIndex = right.indexOf(',');
+        const tokenEnd = rightCommaIndex >= 0 ? cursor + rightCommaIndex : raw.length;
+        const rawToken = raw.slice(tokenStart, tokenEnd);
+
         return {
-            token: parts.length > 0 ? parts[parts.length - 1].trim() : '',
-            parts,
+            raw,
+            tokenStart,
+            tokenEnd,
+            token: rawToken.trim(),
         };
     };
 
     const applySuggestion = (value) => {
-        const raw = input.value ?? '';
-        const parts = raw
-            .split(',')
-            .map((part) => part.trim())
-            .filter((part) => part !== '');
-
-        if (parts.length === 0) {
-            input.value = `${value}, `;
-        } else {
-            parts[parts.length - 1] = value;
-            input.value = `${parts.join(', ')}, `;
-        }
+        const { raw, tokenStart, tokenEnd } = getCurrentTokenContext();
+        const before = raw.slice(0, tokenStart).replace(/\s*$/, '');
+        const after = raw.slice(tokenEnd).replace(/^\s*/, '');
+        const prefix = before === '' ? '' : `${before}, `;
+        const suffix = after === '' ? '' : `, ${after}`;
+        input.value = `${prefix}${value}${suffix}, `;
 
         input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
         hideSuggestions();
     };
 
     const renderSuggestions = () => {
-        const { token } = getCurrentToken();
+        const { token } = getCurrentTokenContext();
         const needle = normalize(token);
-        if (needle.length < 1) {
-            hideSuggestions();
-            return;
-        }
 
         const matches = allSuggestions
-            .filter((item) => normalize(item).includes(needle))
+            .filter((item) => needle.length < 1 || normalize(item).includes(needle))
             .slice(0, 8);
 
         if (matches.length === 0) {

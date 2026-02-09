@@ -14,21 +14,20 @@ class NavbarSearchController extends Controller
     public function suggest(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'scope' => ['required', 'in:id,public_tag,litter_id,litter_code'],
+            'scope' => ['required', 'in:animals,id,public_tag,litters,litter_id,litter_code'],
             'q' => ['required', 'string', 'min:1', 'max:100'],
         ]);
 
-        $scope = (string) ($validated['scope'] ?? 'id');
+        $scope = $this->normalizeScope((string) ($validated['scope'] ?? 'id'));
         $q = trim((string) ($validated['q'] ?? ''));
         if ($q === '') {
             return response()->json(['items' => []]);
         }
 
         $items = match ($scope) {
-            'id' => $this->suggestAnimalsByIdPrefix($q),
-            'public_tag' => $this->suggestAnimalsByPublicTag($q),
-            'litter_id' => $this->suggestLittersByIdPrefix($q),
-            default => $this->suggestLittersByCode($q),
+            'animals' => $this->suggestAnimalsAuto($q),
+            'litters' => $this->suggestLittersAuto($q),
+            default => [],
         };
 
         return response()->json(['items' => $items]);
@@ -37,18 +36,17 @@ class NavbarSearchController extends Controller
     public function go(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'scope' => ['required', 'in:id,public_tag,litter_id,litter_code'],
+            'scope' => ['required', 'in:animals,id,public_tag,litters,litter_id,litter_code'],
             'q' => ['required', 'string', 'min:1', 'max:100'],
         ]);
 
-        $scope = (string) ($validated['scope'] ?? 'id');
+        $scope = $this->normalizeScope((string) ($validated['scope'] ?? 'id'));
         $q = trim((string) ($validated['q'] ?? ''));
 
         $url = match ($scope) {
-            'id' => $this->resolveAnimalById($q),
-            'public_tag' => $this->resolveAnimalByPublicTag($q),
-            'litter_id' => $this->resolveLitterById($q),
-            default => $this->resolveLitterByCode($q),
+            'animals' => $this->resolveAnimalAuto($q),
+            'litters' => $this->resolveLitterAuto($q),
+            default => null,
         };
 
         if ($url !== null) {
@@ -183,6 +181,49 @@ class NavbarSearchController extends Controller
             ->first(['id']);
 
         return $litter ? route('panel.litters.show', $litter->id) : null;
+    }
+
+    /**
+     * @return array<int, array{label:string,subtitle:string,url:string}>
+     */
+    private function suggestLittersAuto(string $q): array
+    {
+        return preg_match('/^\d+$/', $q) === 1
+            ? $this->suggestLittersByIdPrefix($q)
+            : $this->suggestLittersByCode($q);
+    }
+
+    /**
+     * @return array<int, array{label:string,subtitle:string,url:string}>
+     */
+    private function suggestAnimalsAuto(string $q): array
+    {
+        return preg_match('/^\d+$/', $q) === 1
+            ? $this->suggestAnimalsByIdPrefix($q)
+            : $this->suggestAnimalsByPublicTag($q);
+    }
+
+    private function resolveLitterAuto(string $q): ?string
+    {
+        return preg_match('/^\d+$/', $q) === 1
+            ? $this->resolveLitterById($q)
+            : $this->resolveLitterByCode($q);
+    }
+
+    private function resolveAnimalAuto(string $q): ?string
+    {
+        return preg_match('/^\d+$/', $q) === 1
+            ? $this->resolveAnimalById($q)
+            : $this->resolveAnimalByPublicTag($q);
+    }
+
+    private function normalizeScope(string $scope): string
+    {
+        return match ($scope) {
+            'id', 'public_tag' => 'animals',
+            'litter_id', 'litter_code' => 'litters',
+            default => $scope,
+        };
     }
 
     private function normalizePlainText(string $value, string $fallback): string
