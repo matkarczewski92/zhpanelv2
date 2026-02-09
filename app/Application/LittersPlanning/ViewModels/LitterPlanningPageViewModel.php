@@ -30,8 +30,22 @@ class LitterPlanningPageViewModel
      *     traits_count:int,
      *     percentage:float,
      *     percentage_label:string,
-     *     litter_url:string
+     *     litter_url:string,
+     *     litter_eggs_to_incubation:int
      * }> $seasonOffspringRows
+     * @param array<int, array{
+     *     morph_name:string,
+     *     grouped_rows:int,
+     *     litters_count:int,
+     *     percentage_sum:float,
+     *     percentage_sum_label:string,
+     *     avg_eggs_to_incubation:float,
+     *     avg_eggs_to_incubation_label:string,
+     *     numeric_count:float,
+     *     numeric_count_label:string
+     * }> $seasonOffspringSummaryRows
+     * @param array<string, array{url:string,indicator:string}> $seasonOffspringSortLinks
+     * @param array<string, array{url:string,indicator:string}> $seasonOffspringSummarySortLinks
      * @param array<int, string> $connectionExpectedTraits
      * @param array<int, string> $connectionGeneSuggestions
      * @param array<int, array{
@@ -111,14 +125,23 @@ class LitterPlanningPageViewModel
         public readonly array $seasons,
         public readonly int $selectedSeason,
         public readonly array $seasonOffspringRows,
+        public readonly array $seasonOffspringSummaryRows,
+        public readonly string $seasonOffspringSort,
+        public readonly string $seasonOffspringDirection,
+        public readonly array $seasonOffspringSortLinks,
+        public readonly string $seasonOffspringSummarySort,
+        public readonly string $seasonOffspringSummaryDirection,
+        public readonly array $seasonOffspringSummarySortLinks,
         public readonly string $connectionSearchInput,
         public readonly array $connectionExpectedTraits,
         public readonly bool $connectionStrictVisualOnly,
+        public readonly bool $connectionOnlyAbove250,
         public readonly array $connectionGeneSuggestions,
         public readonly int $connectionCheckedPairs,
         public readonly array $connectionSearchRows,
         public readonly string $roadmapSearchInput,
         public readonly string $roadmapPriorityMode,
+        public readonly bool $roadmapGenerationOneOnlyAbove250,
         public readonly array $roadmapExcludedRootPairs,
         public readonly string $roadmapRootPairKey,
         public readonly int $roadmapGenerations,

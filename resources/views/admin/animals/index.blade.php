@@ -46,6 +46,17 @@
                     </select>
                 </div>
                 <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label" for="sex">Płeć</label>
+                    <select id="sex" name="sex" class="form-select">
+                        <option value="">Wszystkie</option>
+                        @foreach ($sexes as $sex)
+                            <option value="{{ $sex['id'] }}" @selected(($filters['sex'] ?? null) === $sex['id'])>
+                                {{ $sex['label'] }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
                     <label class="form-label" for="feed_id">Karma</label>
                     <select id="feed_id" name="feed_id" class="form-select">
                         <option value="">Wszystkie</option>

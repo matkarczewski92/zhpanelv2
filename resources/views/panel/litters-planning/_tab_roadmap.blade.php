@@ -64,6 +64,19 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-12 col-lg-2">
+                    <label class="form-check-label small text-nowrap mt-lg-4 pt-lg-2">
+                        <input type="hidden" name="roadmap_generation_one_only_above_250" value="0">
+                        <input
+                            type="checkbox"
+                            class="form-check-input me-1"
+                            name="roadmap_generation_one_only_above_250"
+                            value="1"
+                            @checked($page->roadmapGenerationOneOnlyAbove250)
+                        >
+                        Tylko węże powyżej 250g (G1)
+                    </label>
+                </div>
                 <div class="col-12 d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <div class="btn-group btn-group-sm" role="group" aria-label="Priorytet roadmapy">
                         <input
@@ -118,6 +131,9 @@
                 @if ($page->connectionStrictVisualOnly)
                     Wlaczony filtr: bez dodatkowych genow wizualnych.
                 @endif
+                @if ($page->roadmapGenerationOneOnlyAbove250)
+                    Wlaczony filtr G1: tylko węże powyżej 250g.
+                @endif
                 Tryb: {{ $page->roadmapPriorityMode === 'highest_probability' ? 'najwiekszy % celu' : 'najszybszy' }}.
                 @if ($page->roadmapTargetReachable)
                     <span class="text-success">Cel mozliwy do osiagniecia w zaproponowanym roadmap.</span>
@@ -128,7 +144,6 @@
 
             @if (
                 empty($activeRoadmap)
-                && $page->roadmapPriorityMode === 'fastest'
                 && $page->roadmapTargetReachable
                 && $page->roadmapRootPairKey !== ''
             )
@@ -148,6 +163,7 @@
                             'roadmap_priority_mode' => $page->roadmapPriorityMode,
                             'roadmap_generations' => $page->roadmapGenerations > 0 ? $page->roadmapGenerations : null,
                             'strict_visual_only' => $page->connectionStrictVisualOnly ? 1 : 0,
+                            'roadmap_generation_one_only_above_250' => $page->roadmapGenerationOneOnlyAbove250 ? 1 : 0,
                             'roadmap_excluded_root_pairs' => $excludedForAlternative,
                         ]) }}"
                         class="btn btn-sm btn-outline-warning"
@@ -177,6 +193,9 @@
                         <input type="hidden" name="roadmap_expected_genes" value="{{ $page->roadmapSearchInput }}">
                         <input type="hidden" name="roadmap_priority_mode" value="{{ $page->roadmapPriorityMode }}">
                         <input type="hidden" name="roadmap_generations" value="{{ $page->roadmapGenerations > 0 ? $page->roadmapGenerations : '' }}">
+                        <input type="hidden" name="roadmap_excluded_root_pairs" value="{{ implode(',', $page->roadmapExcludedRootPairs) }}">
+                        <input type="hidden" name="strict_visual_only" value="{{ $page->connectionStrictVisualOnly ? 1 : 0 }}">
+                        <input type="hidden" name="roadmap_generation_one_only_above_250" value="{{ $page->roadmapGenerationOneOnlyAbove250 ? 1 : 0 }}">
                     </div>
                     <div class="col-12 col-lg-3 d-grid">
                         <button type="submit" class="btn btn-outline-success">Zapisz Roadmap</button>

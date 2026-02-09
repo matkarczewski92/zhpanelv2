@@ -35,6 +35,17 @@
                     >
                     Bez dodatkowych genow wizualnych
                 </label>
+                <label class="form-check-label small">
+                    <input type="hidden" name="connections_only_above_250" value="0">
+                    <input
+                        type="checkbox"
+                        class="form-check-input me-1"
+                        name="connections_only_above_250"
+                        value="1"
+                        @checked($page->connectionOnlyAbove250)
+                    >
+                    Tylko węże powyżej 250g
+                </label>
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary flex-grow-1">Szukaj</button>
                     <a href="{{ route('panel.litters-planning.index', ['tab' => 'connections']) }}" class="btn btn-outline-light">Wyczysc</a>
@@ -55,6 +66,9 @@
                 Znalezione dopasowania: {{ count($page->connectionSearchRows) }}.
                 @if ($page->connectionStrictVisualOnly)
                     Wlaczony filtr: bez dodatkowych genow wizualnych.
+                @endif
+                @if ($page->connectionOnlyAbove250)
+                    Wlaczony filtr: tylko węże powyżej 250g.
                 @endif
             </div>
         @endif

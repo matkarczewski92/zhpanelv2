@@ -20,12 +20,22 @@ class LitterPlanningIndexRequest extends FormRequest
             'strict_visual_only' => $this->has('strict_visual_only')
                 ? $this->normalizeBoolean($this->input('strict_visual_only'))
                 : null,
+            'connections_only_above_250' => $this->has('connections_only_above_250')
+                ? $this->normalizeBoolean($this->input('connections_only_above_250'))
+                : null,
             'roadmap_expected_genes' => $this->normalizeText($this->input('roadmap_expected_genes')),
             'roadmap_priority_mode' => $this->normalizeRoadmapPriorityMode($this->input('roadmap_priority_mode')),
             'roadmap_excluded_root_pairs' => $this->normalizeText($this->input('roadmap_excluded_root_pairs')),
             'roadmap_generations' => $this->normalizeInt($this->input('roadmap_generations')),
+            'roadmap_generation_one_only_above_250' => $this->has('roadmap_generation_one_only_above_250')
+                ? $this->normalizeBoolean($this->input('roadmap_generation_one_only_above_250'))
+                : null,
             'roadmap_id' => $this->normalizeInt($this->input('roadmap_id')),
             'roadmap_open_id' => $this->normalizeInt($this->input('roadmap_open_id')),
+            'offspring_sort' => $this->normalizeOffspringSort($this->input('offspring_sort')),
+            'offspring_direction' => $this->normalizeDirection($this->input('offspring_direction')),
+            'offspring_summary_sort' => $this->normalizeOffspringSummarySort($this->input('offspring_summary_sort')),
+            'offspring_summary_direction' => $this->normalizeDirection($this->input('offspring_summary_direction')),
         ]);
     }
 
@@ -36,12 +46,18 @@ class LitterPlanningIndexRequest extends FormRequest
             'season' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'expected_genes' => ['nullable', 'string', 'max:500'],
             'strict_visual_only' => ['nullable', 'boolean'],
+            'connections_only_above_250' => ['nullable', 'boolean'],
             'roadmap_expected_genes' => ['nullable', 'string', 'max:500'],
             'roadmap_priority_mode' => ['nullable', 'in:fastest,highest_probability'],
             'roadmap_excluded_root_pairs' => ['nullable', 'string', 'max:500'],
             'roadmap_generations' => ['nullable', 'integer', 'min:2', 'max:5'],
+            'roadmap_generation_one_only_above_250' => ['nullable', 'boolean'],
             'roadmap_id' => ['nullable', 'integer', 'exists:litter_roadmaps,id'],
             'roadmap_open_id' => ['nullable', 'integer', 'exists:litter_roadmaps,id'],
+            'offspring_sort' => ['nullable', 'in:litter_id,litter_code,season,traits_name,traits,traits_count,percentage'],
+            'offspring_direction' => ['nullable', 'in:asc,desc'],
+            'offspring_summary_sort' => ['nullable', 'in:morph_name,percentage_sum,avg_eggs_to_incubation,numeric_count,litters_count,grouped_rows'],
+            'offspring_summary_direction' => ['nullable', 'in:asc,desc'],
         ];
     }
 
@@ -94,6 +110,46 @@ class LitterPlanningIndexRequest extends FormRequest
         $normalized = strtolower($normalized);
 
         return in_array($normalized, ['fastest', 'highest_probability'], true)
+            ? $normalized
+            : null;
+    }
+
+    private function normalizeOffspringSort(mixed $value): ?string
+    {
+        $normalized = $this->normalizeText($value);
+        if ($normalized === null) {
+            return null;
+        }
+
+        $normalized = strtolower($normalized);
+        return in_array($normalized, ['litter_id', 'litter_code', 'season', 'traits_name', 'traits', 'traits_count', 'percentage'], true)
+            ? $normalized
+            : null;
+    }
+
+    private function normalizeDirection(mixed $value): ?string
+    {
+        $normalized = $this->normalizeText($value);
+        if ($normalized === null) {
+            return null;
+        }
+
+        $normalized = strtolower($normalized);
+
+        return in_array($normalized, ['asc', 'desc'], true)
+            ? $normalized
+            : null;
+    }
+
+    private function normalizeOffspringSummarySort(mixed $value): ?string
+    {
+        $normalized = $this->normalizeText($value);
+        if ($normalized === null) {
+            return null;
+        }
+
+        $normalized = strtolower($normalized);
+        return in_array($normalized, ['morph_name', 'percentage_sum', 'avg_eggs_to_incubation', 'numeric_count', 'litters_count', 'grouped_rows'], true)
             ? $normalized
             : null;
     }

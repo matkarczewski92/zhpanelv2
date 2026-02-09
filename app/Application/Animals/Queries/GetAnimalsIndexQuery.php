@@ -24,6 +24,7 @@ class GetAnimalsIndexQuery
         $typeId = $this->intOrNull($request->query('type_id'));
         $categoryId = $this->intOrNull($request->query('category_id'));
         $feedId = $this->intOrNull($request->query('feed_id'));
+        $sex = $this->normalizeSex($request->query('sex'));
         $colorGroupIds = $this->normalizeIdList($request->query('color_groups', []));
         $sortMap = [
             'id' => 'animals.id',
@@ -110,6 +111,10 @@ class GetAnimalsIndexQuery
             $query->where('animals.feed_id', $feedId);
         }
 
+        if ($sex !== null) {
+            $query->where('animals.sex', $sex);
+        }
+
         if ($colorGroupIds !== []) {
             $query->whereHas('colorGroups', function ($builder) use ($colorGroupIds): void {
                 $builder->whereIn('color_groups.id', $colorGroupIds);
@@ -183,11 +188,16 @@ class GetAnimalsIndexQuery
             'types' => $types->map(fn ($type) => ['id' => $type->id, 'name' => $type->name])->all(),
             'categories' => $categories->map(fn ($category) => ['id' => $category->id, 'name' => $category->name])->all(),
             'feeds' => $feeds->map(fn ($feed) => ['id' => $feed->id, 'name' => $feed->name])->all(),
+            'sexes' => collect(Sex::options())
+                ->map(fn (string $label, int $value): array => ['id' => $value, 'label' => $label])
+                ->values()
+                ->all(),
             'filters' => [
                 'q' => $search,
                 'type_id' => $typeId,
                 'category_id' => $categoryId,
                 'feed_id' => $feedId,
+                'sex' => $sex,
                 'color_groups' => $colorGroupIds,
             ],
             'colorGroupFilters' => $this->buildColorGroupFilters($request, $activeColorGroups, $colorGroupIds),
@@ -237,6 +247,18 @@ class GetAnimalsIndexQuery
         $int = (int) $value;
 
         return $int > 0 ? $int : null;
+    }
+
+    private function normalizeSex(mixed $value): ?int
+    {
+        $sex = $this->intOrNull($value);
+        if ($sex === null) {
+            return null;
+        }
+
+        return in_array($sex, [Sex::Unknown->value, Sex::Male->value, Sex::Female->value], true)
+            ? $sex
+            : null;
     }
 
     private function resolveDefaultCategoryId(Collection $categories): ?int

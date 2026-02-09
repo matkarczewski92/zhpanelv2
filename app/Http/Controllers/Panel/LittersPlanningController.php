@@ -119,8 +119,12 @@ class LittersPlanningController extends Controller
         $snapshot = $query->buildRoadmapSnapshot(
             (string) ($validated['roadmap_expected_genes'] ?? ''),
             (int) ($validated['roadmap_generations'] ?? 0),
-            true,
-            (string) ($validated['roadmap_priority_mode'] ?? 'fastest')
+            isset($validated['strict_visual_only'])
+                ? (bool) $validated['strict_visual_only']
+                : true,
+            (string) ($validated['roadmap_priority_mode'] ?? 'fastest'),
+            $this->parseRootPairKeys((string) ($validated['roadmap_excluded_root_pairs'] ?? '')),
+            (bool) ($validated['roadmap_generation_one_only_above_250'] ?? false)
         );
 
         $roadmap = $service->store([
@@ -220,5 +224,23 @@ class LittersPlanningController extends Controller
                 'type' => 'success',
                 'message' => "Roadmap \"{$name}\" zostala usunieta.",
             ]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function parseRootPairKeys(string $value): array
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return [];
+        }
+
+        return collect(explode(',', $trimmed))
+            ->map(fn (string $part): string => trim($part))
+            ->filter(fn (string $part): bool => preg_match('/^\d+:\d+$/', $part) === 1)
+            ->unique()
+            ->values()
+            ->all();
     }
 }

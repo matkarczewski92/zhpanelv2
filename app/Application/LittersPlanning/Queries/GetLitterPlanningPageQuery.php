@@ -43,6 +43,7 @@ class GetLitterPlanningPageQuery
         $connectionStrictVisualOnly = $strictVisualOnlyFilter === null
             ? true
             : (bool) $strictVisualOnlyFilter;
+        $connectionOnlyAbove250 = (bool) ($filters['connections_only_above_250'] ?? false);
         $connectionGeneSuggestions = $this->buildConnectionGeneSuggestions($traitGeneAliasMap);
         $hasRoadmapManualInput = isset($filters['roadmap_expected_genes'])
             && trim((string) ($filters['roadmap_expected_genes'] ?? '')) !== '';
@@ -55,6 +56,7 @@ class GetLitterPlanningPageQuery
         $roadmapGenerations = isset($filters['roadmap_generations']) && is_numeric($filters['roadmap_generations'])
             ? (int) $filters['roadmap_generations']
             : 0; // 0 = dowolny
+        $roadmapGenerationOneOnlyAbove250 = (bool) ($filters['roadmap_generation_one_only_above_250'] ?? false);
 
         if ($selectedRoadmap && $roadmapSearchInput === '') {
             $roadmapSearchInput = trim((string) ($selectedRoadmap->search_input ?? ''));
@@ -122,7 +124,42 @@ class GetLitterPlanningPageQuery
                 : (!empty($seasons) ? (int) end($seasons) : $currentYear);
         }
 
-        $seasonOffspringRows = $this->buildSeasonOffspringRows($selectedSeason);
+        $seasonOffspringSort = strtolower((string) ($filters['offspring_sort'] ?? 'litter_id'));
+        if (!in_array($seasonOffspringSort, ['litter_id', 'litter_code', 'season', 'traits_name', 'traits', 'traits_count', 'percentage'], true)) {
+            $seasonOffspringSort = 'litter_id';
+        }
+        $seasonOffspringDirection = strtolower((string) ($filters['offspring_direction'] ?? 'asc'));
+        if (!in_array($seasonOffspringDirection, ['asc', 'desc'], true)) {
+            $seasonOffspringDirection = 'asc';
+        }
+        $seasonOffspringRows = $this->buildSeasonOffspringRows($selectedSeason, $seasonOffspringSort, $seasonOffspringDirection);
+        $seasonOffspringSummarySort = strtolower((string) ($filters['offspring_summary_sort'] ?? 'percentage_sum'));
+        if (!in_array($seasonOffspringSummarySort, ['morph_name', 'percentage_sum', 'avg_eggs_to_incubation', 'numeric_count', 'litters_count', 'grouped_rows'], true)) {
+            $seasonOffspringSummarySort = 'percentage_sum';
+        }
+        $seasonOffspringSummaryDirection = strtolower((string) ($filters['offspring_summary_direction'] ?? 'desc'));
+        if (!in_array($seasonOffspringSummaryDirection, ['asc', 'desc'], true)) {
+            $seasonOffspringSummaryDirection = 'desc';
+        }
+        $stableEggsToIncubationAverage = $this->getStableEggsToIncubationAverage();
+        $seasonOffspringSummaryRows = $this->buildSeasonOffspringSummaryRows(
+            $seasonOffspringRows,
+            $stableEggsToIncubationAverage,
+            $seasonOffspringSummarySort,
+            $seasonOffspringSummaryDirection
+        );
+        $seasonOffspringSortLinks = $this->buildSeasonOffspringSortLinks(
+            $filters,
+            $selectedSeason,
+            $seasonOffspringSort,
+            $seasonOffspringDirection
+        );
+        $seasonOffspringSummarySortLinks = $this->buildSeasonOffspringSummarySortLinks(
+            $filters,
+            $selectedSeason,
+            $seasonOffspringSummarySort,
+            $seasonOffspringSummaryDirection
+        );
         $connectionSearchRows = [];
         $connectionCheckedPairs = 0;
         $roadmapTargetReachable = false;
@@ -135,7 +172,8 @@ class GetLitterPlanningPageQuery
             $connectionSearchRows = $this->buildConnectionSearchRows(
                 $connectionExpectedTraits,
                 $connectionStrictVisualOnly,
-                $connectionCheckedPairs
+                $connectionCheckedPairs,
+                $connectionOnlyAbove250
             );
         }
 
@@ -161,7 +199,8 @@ class GetLitterPlanningPageQuery
                 $roadmapGenerations,
                 $connectionStrictVisualOnly,
                 $roadmapPriorityMode,
-                $roadmapExcludedRootPairs
+                $roadmapExcludedRootPairs,
+                $roadmapGenerationOneOnlyAbove250
             );
             $roadmapTargetReachable = $roadmap['target_reachable'];
             $roadmapMatchedTraits = $roadmap['matched_traits'];
@@ -180,14 +219,23 @@ class GetLitterPlanningPageQuery
             seasons: $seasons,
             selectedSeason: $selectedSeason,
             seasonOffspringRows: $seasonOffspringRows,
+            seasonOffspringSummaryRows: $seasonOffspringSummaryRows,
+            seasonOffspringSort: $seasonOffspringSort,
+            seasonOffspringDirection: $seasonOffspringDirection,
+            seasonOffspringSortLinks: $seasonOffspringSortLinks,
+            seasonOffspringSummarySort: $seasonOffspringSummarySort,
+            seasonOffspringSummaryDirection: $seasonOffspringSummaryDirection,
+            seasonOffspringSummarySortLinks: $seasonOffspringSummarySortLinks,
             connectionSearchInput: $connectionSearchInput,
             connectionExpectedTraits: $connectionExpectedTraits,
             connectionStrictVisualOnly: $connectionStrictVisualOnly,
+            connectionOnlyAbove250: $connectionOnlyAbove250,
             connectionGeneSuggestions: $connectionGeneSuggestions,
             connectionCheckedPairs: $connectionCheckedPairs,
             connectionSearchRows: $connectionSearchRows,
             roadmapSearchInput: $roadmapSearchInput,
             roadmapPriorityMode: $roadmapPriorityMode,
+            roadmapGenerationOneOnlyAbove250: $roadmapGenerationOneOnlyAbove250,
             roadmapExcludedRootPairs: $roadmapExcludedRootPairs,
             roadmapRootPairKey: $roadmapRootPairKey,
             roadmapGenerations: $roadmapGenerations,
@@ -218,7 +266,8 @@ class GetLitterPlanningPageQuery
         int $generations = 0,
         bool $strictVisualOnly = true,
         string $priorityMode = 'fastest',
-        array $excludedGenerationOnePairs = []
+        array $excludedGenerationOnePairs = [],
+        bool $generationOneOnlyAbove250 = false
     ): array
     {
         $normalizedSearch = trim($searchInput);
@@ -236,7 +285,9 @@ class GetLitterPlanningPageQuery
                 $generationsLimit,
                 $strictVisualOnly,
                 $priorityMode,
-                $excludedGenerationOnePairs
+                $excludedGenerationOnePairs,
+                true,
+                $generationOneOnlyAbove250
             )
             : [
                 'target_reachable' => false,
@@ -653,9 +704,9 @@ class GetLitterPlanningPageQuery
     }
 
     /**
-     * @return array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int, string>,carrier_traits:array<int, string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string}>
+     * @return array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int, string>,carrier_traits:array<int, string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int}>
      */
-    private function buildSeasonOffspringRows(int $season): array
+    private function buildSeasonOffspringRows(int $season, string $sort = 'litter_id', string $direction = 'asc'): array
     {
         $litters = Litter::query()
             ->with([
@@ -670,7 +721,7 @@ class GetLitterPlanningPageQuery
             ->whereNotNull('parent_male')
             ->whereNotNull('parent_female')
             ->orderBy('id')
-            ->get(['id', 'litter_code', 'season', 'parent_male', 'parent_female']);
+            ->get(['id', 'litter_code', 'season', 'parent_male', 'parent_female', 'laying_eggs_ok']);
 
         if ($litters->isEmpty()) {
             return [];
@@ -714,11 +765,278 @@ class GetLitterPlanningPageQuery
                     'percentage' => $percentage,
                     'percentage_label' => number_format($percentage, 2, ',', ' ') . '%',
                     'litter_url' => route('panel.litters.show', $litter->id),
+                    'litter_eggs_to_incubation' => (int) ($litter->laying_eggs_ok ?? 0),
                 ];
             }
         }
 
-        return $rows;
+        return $this->sortSeasonOffspringRows($rows, $sort, $direction);
+    }
+
+    /**
+     * @param array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int,string>,carrier_traits:array<int,string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int}> $rows
+     * @return array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int,string>,carrier_traits:array<int,string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int}>
+     */
+    private function sortSeasonOffspringRows(array $rows, string $sort, string $direction): array
+    {
+        usort($rows, function (array $left, array $right) use ($sort, $direction): int {
+            $result = match ($sort) {
+                'litter_code' => strcmp(
+                    strtolower((string) ($left['litter_code'] ?? '')),
+                    strtolower((string) ($right['litter_code'] ?? ''))
+                ),
+                'season' => ((int) ($left['season'] ?? 0)) <=> ((int) ($right['season'] ?? 0)),
+                'traits_name' => strcmp(
+                    strtolower((string) ($left['traits_name'] ?? '')),
+                    strtolower((string) ($right['traits_name'] ?? ''))
+                ),
+                'traits' => strcmp(
+                    strtolower(trim(
+                        implode(' ', array_merge(
+                            (array) ($left['visual_traits'] ?? []),
+                            (array) ($left['carrier_traits'] ?? [])
+                        ))
+                    )),
+                    strtolower(trim(
+                        implode(' ', array_merge(
+                            (array) ($right['visual_traits'] ?? []),
+                            (array) ($right['carrier_traits'] ?? [])
+                        ))
+                    ))
+                ),
+                'traits_count' => ((int) ($left['traits_count'] ?? 0)) <=> ((int) ($right['traits_count'] ?? 0)),
+                'percentage' => ((float) ($left['percentage'] ?? 0)) <=> ((float) ($right['percentage'] ?? 0)),
+                default => ((int) ($left['litter_id'] ?? 0)) <=> ((int) ($right['litter_id'] ?? 0)),
+            };
+
+            if ($result === 0) {
+                $result = ((int) ($left['litter_id'] ?? 0)) <=> ((int) ($right['litter_id'] ?? 0));
+                if ($result === 0) {
+                    $result = strcmp(
+                        strtolower((string) ($left['traits_name'] ?? '')),
+                        strtolower((string) ($right['traits_name'] ?? ''))
+                    );
+                }
+            }
+
+            return $direction === 'desc' ? -$result : $result;
+        });
+
+        return array_values($rows);
+    }
+
+    /**
+     * @param array<int, array{
+     *     litter_id:int,
+     *     litter_code:string,
+     *     season:int,
+     *     traits_name:string,
+     *     visual_traits:array<int, string>,
+     *     carrier_traits:array<int, string>,
+     *     traits_count:int,
+     *     percentage:float,
+     *     percentage_label:string,
+     *     litter_url:string,
+     *     litter_eggs_to_incubation:int
+     * }> $rows
+     * @return array<int, array{
+     *     morph_name:string,
+     *     grouped_rows:int,
+     *     litters_count:int,
+     *     percentage_sum:float,
+     *     percentage_sum_label:string,
+     *     avg_eggs_to_incubation:float,
+     *     avg_eggs_to_incubation_label:string,
+     *     numeric_count:float,
+     *     numeric_count_label:string
+     * }>
+     */
+    private function buildSeasonOffspringSummaryRows(
+        array $rows,
+        float $stableEggsToIncubationAverage,
+        string $sort = 'percentage_sum',
+        string $direction = 'desc'
+    ): array
+    {
+        $grouped = [];
+
+        foreach ($rows as $row) {
+            $displayName = $this->canonicalMorphName(trim((string) ($row['traits_name'] ?? '')));
+            $key = $this->normalizeTrait($displayName !== '-' ? $displayName : '_brak_');
+
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'morph_name' => $displayName,
+                    'grouped_rows' => 0,
+                    'percentage_sum' => 0.0,
+                    'litters' => [],
+                ];
+            }
+
+            $grouped[$key]['grouped_rows']++;
+            $grouped[$key]['percentage_sum'] += (float) ($row['percentage'] ?? 0);
+
+            $litterId = (int) ($row['litter_id'] ?? 0);
+            if ($litterId > 0) {
+                $grouped[$key]['litters'][$litterId] = true;
+            }
+        }
+
+        $summary = collect($grouped)
+            ->map(function (array $group) use ($stableEggsToIncubationAverage): array {
+                $litters = (array) ($group['litters'] ?? []);
+                $littersCount = count($litters);
+                $avgEggs = $stableEggsToIncubationAverage;
+                $percentageSum = (float) ($group['percentage_sum'] ?? 0);
+                $numericCount = round(($percentageSum / 100) * $avgEggs, 0);
+
+                return [
+                    'morph_name' => (string) ($group['morph_name'] ?? '-'),
+                    'grouped_rows' => (int) ($group['grouped_rows'] ?? 0),
+                    'litters_count' => $littersCount,
+                    'percentage_sum' => $percentageSum,
+                    'percentage_sum_label' => number_format($percentageSum, 2, ',', ' ') . '%',
+                    'avg_eggs_to_incubation' => $avgEggs,
+                    'avg_eggs_to_incubation_label' => number_format($avgEggs, 2, ',', ' '),
+                    'numeric_count' => $numericCount,
+                    'numeric_count_label' => number_format($numericCount, 0, ',', ' '),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return $this->sortSeasonOffspringSummaryRows($summary, $sort, $direction);
+    }
+
+    private function getStableEggsToIncubationAverage(): float
+    {
+        $average = Litter::query()
+            ->whereIn('category', [1, 4])
+            ->whereNotNull('laying_eggs_ok')
+            ->where('laying_eggs_ok', '>', 0)
+            ->avg('laying_eggs_ok');
+
+        return is_numeric($average) ? (float) $average : 0.0;
+    }
+
+    /**
+     * @param array<int, array{
+     *     morph_name:string,
+     *     grouped_rows:int,
+     *     litters_count:int,
+     *     percentage_sum:float,
+     *     percentage_sum_label:string,
+     *     avg_eggs_to_incubation:float,
+     *     avg_eggs_to_incubation_label:string,
+     *     numeric_count:float,
+     *     numeric_count_label:string
+     * }> $rows
+     * @return array<int, array{
+     *     morph_name:string,
+     *     grouped_rows:int,
+     *     litters_count:int,
+     *     percentage_sum:float,
+     *     percentage_sum_label:string,
+     *     avg_eggs_to_incubation:float,
+     *     avg_eggs_to_incubation_label:string,
+     *     numeric_count:float,
+     *     numeric_count_label:string
+     * }>
+     */
+    private function sortSeasonOffspringSummaryRows(array $rows, string $sort, string $direction): array
+    {
+        usort($rows, function (array $left, array $right) use ($sort, $direction): int {
+            $result = match ($sort) {
+                'morph_name' => strcmp(
+                    strtolower((string) ($left['morph_name'] ?? '')),
+                    strtolower((string) ($right['morph_name'] ?? ''))
+                ),
+                'avg_eggs_to_incubation' => ((float) ($left['avg_eggs_to_incubation'] ?? 0)) <=> ((float) ($right['avg_eggs_to_incubation'] ?? 0)),
+                'numeric_count' => ((float) ($left['numeric_count'] ?? 0)) <=> ((float) ($right['numeric_count'] ?? 0)),
+                'litters_count' => ((int) ($left['litters_count'] ?? 0)) <=> ((int) ($right['litters_count'] ?? 0)),
+                'grouped_rows' => ((int) ($left['grouped_rows'] ?? 0)) <=> ((int) ($right['grouped_rows'] ?? 0)),
+                default => ((float) ($left['percentage_sum'] ?? 0)) <=> ((float) ($right['percentage_sum'] ?? 0)),
+            };
+
+            if ($result === 0) {
+                $result = strcmp(
+                    strtolower((string) ($left['morph_name'] ?? '')),
+                    strtolower((string) ($right['morph_name'] ?? ''))
+                );
+            }
+
+            return $direction === 'desc' ? -$result : $result;
+        });
+
+        return array_values($rows);
+    }
+
+    /**
+     * @return array<string, array{url:string,indicator:string}>
+     */
+    private function buildSeasonOffspringSummarySortLinks(
+        array $filters,
+        int $season,
+        string $activeSort,
+        string $activeDirection
+    ): array {
+        $fields = ['morph_name', 'percentage_sum', 'avg_eggs_to_incubation', 'numeric_count', 'litters_count', 'grouped_rows'];
+        $baseQuery = $filters;
+        unset($baseQuery['offspring_summary_sort'], $baseQuery['offspring_summary_direction']);
+
+        $baseQuery['tab'] = 'offspring';
+        $baseQuery['season'] = $season;
+
+        $links = [];
+        foreach ($fields as $field) {
+            $isActive = $field === $activeSort;
+            $nextDirection = $isActive && $activeDirection === 'asc' ? 'desc' : 'asc';
+            $query = array_merge($baseQuery, [
+                'offspring_summary_sort' => $field,
+                'offspring_summary_direction' => $nextDirection,
+            ]);
+
+            $links[$field] = [
+                'url' => route('panel.litters-planning.index', $query),
+                'indicator' => $isActive ? ($activeDirection === 'asc' ? '▲' : '▼') : '',
+            ];
+        }
+
+        return $links;
+    }
+
+    /**
+     * @return array<string, array{url:string,indicator:string}>
+     */
+    private function buildSeasonOffspringSortLinks(
+        array $filters,
+        int $season,
+        string $activeSort,
+        string $activeDirection
+    ): array {
+        $fields = ['litter_id', 'litter_code', 'season', 'traits_name', 'traits', 'traits_count', 'percentage'];
+        $baseQuery = $filters;
+        unset($baseQuery['offspring_sort'], $baseQuery['offspring_direction']);
+
+        $baseQuery['tab'] = 'offspring';
+        $baseQuery['season'] = $season;
+
+        $links = [];
+        foreach ($fields as $field) {
+            $isActive = $field === $activeSort;
+            $nextDirection = $isActive && $activeDirection === 'asc' ? 'desc' : 'asc';
+            $query = array_merge($baseQuery, [
+                'offspring_sort' => $field,
+                'offspring_direction' => $nextDirection,
+            ]);
+
+            $links[$field] = [
+                'url' => route('panel.litters-planning.index', $query),
+                'indicator' => $isActive ? ($activeDirection === 'asc' ? '▲' : '▼') : '',
+            ];
+        }
+
+        return $links;
     }
 
     /**
@@ -767,6 +1085,30 @@ class GetLitterPlanningPageQuery
         $name = trim(strip_tags((string) $value));
 
         return $name !== '' ? $name : $fallback;
+    }
+
+    private function canonicalMorphName(string $name): string
+    {
+        $clean = trim(preg_replace('/\s+/', ' ', $name) ?? $name);
+        if ($clean === '') {
+            return '-';
+        }
+
+        $parts = collect(explode(' ', $clean))
+            ->map(fn (string $part): string => trim($part))
+            ->filter()
+            ->values()
+            ->all();
+
+        if (count($parts) <= 1) {
+            return $clean;
+        }
+
+        usort($parts, function (string $a, string $b): int {
+            return strcmp($this->normalizeTrait($a), $this->normalizeTrait($b));
+        });
+
+        return implode(' ', $parts);
     }
 
     /**
@@ -892,12 +1234,14 @@ class GetLitterPlanningPageQuery
     private function buildConnectionSearchRows(
         array $expectedTraits,
         bool $strictVisualOnly,
-        int &$checkedPairs
+        int &$checkedPairs,
+        bool $onlyAbove250
     ): array
     {
         $animals = Animal::query()
             ->where('animal_category_id', 1)
             ->whereIn('sex', [2, 3])
+            ->withMax('weights', 'value')
             ->with(['genotypes.category'])
             ->orderBy('id')
             ->get(['id', 'name', 'sex', 'animal_type_id']);
@@ -928,6 +1272,14 @@ class GetLitterPlanningPageQuery
             /** @var Collection<int, Animal> $typeMales */
             $typeMales = $malesByType->get((string) $femaleTypeId, collect());
             foreach ($typeMales as $male) {
+                if ($onlyAbove250) {
+                    $femaleWeight = (float) ($female->weights_max_value ?? 0);
+                    $maleWeight = (float) ($male->weights_max_value ?? 0);
+                    if ($femaleWeight <= 250 || $maleWeight <= 250) {
+                        continue;
+                    }
+                }
+
                 $checkedPairs++;
 
                 $rows = $this->genotypeCalculator
@@ -1014,12 +1366,14 @@ class GetLitterPlanningPageQuery
         bool $strictVisualOnly,
         string $priorityMode,
         array $excludedGenerationOnePairs = [],
-        bool $allowDiversification = true
+        bool $allowDiversification = true,
+        bool $generationOneOnlyAbove250 = false
     ): array
     {
         $breeders = Animal::query()
             ->where('animal_category_id', 1)
             ->whereIn('sex', [2, 3])
+            ->withMax('weights', 'value')
             ->with(['genotypes.category'])
             ->orderBy('id')
             ->get(['id', 'name', 'sex', 'animal_type_id']);
@@ -1115,6 +1469,7 @@ class GetLitterPlanningPageQuery
                 'origin_row_signature' => null,
                 'genotype' => $genotype,
                 'relevance' => $scoreGenotypeRelevance($genotype),
+                'weight' => (int) round((float) ($animal->weights_max_value ?? 0)),
             ];
             $realBreederIds[] = $breederId;
         }
@@ -1273,6 +1628,14 @@ class GetLitterPlanningPageQuery
                         $rootPairKey = ($rootFemaleId ?? 0) . ':' . ($rootMaleId ?? 0);
                         if ($rootFemaleId !== null && $rootMaleId !== null && in_array($rootPairKey, $excludedGenerationOnePairs, true)) {
                             continue;
+                        }
+
+                        if ($generationOneOnlyAbove250) {
+                            $femaleWeight = (int) ($allBreeders[$femaleId]['weight'] ?? 0);
+                            $maleWeight = (int) ($allBreeders[$maleId]['weight'] ?? 0);
+                            if ($femaleWeight <= 250 || $maleWeight <= 250) {
+                                continue;
+                            }
                         }
                     }
 
@@ -1481,6 +1844,7 @@ class GetLitterPlanningPageQuery
                     'origin_step_id' => (int) $keeper['origin_step_id'],
                     'origin_row_signature' => (string) $keeper['origin_row_signature'],
                     'genotype' => (array) $keeper['genotype'],
+                    'weight' => 0,
                 ];
                 $generatedBreederIds[] = $keeperId;
             }
@@ -1604,7 +1968,8 @@ class GetLitterPlanningPageQuery
             $maxFemalesPerType,
             $maxPairChecksPerType,
             $maxRowsPerStep,
-            $strictVisualOnly
+            $strictVisualOnly,
+            $generationOneOnlyAbove250
         );
 
         if ($shortcut !== null && $priorityMode === 'fastest') {
@@ -1671,7 +2036,8 @@ class GetLitterPlanningPageQuery
                     $strictVisualOnly,
                     $priorityMode,
                     $excluded,
-                    false
+                    false,
+                    $generationOneOnlyAbove250
                 );
 
                 if (!(bool) ($candidate['target_reachable'] ?? false)) {
@@ -1749,7 +2115,8 @@ class GetLitterPlanningPageQuery
         int $maxFemalesPerType,
         int $maxPairChecksPerType,
         int $maxRowsPerStep,
-        bool $strictVisualOnly
+        bool $strictVisualOnly,
+        bool $generationOneOnlyAbove250
     ): ?array {
         if (empty($expectedTraits)) {
             return null;
@@ -1783,6 +2150,14 @@ class GetLitterPlanningPageQuery
                         break;
                     }
                     $checkedPairs++;
+
+                    if ($generationOneOnlyAbove250) {
+                        $maleWeight = (float) ($male->weights_max_value ?? 0);
+                        $femaleWeight = (float) ($female->weights_max_value ?? 0);
+                        if ($maleWeight <= 250 || $femaleWeight <= 250) {
+                            continue;
+                        }
+                    }
 
                     $rows1 = $this->genotypeCalculator
                         ->setParentsTypeIds($male->animal_type_id, $female->animal_type_id)

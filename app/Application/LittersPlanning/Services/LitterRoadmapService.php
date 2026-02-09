@@ -2,8 +2,10 @@
 
 namespace App\Application\LittersPlanning\Services;
 
+use App\Models\Animal;
 use App\Models\LitterRoadmap;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class LitterRoadmapService
 {
@@ -66,50 +68,24 @@ class LitterRoadmapService
     {
         return DB::transaction(function () use ($roadmap, $snapshot): LitterRoadmap {
             $existingSteps = array_values((array) ($roadmap->steps ?? []));
-            $newSteps = array_values((array) ($snapshot['steps'] ?? []));
             $completedGenerations = $this->normalizeCompletedGenerations(
                 (array) ($roadmap->completed_generations ?? []),
                 $existingSteps
             );
 
-            $preservedByGeneration = collect($existingSteps)
-                ->filter(fn (mixed $step): bool => is_array($step))
-                ->mapWithKeys(function (array $step): array {
-                    $generation = (int) ($step['generation'] ?? 0);
-                    if ($generation <= 0) {
-                        return [];
-                    }
+            $stepsToPersist = $existingSteps;
+            if ($stepsToPersist === []) {
+                $stepsToPersist = array_values((array) ($snapshot['steps'] ?? []));
+                $roadmap->expected_traits = array_values((array) ($snapshot['expected_traits'] ?? []));
+                $roadmap->target_reachable = (bool) ($snapshot['target_reachable'] ?? false);
+                $roadmap->matched_traits = array_values((array) ($snapshot['matched_traits'] ?? []));
+                $roadmap->missing_traits = array_values((array) ($snapshot['missing_traits'] ?? []));
+            } else {
+                $stepsToPersist = $this->resolveVirtualBreedersInSteps($stepsToPersist);
+            }
 
-                    return [$generation => $step];
-                })
-                ->all();
-
-            $mergedSteps = collect($newSteps)
-                ->map(function (mixed $step) use ($completedGenerations, $preservedByGeneration): mixed {
-                    if (!is_array($step)) {
-                        return $step;
-                    }
-
-                    $generation = (int) ($step['generation'] ?? 0);
-                    if ($generation <= 0) {
-                        return $step;
-                    }
-
-                    if (in_array($generation, $completedGenerations, true) && isset($preservedByGeneration[$generation])) {
-                        return $preservedByGeneration[$generation];
-                    }
-
-                    return $step;
-                })
-                ->values()
-                ->all();
-
-            $roadmap->expected_traits = $snapshot['expected_traits'];
-            $roadmap->target_reachable = $snapshot['target_reachable'];
-            $roadmap->matched_traits = $snapshot['matched_traits'];
-            $roadmap->missing_traits = $snapshot['missing_traits'];
-            $roadmap->steps = $this->applyRealizedFlags($mergedSteps, $completedGenerations);
-            $roadmap->completed_generations = $this->normalizeCompletedGenerations($completedGenerations, $mergedSteps);
+            $roadmap->steps = $this->applyRealizedFlags($stepsToPersist, $completedGenerations);
+            $roadmap->completed_generations = $this->normalizeCompletedGenerations($completedGenerations, $stepsToPersist);
             $roadmap->last_refreshed_at = now();
             $roadmap->save();
 
@@ -247,5 +223,236 @@ class LitterRoadmapService
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * @param array<int, mixed> $steps
+     * @return array<int, mixed>
+     */
+    private function resolveVirtualBreedersInSteps(array $steps): array
+    {
+        $breeders = Animal::query()
+            ->whereIn('animal_category_id', [1, 4])
+            ->whereIn('sex', [2, 3])
+            ->with(['genotypes.category'])
+            ->orderBy('id')
+            ->get(['id', 'name', 'second_name', 'sex']);
+
+        if ($breeders->isEmpty()) {
+            return $steps;
+        }
+
+        $candidatesBySex = [
+            2 => [],
+            3 => [],
+        ];
+
+        foreach ($breeders as $animal) {
+            $sex = (int) ($animal->sex ?? 0);
+            if (!isset($candidatesBySex[$sex])) {
+                continue;
+            }
+
+            $searchLabels = collect([
+                $this->normalizeDescriptor((string) ($animal->name ?? '')),
+                $this->normalizeDescriptor((string) ($animal->second_name ?? '')),
+                $this->normalizeDescriptor(trim((string) ($animal->name ?? '') . ' ' . (string) ($animal->second_name ?? ''))),
+            ])
+                ->merge($this->buildMorphSearchLabels($animal))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($searchLabels === []) {
+                continue;
+            }
+
+            $candidatesBySex[$sex][] = [
+                'id' => (int) $animal->id,
+                'name' => trim((string) ($animal->name ?? '')) !== '' ? trim((string) ($animal->name ?? '')) : ('#' . (int) $animal->id),
+                'search_labels' => $searchLabels,
+            ];
+        }
+
+        return collect($steps)
+            ->map(function (mixed $step) use ($candidatesBySex): mixed {
+                if (!is_array($step)) {
+                    return $step;
+                }
+
+                $pairingLabel = trim((string) ($step['pairing_label'] ?? ''));
+                if ($pairingLabel === '') {
+                    return $step;
+                }
+
+                [$femalePart, $malePart] = $this->splitPairingLabel($pairingLabel);
+                if ($malePart === '') {
+                    return $step;
+                }
+
+                $parentFemaleId = isset($step['parent_female_id']) ? (int) ($step['parent_female_id'] ?? 0) : 0;
+                $parentMaleId = isset($step['parent_male_id']) ? (int) ($step['parent_male_id'] ?? 0) : 0;
+
+                if ($parentFemaleId <= 0) {
+                    $virtualFemaleLabel = $this->extractVirtualLabel($femalePart);
+                    if ($virtualFemaleLabel !== null) {
+                        $resolvedFemale = $this->resolveBreederIdByLabel($virtualFemaleLabel, (array) ($candidatesBySex[3] ?? []));
+                        if ($resolvedFemale !== null) {
+                            $parentFemaleId = (int) ($resolvedFemale['id'] ?? 0);
+                            $femalePart = (string) ($resolvedFemale['name'] ?? $femalePart);
+                        }
+                    }
+                }
+
+                if ($parentMaleId <= 0) {
+                    $virtualMaleLabel = $this->extractVirtualLabel($malePart);
+                    if ($virtualMaleLabel !== null) {
+                        $resolvedMale = $this->resolveBreederIdByLabel($virtualMaleLabel, (array) ($candidatesBySex[2] ?? []));
+                        if ($resolvedMale !== null) {
+                            $parentMaleId = (int) ($resolvedMale['id'] ?? 0);
+                            $malePart = (string) ($resolvedMale['name'] ?? $malePart);
+                        }
+                    }
+                }
+
+                $step['pairing_label'] = trim($femalePart) . ' x ' . trim($malePart);
+                $step['parent_female_id'] = $parentFemaleId > 0 ? $parentFemaleId : null;
+                $step['parent_male_id'] = $parentMaleId > 0 ? $parentMaleId : null;
+                $step['can_create_litter'] = $parentFemaleId > 0 && $parentMaleId > 0;
+
+                return $step;
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{0:string,1:string}
+     */
+    private function splitPairingLabel(string $pairingLabel): array
+    {
+        $parts = preg_split('/\s+x\s+/iu', trim($pairingLabel), 2) ?: [];
+        if (count($parts) < 2) {
+            return [trim($pairingLabel), ''];
+        }
+
+        return [trim((string) ($parts[0] ?? '')), trim((string) ($parts[1] ?? ''))];
+    }
+
+    private function extractVirtualLabel(string $side): ?string
+    {
+        $trimmed = trim($side);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (preg_match('/^\[g\d+\]\s*(.+)$/iu', $trimmed, $matches) !== 1) {
+            return null;
+        }
+
+        $label = trim((string) ($matches[1] ?? ''));
+
+        return $label !== '' ? $label : null;
+    }
+
+    /**
+     * @param array<int, array{id:int,name:string,search_labels:array<int,string>}> $candidates
+     * @return array{id:int,name:string,search_labels:array<int,string>}|null
+     */
+    private function resolveBreederIdByLabel(string $virtualLabel, array $candidates): ?array
+    {
+        $needle = $this->normalizeDescriptor($virtualLabel);
+        if ($needle === '' || $candidates === []) {
+            return null;
+        }
+
+        $exactMatches = array_values(array_filter(
+            $candidates,
+            fn (array $candidate): bool => in_array($needle, (array) ($candidate['search_labels'] ?? []), true)
+        ));
+        if (count($exactMatches) === 1) {
+            return $exactMatches[0];
+        }
+
+        $containsMatches = array_values(array_filter($candidates, function (array $candidate) use ($needle): bool {
+            foreach ((array) ($candidate['search_labels'] ?? []) as $label) {
+                if ($label === '') {
+                    continue;
+                }
+
+                if (str_contains((string) $label, $needle) || str_contains($needle, (string) $label)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
+
+        return count($containsMatches) === 1 ? $containsMatches[0] : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function buildMorphSearchLabels(Animal $animal): array
+    {
+        $visualTraits = [];
+        $carrierTraits = [];
+
+        foreach ($animal->genotypes as $genotype) {
+            $category = $genotype->category;
+            $categoryName = trim((string) ($category?->name ?? ''));
+            if ($categoryName === '') {
+                continue;
+            }
+
+            $type = strtolower((string) ($genotype->type ?? ''));
+            if ($type === 'v') {
+                $visualTraits[] = $categoryName;
+                continue;
+            }
+
+            if ($type === 'h') {
+                $carrierTraits[] = '100% het ' . $categoryName;
+                continue;
+            }
+
+            if ($type === 'p') {
+                $carrierTraits[] = '66% het ' . $categoryName;
+            }
+        }
+
+        $visualTraits = array_values(array_unique($visualTraits));
+        $carrierTraits = array_values(array_unique($carrierTraits));
+
+        $labels = [];
+        if ($visualTraits !== []) {
+            $visualLabel = implode(' ', $visualTraits);
+            $labels[] = $visualLabel;
+            if ($carrierTraits !== []) {
+                $labels[] = $visualLabel . ' (' . implode(', ', $carrierTraits) . ')';
+            }
+        }
+
+        if ($carrierTraits !== []) {
+            $labels[] = implode(', ', $carrierTraits);
+        }
+
+        return collect($labels)
+            ->map(fn (string $label): string => $this->normalizeDescriptor($label))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function normalizeDescriptor(string $value): string
+    {
+        $ascii = Str::ascii(strtolower(trim($value)));
+        $ascii = preg_replace('/[^a-z0-9%\/]+/', ' ', $ascii) ?? $ascii;
+        $ascii = preg_replace('/\s+/', ' ', $ascii) ?? $ascii;
+
+        return trim($ascii);
     }
 }

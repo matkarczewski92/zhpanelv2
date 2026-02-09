@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=0.7">
-    <meta name="description" content="Hodowla gadow MaksSnake - profile, oferta i plany hodowlane.">
-    <title>Hodowla Gadow MaksSnake</title>
+    <meta name="description" content="Hodowla gadów MaksSnake - profile, oferta i plany hodowlane.">
+    <title>Hodowla Gadów MaksSnake</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="landing-body">
@@ -19,15 +19,15 @@
         <nav class="navbar navbar-expand-lg navbar-dark landing-nav">
             <div class="container">
                 <a class="navbar-brand fw-semibold" href="#top">MAKS SNAKE</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landingNav" aria-controls="landingNav" aria-expanded="false" aria-label="Przelacz nawigacje">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landingNav" aria-controls="landingNav" aria-expanded="false" aria-label="Przełącz nawigację">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="landingNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item"><a class="nav-link" href="#gallery">Galeria</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#offer">Nadwyzki hodowlane</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#offer">Nadwyżki hodowlane</a></li>
                         <li class="nav-item"><a class="nav-link" href="#plans">Plany hodowlane</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#profile">Profil weza</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#profile">Profil węża</a></li>
                         <li class="nav-item"><a class="nav-link" href="#about-us">O nas</a></li>
                     </ul>
                     <div class="d-flex gap-2">
@@ -47,7 +47,7 @@
         <div class="landing-overlay"></div>
         <div class="container position-relative z-2 text-center">
             <img src="{{ asset('images/landing/logo_white.png') }}" alt="Logo MaksSnake" class="landing-logo mb-4">
-            <h1 class="display-5 fw-bold mb-2">Hodowla Gadow MaksSnake</h1>
+            <h1 class="display-5 fw-bold mb-2">Hodowla Gadów MaksSnake</h1>
             <p class="lead mb-0">Węże właściwe, pytony królewskie, agamy brodate</p>
         </div>
     </section>
@@ -55,7 +55,7 @@
     <main>
         <section id="gallery" class="landing-section">
             <div class="container">
-                <h2 class="landing-section-title">Nasze weze</h2>
+                <h2 class="landing-section-title">Nasze węże</h2>
                 <div id="landingGalleryCarousel" class="carousel slide landing-carousel" data-bs-ride="carousel">
                     <div class="carousel-inner">
                         <div class="carousel-item active">
@@ -76,7 +76,7 @@
                     <button class="carousel-control-prev" type="button" data-bs-target="#landingGalleryCarousel" data-bs-slide="prev" aria-label="Poprzedni slajd">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                     </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#landingGalleryCarousel" data-bs-slide="next" aria-label="Nastepny slajd">
+                    <button class="carousel-control-next" type="button" data-bs-target="#landingGalleryCarousel" data-bs-slide="next" aria-label="Następny slajd">
                         <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     </button>
                 </div>
@@ -86,7 +86,7 @@
         <section class="landing-hero landing-hero-offer" id="offer">
             <div class="landing-overlay"></div>
             <div class="container position-relative z-2 text-center">
-                <h2 class="display-6 fw-bold mb-0">Nadwyzki hodowlane</h2>
+                <h2 class="display-6 fw-bold mb-0">Nadwyżki hodowlane</h2>
             </div>
         </section>
 
@@ -166,13 +166,13 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-center text-light-emphasis mb-0">Aktualnie nie posiadamy nadwyzek hodowlanych.</p>
+                    <p class="text-center text-light-emphasis mb-0">Aktualnie nie posiadamy nadwyżek hodowlanych.</p>
                 @endforelse
 
                 <div class="landing-legal text-light-emphasis">
-                    <p>Nie wydajemy zwierzat osobom nieletnim.</p>
-                    <p>Nie wysylamy wezy kurierem ani przesylka konduktorska.</p>
-                    <p>Prezentowane informacje maja charakter dokumentacyjny i nie stanowia oferty handlowej.</p>
+                    <p>Nie wydajemy zwierząt osobom nieletnim.</p>
+                    <p>Nie wysyłamy węży kurierem ani przesyłką konduktorską.</p>
+                    <p>Prezentowane informacje mają charakter dokumentacyjny i nie stanowią oferty handlowej.</p>
                 </div>
             </div>
         </section>
@@ -198,7 +198,7 @@
                             @endif
                         </div>
                     @empty
-                        <div class="list-group-item text-light-emphasis">Brak planow hodowlanych na biezacy rok.</div>
+                        <div class="list-group-item text-light-emphasis">Brak planów hodowlanych na bieżący rok.</div>
                     @endforelse
                 </div>
             </div>
@@ -207,16 +207,16 @@
         <section class="landing-hero landing-hero-profile" id="profile">
             <div class="landing-overlay"></div>
             <div class="container position-relative z-2 text-center">
-                <h2 class="display-6 fw-bold mb-0">Profil weza</h2>
+                <h2 class="display-6 fw-bold mb-0">Profil węża</h2>
             </div>
         </section>
 
         <section class="landing-section">
             <div class="container text-center" style="max-width: 760px;">
-                <h2 class="landing-section-title">Historia Twojego weza</h2>
+                <h2 class="landing-section-title">Historia Twojego węża</h2>
                 <p class="text-light-emphasis">
-                    Kazdy waz z naszej hodowli posiada publiczny profil z historia karmien, wylinek i wazen.
-                    Wpisz kod z etykiety i przejdz do profilu.
+                    Każdy wąż z naszej hodowli posiada publiczny profil z historią karmień, wylinek i ważeń.
+                    Wpisz kod z etykiety i przejdź do profilu.
                 </p>
                 @if (session('profile_lookup_error'))
                     <div class="alert alert-warning py-2 mt-3 mb-0">
@@ -240,7 +240,7 @@
                         @enderror
                     </div>
                     <div class="col-auto">
-                        <button type="submit" class="btn btn-primary">Pokaz profil</button>
+                        <button type="submit" class="btn btn-primary">Pokaż profil</button>
                     </div>
                 </form>
             </div>
@@ -264,7 +264,7 @@
         <section class="landing-hero landing-hero-quote">
             <div class="landing-overlay"></div>
             <div class="container position-relative z-2 text-center">
-                <p class="landing-quote mb-0">"Twoja pasja czeka, az dogoni ja odwaga."</p>
+                <p class="landing-quote mb-0">"Twoja pasja czeka, aż dogoni ją odwaga."</p>
             </div>
         </section>
     </main>
