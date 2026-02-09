@@ -17,16 +17,10 @@
                         placeholder="np. Amel, het Anery, Snow"
                         data-role="possible-connections-genes-input"
                         data-gene-suggestions='@json($page->possibleConnectionsGeneSuggestions)'
-                        list="possibleConnectionsGeneSuggestionsList"
                         autocomplete="off"
                     >
                     <div class="connections-suggestions list-group position-absolute w-100 d-none" data-role="possible-connections-genes-suggestions"></div>
                 </div>
-                <datalist id="possibleConnectionsGeneSuggestionsList">
-                    @foreach ($page->possibleConnectionsGeneSuggestions as $suggestion)
-                        <option value="{{ $suggestion }}"></option>
-                    @endforeach
-                </datalist>
                 <div class="form-text text-muted">Mozesz wpisac wiele pozycji po przecinku. Obsluguje tez "het Gen".</div>
             </div>
             <div class="col-12 d-flex flex-wrap align-items-center gap-3">
