@@ -14,9 +14,14 @@ class PossibleConnectionsRepository
     /**
      * @return LengthAwarePaginator<int, object>
      */
-    public function paginateEligiblePairs(int $perPage, int $page, string $pageName = 'possible_connections_page'): LengthAwarePaginator
+    public function paginateEligiblePairs(
+        int $perPage,
+        int $page,
+        string $pageName = 'possible_connections_page',
+        bool $includeBelow250 = false
+    ): LengthAwarePaginator
     {
-        return $this->eligiblePairsQuery()
+        return $this->eligiblePairsQuery($includeBelow250)
             ->paginate($perPage, ['*'], $pageName, $page);
     }
 
@@ -30,9 +35,9 @@ class PossibleConnectionsRepository
      *     male_type_id:int|null
      * }>
      */
-    public function getEligiblePairsSorted(): array
+    public function getEligiblePairsSorted(bool $includeBelow250 = false): array
     {
-        return $this->eligiblePairsQuery()
+        return $this->eligiblePairsQuery($includeBelow250)
             ->get()
             ->map(function (object $row): array {
                 return [
@@ -78,10 +83,10 @@ class PossibleConnectionsRepository
             ->all();
     }
 
-    private function eligiblePairsQuery(): Builder
+    private function eligiblePairsQuery(bool $includeBelow250 = false): Builder
     {
-        $females = $this->eligibleAnimalsBySexSubquery(3);
-        $males = $this->eligibleAnimalsBySexSubquery(2);
+        $females = $this->eligibleAnimalsBySexSubquery(3, $includeBelow250);
+        $males = $this->eligibleAnimalsBySexSubquery(2, $includeBelow250);
 
         return DB::query()
             ->fromSub($females, 'f')
@@ -100,20 +105,25 @@ class PossibleConnectionsRepository
             ->orderBy('m.id');
     }
 
-    private function eligibleAnimalsBySexSubquery(int $sex): Builder
+    private function eligibleAnimalsBySexSubquery(int $sex, bool $includeBelow250 = false): Builder
     {
         $latestWeightIds = DB::table('animal_weights as aw')
             ->selectRaw('aw.animal_id, MAX(aw.id) as latest_weight_id')
             ->groupBy('aw.animal_id');
 
-        return DB::table('animals as a')
+        $query = DB::table('animals as a')
             ->joinSub($latestWeightIds, 'lw_latest', function ($join): void {
                 $join->on('lw_latest.animal_id', '=', 'a.id');
             })
             ->join('animal_weights as lw', 'lw.id', '=', 'lw_latest.latest_weight_id')
             ->where('a.animal_category_id', 1)
-            ->where('a.sex', $sex)
-            ->where('lw.value', '>=', 250)
+            ->where('a.sex', $sex);
+
+        if (!$includeBelow250) {
+            $query->where('lw.value', '>=', 250);
+        }
+
+        return $query
             ->select([
                 'a.id',
                 'a.name',
@@ -121,4 +131,3 @@ class PossibleConnectionsRepository
             ]);
     }
 }
-

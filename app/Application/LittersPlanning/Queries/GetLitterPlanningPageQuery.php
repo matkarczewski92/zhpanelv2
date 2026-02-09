@@ -55,6 +55,7 @@ class GetLitterPlanningPageQuery
             ? max(1, (int) $filters['possible_connections_page'])
             : 1;
         $possibleConnectionsIncludeExtraGenes = (bool) ($filters['possible_connections_include_extra_genes'] ?? false);
+        $possibleConnectionsIncludeBelow250 = (bool) ($filters['possible_connections_include_below_250'] ?? false);
         $hasRoadmapManualInput = isset($filters['roadmap_expected_genes'])
             && trim((string) ($filters['roadmap_expected_genes'] ?? '')) !== '';
         $roadmapSearchInput = trim((string) ($filters['roadmap_expected_genes'] ?? ''));
@@ -225,7 +226,8 @@ class GetLitterPlanningPageQuery
             $possibleConnectionsExpectedTraits,
             $possibleConnectionsPage,
             $filters,
-            $possibleConnectionsIncludeExtraGenes
+            $possibleConnectionsIncludeExtraGenes,
+            $possibleConnectionsIncludeBelow250
         );
 
         return new LitterPlanningPageViewModel(
@@ -246,6 +248,7 @@ class GetLitterPlanningPageQuery
             possibleConnectionsExpectedTraits: $possibleConnectionsExpectedTraits,
             possibleConnectionsGeneSuggestions: $connectionGeneSuggestions,
             possibleConnectionsIncludeExtraGenes: $possibleConnectionsIncludeExtraGenes,
+            possibleConnectionsIncludeBelow250: $possibleConnectionsIncludeBelow250,
             possibleConnectionsTotalPairs: (int) ($possibleConnectionsData['total_pairs'] ?? 0),
             possibleConnectionsMatchedPairs: (int) ($possibleConnectionsData['matched_pairs'] ?? 0),
             possibleConnectionsPaginator: $possibleConnectionsData['paginator'],
@@ -377,7 +380,8 @@ class GetLitterPlanningPageQuery
         array $expectedTraits,
         int $page,
         array $filters,
-        bool $includeExtraGenes
+        bool $includeExtraGenes,
+        bool $includeBelow250
     ): array
     {
         $perPage = 50;
@@ -385,7 +389,7 @@ class GetLitterPlanningPageQuery
         $queryParams = $this->buildPossibleConnectionsQueryParams($filters);
 
         if (!empty($expectedTraits)) {
-            $allPairs = $this->possibleConnectionsRepository->getEligiblePairsSorted();
+            $allPairs = $this->possibleConnectionsRepository->getEligiblePairsSorted($includeBelow250);
             $rows = $this->enrichPossibleConnectionsRows($allPairs, $expectedTraits, $includeExtraGenes);
             $paginator = $this->paginatePossibleConnectionsRows($rows, $perPage, $page, $pageName);
             $paginator->setPath(route('panel.litters-planning.index'));
@@ -398,7 +402,7 @@ class GetLitterPlanningPageQuery
             ];
         }
 
-        $paginator = $this->possibleConnectionsRepository->paginateEligiblePairs($perPage, $page, $pageName);
+        $paginator = $this->possibleConnectionsRepository->paginateEligiblePairs($perPage, $page, $pageName, false);
         $pairs = collect($paginator->items())
             ->map(fn (object $row): array => [
                 'female_id' => (int) ($row->female_id ?? 0),

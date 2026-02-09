@@ -6,7 +6,7 @@
     <div class="card-body d-flex flex-column gap-3">
         <form method="GET" action="{{ route('panel.litters-planning.index') }}" class="row g-2 align-items-end">
             <input type="hidden" name="tab" value="possible-connections">
-            <div class="col-12 col-lg-9">
+            <div class="col-12">
                 <label class="form-label small text-muted mb-1" for="possibleConnectionsGenes">Filtruj po genach/traits</label>
                 <div class="position-relative">
                     <input
@@ -17,26 +17,47 @@
                         placeholder="np. Amel, het Anery, Snow"
                         data-role="possible-connections-genes-input"
                         data-gene-suggestions='@json($page->possibleConnectionsGeneSuggestions)'
+                        list="possibleConnectionsGeneSuggestionsList"
                         autocomplete="off"
                     >
                     <div class="connections-suggestions list-group position-absolute w-100 d-none" data-role="possible-connections-genes-suggestions"></div>
                 </div>
+                <datalist id="possibleConnectionsGeneSuggestionsList">
+                    @foreach ($page->possibleConnectionsGeneSuggestions as $suggestion)
+                        <option value="{{ $suggestion }}"></option>
+                    @endforeach
+                </datalist>
                 <div class="form-text text-muted">Mozesz wpisac wiele pozycji po przecinku. Obsluguje tez "het Gen".</div>
             </div>
-            <div class="col-12 col-lg-3 d-flex gap-2">
-                <label class="form-check-label small d-flex align-items-center me-2">
-                    <input type="hidden" name="possible_connections_include_extra_genes" value="0">
-                    <input
-                        type="checkbox"
-                        class="form-check-input me-1"
-                        name="possible_connections_include_extra_genes"
-                        value="1"
-                        @checked($page->possibleConnectionsIncludeExtraGenes)
-                    >
-                    Pokaz z dodatkowymi genami
-                </label>
-                <button type="submit" class="btn btn-primary flex-grow-1">Filtruj</button>
-                <a href="{{ route('panel.litters-planning.index', ['tab' => 'possible-connections']) }}" class="btn btn-outline-light">Wyczysc</a>
+            <div class="col-12 d-flex flex-wrap align-items-center gap-3">
+                <div class="d-flex flex-column">
+                    <label class="form-check-label small d-flex align-items-center">
+                        <input type="hidden" name="possible_connections_include_extra_genes" value="0">
+                        <input
+                            type="checkbox"
+                            class="form-check-input me-1"
+                            name="possible_connections_include_extra_genes"
+                            value="1"
+                            @checked($page->possibleConnectionsIncludeExtraGenes)
+                        >
+                        Pokaz z dodatkowymi genami
+                    </label>
+                    <label class="form-check-label small d-flex align-items-center mt-1">
+                        <input type="hidden" name="possible_connections_include_below_250" value="0">
+                        <input
+                            type="checkbox"
+                            class="form-check-input me-1"
+                            name="possible_connections_include_below_250"
+                            value="1"
+                            @checked($page->possibleConnectionsIncludeBelow250)
+                        >
+                        Pokaz wyszukiwane ponizej 250g
+                    </label>
+                </div>
+                <div class="d-flex gap-2 ms-lg-auto">
+                    <button type="submit" class="btn btn-primary">Filtruj</button>
+                    <a href="{{ route('panel.litters-planning.index', ['tab' => 'possible-connections']) }}" class="btn btn-outline-light">Wyczysc</a>
+                </div>
             </div>
         </form>
 

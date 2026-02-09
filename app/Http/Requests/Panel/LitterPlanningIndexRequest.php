@@ -41,6 +41,9 @@ class LitterPlanningIndexRequest extends FormRequest
             'possible_connections_include_extra_genes' => $this->has('possible_connections_include_extra_genes')
                 ? $this->normalizeBoolean($this->input('possible_connections_include_extra_genes'))
                 : null,
+            'possible_connections_include_below_250' => $this->has('possible_connections_include_below_250')
+                ? $this->normalizeBoolean($this->input('possible_connections_include_below_250'))
+                : null,
         ]);
     }
 
@@ -66,6 +69,7 @@ class LitterPlanningIndexRequest extends FormRequest
             'possible_connections_genes' => ['nullable', 'string', 'max:500'],
             'possible_connections_page' => ['nullable', 'integer', 'min:1'],
             'possible_connections_include_extra_genes' => ['nullable', 'boolean'],
+            'possible_connections_include_below_250' => ['nullable', 'boolean'],
         ];
     }
 
