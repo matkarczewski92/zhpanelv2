@@ -36,13 +36,15 @@ class LitterPlanningIndexRequest extends FormRequest
             'offspring_direction' => $this->normalizeDirection($this->input('offspring_direction')),
             'offspring_summary_sort' => $this->normalizeOffspringSummarySort($this->input('offspring_summary_sort')),
             'offspring_summary_direction' => $this->normalizeDirection($this->input('offspring_summary_direction')),
+            'possible_connections_genes' => $this->normalizeText($this->input('possible_connections_genes')),
+            'possible_connections_page' => $this->normalizeInt($this->input('possible_connections_page')),
         ]);
     }
 
     public function rules(): array
     {
         return [
-            'tab' => ['nullable', 'in:planning,plans,offspring,connections,roadmap,roadmaps,roadmap-keepers'],
+            'tab' => ['nullable', 'in:planning,plans,offspring,possible-connections,connections,roadmap,roadmaps,roadmap-keepers'],
             'season' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'expected_genes' => ['nullable', 'string', 'max:500'],
             'strict_visual_only' => ['nullable', 'boolean'],
@@ -58,6 +60,8 @@ class LitterPlanningIndexRequest extends FormRequest
             'offspring_direction' => ['nullable', 'in:asc,desc'],
             'offspring_summary_sort' => ['nullable', 'in:morph_name,percentage_sum,avg_eggs_to_incubation,numeric_count,litters_count,grouped_rows'],
             'offspring_summary_direction' => ['nullable', 'in:asc,desc'],
+            'possible_connections_genes' => ['nullable', 'string', 'max:500'],
+            'possible_connections_page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 

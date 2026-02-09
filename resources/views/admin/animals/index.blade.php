@@ -2,6 +2,16 @@
 
 @section('title', 'Zwierzęta')
 
+@push('styles')
+    <style>
+        @media (min-width: 1200px) {
+            .animals-filter-compact {
+                max-width: 14rem;
+            }
+        }
+    </style>
+@endpush
+
 @section('content')
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
@@ -35,7 +45,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-12 col-md-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-3 animals-filter-compact">
                     <label class="form-label" for="category_id">Kategoria</label>
                     <select id="category_id" name="category_id" class="form-select">
                         @foreach ($categories as $category)
@@ -45,7 +55,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-12 col-md-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-3 animals-filter-compact">
                     <label class="form-label" for="sex">Płeć</label>
                     <select id="sex" name="sex" class="form-select">
                         <option value="">Wszystkie</option>
@@ -56,7 +66,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-12 col-md-6 col-xl-3">
+                <div class="col-12 col-md-6 col-xl-3 animals-filter-compact">
                     <label class="form-label" for="feed_id">Karma</label>
                     <select id="feed_id" name="feed_id" class="form-select">
                         <option value="">Wszystkie</option>

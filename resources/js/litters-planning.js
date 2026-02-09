@@ -283,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTab(app, app.dataset.activeTab || 'planning');
     initGeneAutocomplete(app, 'connections-genes-input', 'connections-genes-suggestions');
+    initGeneAutocomplete(app, 'possible-connections-genes-input', 'possible-connections-genes-suggestions');
     initGeneAutocomplete(app, 'roadmap-genes-input', 'roadmap-genes-suggestions');
     normalizeFemaleOptionsLabels();
     refreshCount();

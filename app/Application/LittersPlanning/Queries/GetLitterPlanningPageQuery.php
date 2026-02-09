@@ -2,6 +2,7 @@
 
 namespace App\Application\LittersPlanning\Queries;
 
+use App\Application\LittersPlanning\Repositories\PossibleConnectionsRepository;
 use App\Application\LittersPlanning\ViewModels\LitterPlanningPageViewModel;
 use App\Models\Animal;
 use App\Models\AnimalGenotypeCategory;
@@ -10,12 +11,15 @@ use App\Models\Litter;
 use App\Models\LitterPlan;
 use App\Models\LitterRoadmap;
 use App\Services\Genetics\GenotypeCalculator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class GetLitterPlanningPageQuery
 {
-    public function __construct(private readonly GenotypeCalculator $genotypeCalculator)
-    {
+    public function __construct(
+        private readonly GenotypeCalculator $genotypeCalculator,
+        private readonly PossibleConnectionsRepository $possibleConnectionsRepository,
+    ) {
     }
 
     public function handle(array $filters = []): LitterPlanningPageViewModel
@@ -45,6 +49,11 @@ class GetLitterPlanningPageQuery
             : (bool) $strictVisualOnlyFilter;
         $connectionOnlyAbove250 = (bool) ($filters['connections_only_above_250'] ?? false);
         $connectionGeneSuggestions = $this->buildConnectionGeneSuggestions($traitGeneAliasMap);
+        $possibleConnectionsSearchInput = trim((string) ($filters['possible_connections_genes'] ?? ''));
+        $possibleConnectionsExpectedTraits = $this->parseExpectedTraits($possibleConnectionsSearchInput, $traitGeneAliasMap);
+        $possibleConnectionsPage = isset($filters['possible_connections_page']) && is_numeric($filters['possible_connections_page'])
+            ? max(1, (int) $filters['possible_connections_page'])
+            : 1;
         $hasRoadmapManualInput = isset($filters['roadmap_expected_genes'])
             && trim((string) ($filters['roadmap_expected_genes'] ?? '')) !== '';
         $roadmapSearchInput = trim((string) ($filters['roadmap_expected_genes'] ?? ''));
@@ -211,6 +220,11 @@ class GetLitterPlanningPageQuery
 
         $roadmapSteps = $this->normalizeRoadmapStepsForDisplay($roadmapSteps);
         $roadmapSteps = $this->enrichRoadmapStepsWithExistingLitters($roadmapSteps, $currentYear);
+        $possibleConnectionsData = $this->buildPossibleConnectionsData(
+            $possibleConnectionsExpectedTraits,
+            $possibleConnectionsPage,
+            $filters
+        );
 
         return new LitterPlanningPageViewModel(
             females: $females,
@@ -226,6 +240,12 @@ class GetLitterPlanningPageQuery
             seasonOffspringSummarySort: $seasonOffspringSummarySort,
             seasonOffspringSummaryDirection: $seasonOffspringSummaryDirection,
             seasonOffspringSummarySortLinks: $seasonOffspringSummarySortLinks,
+            possibleConnectionsSearchInput: $possibleConnectionsSearchInput,
+            possibleConnectionsExpectedTraits: $possibleConnectionsExpectedTraits,
+            possibleConnectionsGeneSuggestions: $connectionGeneSuggestions,
+            possibleConnectionsTotalPairs: (int) ($possibleConnectionsData['total_pairs'] ?? 0),
+            possibleConnectionsMatchedPairs: (int) ($possibleConnectionsData['matched_pairs'] ?? 0),
+            possibleConnectionsPaginator: $possibleConnectionsData['paginator'],
             connectionSearchInput: $connectionSearchInput,
             connectionExpectedTraits: $connectionExpectedTraits,
             connectionStrictVisualOnly: $connectionStrictVisualOnly,
@@ -339,6 +359,192 @@ class GetLitterPlanningPageQuery
                 ];
             })
             ->all();
+    }
+
+    /**
+     * @param array<int, string> $expectedTraits
+     * @param array<string, mixed> $filters
+     * @return array{
+     *     paginator:LengthAwarePaginator,
+     *     total_pairs:int,
+     *     matched_pairs:int
+     * }
+     */
+    private function buildPossibleConnectionsData(array $expectedTraits, int $page, array $filters): array
+    {
+        $perPage = 50;
+        $pageName = 'possible_connections_page';
+        $queryParams = $this->buildPossibleConnectionsQueryParams($filters);
+
+        if (!empty($expectedTraits)) {
+            $allPairs = $this->possibleConnectionsRepository->getEligiblePairsSorted();
+            $rows = $this->enrichPossibleConnectionsRows($allPairs, $expectedTraits);
+            $paginator = $this->paginatePossibleConnectionsRows($rows, $perPage, $page, $pageName);
+            $paginator->setPath(route('panel.litters-planning.index'));
+            $paginator->appends($queryParams);
+
+            return [
+                'paginator' => $paginator,
+                'total_pairs' => count($allPairs),
+                'matched_pairs' => count($rows),
+            ];
+        }
+
+        $paginator = $this->possibleConnectionsRepository->paginateEligiblePairs($perPage, $page, $pageName);
+        $pairs = collect($paginator->items())
+            ->map(fn (object $row): array => [
+                'female_id' => (int) ($row->female_id ?? 0),
+                'female_name' => trim((string) ($row->female_name ?? '')),
+                'female_type_id' => isset($row->female_type_id) ? (int) $row->female_type_id : null,
+                'male_id' => (int) ($row->male_id ?? 0),
+                'male_name' => trim((string) ($row->male_name ?? '')),
+                'male_type_id' => isset($row->male_type_id) ? (int) $row->male_type_id : null,
+            ])
+            ->values()
+            ->all();
+
+        $rows = $this->enrichPossibleConnectionsRows($pairs, []);
+        $paginator->setCollection(collect($rows));
+        $paginator->setPath(route('panel.litters-planning.index'));
+        $paginator->appends($queryParams);
+
+        return [
+            'paginator' => $paginator,
+            'total_pairs' => (int) $paginator->total(),
+            'matched_pairs' => (int) $paginator->total(),
+        ];
+    }
+
+    /**
+     * @param array<int, array{
+     *     female_id:int,
+     *     female_name:string,
+     *     female_type_id:int|null,
+     *     male_id:int,
+     *     male_name:string,
+     *     male_type_id:int|null
+     * }> $pairs
+     * @param array<int, string> $expectedTraits
+     * @return array<int, array{
+     *     female_id:int,
+     *     female_name:string,
+     *     male_id:int,
+     *     male_name:string,
+     *     probability:float,
+     *     probability_label:string,
+     *     matched_rows_count:int,
+     *     matched_rows:array<int, array{
+     *         percentage:float,
+     *         percentage_label:string,
+     *         traits_name:string,
+     *         visual_traits:array<int, string>,
+     *         carrier_traits:array<int, string>
+     *     }>
+     * }>
+     */
+    private function enrichPossibleConnectionsRows(array $pairs, array $expectedTraits): array
+    {
+        if (empty($pairs)) {
+            return [];
+        }
+
+        $animalIds = collect($pairs)
+            ->flatMap(fn (array $pair): array => [(int) ($pair['female_id'] ?? 0), (int) ($pair['male_id'] ?? 0)])
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $animalsById = $this->possibleConnectionsRepository
+            ->getAnimalsWithGenotypesByIds($animalIds)
+            ->keyBy('id');
+        $dictionary = $this->possibleConnectionsRepository->getGenotypeDictionary();
+
+        $result = [];
+        foreach ($pairs as $pair) {
+            $femaleId = (int) ($pair['female_id'] ?? 0);
+            $maleId = (int) ($pair['male_id'] ?? 0);
+
+            /** @var Animal|null $female */
+            $female = $animalsById->get($femaleId);
+            /** @var Animal|null $male */
+            $male = $animalsById->get($maleId);
+            if (!$female || !$male) {
+                continue;
+            }
+
+            $rows = $this->genotypeCalculator
+                ->setParentsTypeIds($male->animal_type_id, $female->animal_type_id)
+                ->getGenotypeFinale(
+                    $this->buildAnimalGenotypeArray($male),
+                    $this->buildAnimalGenotypeArray($female),
+                    $dictionary
+                );
+
+            $matchedRows = collect($rows)
+                ->when(
+                    !empty($expectedTraits),
+                    fn (Collection $collection): Collection => $collection
+                        ->filter(fn (array $row): bool => $this->rowMatchesExpectedTraits($row, $expectedTraits, false))
+                )
+                ->map(fn (array $row): array => $this->mapMatchedRow($row))
+                ->sortByDesc('percentage')
+                ->values();
+
+            $probability = (float) $matchedRows->sum('percentage');
+            if (!empty($expectedTraits) && $probability <= 0) {
+                continue;
+            }
+
+            $result[] = [
+                'female_id' => $femaleId,
+                'female_name' => $this->normalizeName($female->name, 'Samica #' . $femaleId),
+                'male_id' => $maleId,
+                'male_name' => $this->normalizeName($male->name, 'Samiec #' . $maleId),
+                'probability' => $probability,
+                'probability_label' => number_format($probability, 2, ',', ' ') . '%',
+                'matched_rows_count' => $matchedRows->count(),
+                'matched_rows' => $matchedRows->take(20)->all(),
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private function paginatePossibleConnectionsRows(
+        array $rows,
+        int $perPage,
+        int $page,
+        string $pageName
+    ): LengthAwarePaginator {
+        $total = count($rows);
+        $offset = max(0, ($page - 1) * $perPage);
+        $items = array_slice($rows, $offset, $perPage);
+
+        return new LengthAwarePaginator(
+            items: $items,
+            total: $total,
+            perPage: $perPage,
+            currentPage: $page,
+            options: ['pageName' => $pageName]
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    private function buildPossibleConnectionsQueryParams(array $filters): array
+    {
+        $query = $filters;
+        unset($query['possible_connections_page']);
+
+        $query['tab'] = 'possible-connections';
+
+        return $query;
     }
 
     /**
@@ -861,8 +1067,9 @@ class GetLitterPlanningPageQuery
         $grouped = [];
 
         foreach ($rows as $row) {
-            $displayName = $this->canonicalMorphName(trim((string) ($row['traits_name'] ?? '')));
-            $key = $this->normalizeTrait($displayName !== '-' ? $displayName : '_brak_');
+            $rawName = trim((string) ($row['traits_name'] ?? ''));
+            $displayName = $rawName !== '' ? $rawName : '-';
+            $key = $this->canonicalMorphGroupingKey($displayName);
 
             if (!isset($grouped[$key])) {
                 $grouped[$key] = [
@@ -1087,28 +1294,21 @@ class GetLitterPlanningPageQuery
         return $name !== '' ? $name : $fallback;
     }
 
-    private function canonicalMorphName(string $name): string
+    private function canonicalMorphGroupingKey(string $name): string
     {
         $clean = trim(preg_replace('/\s+/', ' ', $name) ?? $name);
         if ($clean === '') {
-            return '-';
+            return '_brak_';
         }
 
         $parts = collect(explode(' ', $clean))
-            ->map(fn (string $part): string => trim($part))
+            ->map(fn (string $part): string => $this->normalizeTrait($part))
             ->filter()
+            ->sort()
             ->values()
             ->all();
 
-        if (count($parts) <= 1) {
-            return $clean;
-        }
-
-        usort($parts, function (string $a, string $b): int {
-            return strcmp($this->normalizeTrait($a), $this->normalizeTrait($b));
-        });
-
-        return implode(' ', $parts);
+        return !empty($parts) ? implode(' ', $parts) : '_brak_';
     }
 
     /**
@@ -1126,6 +1326,7 @@ class GetLitterPlanningPageQuery
             ->map(function (string $part): string {
                 $normalized = strtolower(trim($part));
                 $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
+                $normalized = preg_replace('/^het\.\s*/i', 'het ', $normalized) ?? $normalized;
 
                 return trim($normalized);
             })

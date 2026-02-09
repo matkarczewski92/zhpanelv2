@@ -2,6 +2,8 @@
 
 namespace App\Application\LittersPlanning\ViewModels;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
 class LitterPlanningPageViewModel
 {
     /**
@@ -46,6 +48,8 @@ class LitterPlanningPageViewModel
      * }> $seasonOffspringSummaryRows
      * @param array<string, array{url:string,indicator:string}> $seasonOffspringSortLinks
      * @param array<string, array{url:string,indicator:string}> $seasonOffspringSummarySortLinks
+     * @param array<int, string> $possibleConnectionsExpectedTraits
+     * @param array<int, string> $possibleConnectionsGeneSuggestions
      * @param array<int, string> $connectionExpectedTraits
      * @param array<int, string> $connectionGeneSuggestions
      * @param array<int, array{
@@ -132,6 +136,12 @@ class LitterPlanningPageViewModel
         public readonly string $seasonOffspringSummarySort,
         public readonly string $seasonOffspringSummaryDirection,
         public readonly array $seasonOffspringSummarySortLinks,
+        public readonly string $possibleConnectionsSearchInput,
+        public readonly array $possibleConnectionsExpectedTraits,
+        public readonly array $possibleConnectionsGeneSuggestions,
+        public readonly int $possibleConnectionsTotalPairs,
+        public readonly int $possibleConnectionsMatchedPairs,
+        public readonly LengthAwarePaginator $possibleConnectionsPaginator,
         public readonly string $connectionSearchInput,
         public readonly array $connectionExpectedTraits,
         public readonly bool $connectionStrictVisualOnly,

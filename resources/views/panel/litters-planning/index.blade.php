@@ -146,7 +146,7 @@
 @section('content')
     @php
         $activeTab = request()->query('tab', 'planning');
-        if (!in_array($activeTab, ['planning', 'plans', 'offspring', 'connections', 'roadmap', 'roadmaps', 'roadmap-keepers'], true)) {
+        if (!in_array($activeTab, ['planning', 'plans', 'offspring', 'possible-connections', 'connections', 'roadmap', 'roadmaps', 'roadmap-keepers'], true)) {
             $activeTab = 'planning';
         }
     @endphp
@@ -171,6 +171,7 @@
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="planning">Planowanie laczen</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="plans">Opracowane plany</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="offspring">Mozliwe potomstwo</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="possible-connections">Mozliwe polaczenia</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="connections">Wyszukiwarka polaczen</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="roadmap">Roadmap</button>
                     <button type="button" class="btn btn-sm btn-outline-light" data-tab-target="roadmaps">Zapisane roadmapy</button>
@@ -189,6 +190,10 @@
 
         <section data-tab-id="offspring" class="@if($activeTab !== 'offspring') d-none @endif">
             @include('panel.litters-planning._tab_offspring', ['page' => $page])
+        </section>
+
+        <section data-tab-id="possible-connections" class="@if($activeTab !== 'possible-connections') d-none @endif">
+            @include('panel.litters-planning._tab_possible_connections', ['page' => $page])
         </section>
 
         <section data-tab-id="connections" class="@if($activeTab !== 'connections') d-none @endif">
