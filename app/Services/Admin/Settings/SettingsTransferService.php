@@ -31,18 +31,19 @@ class SettingsTransferService
             'sections' => [
                 'animal_categories' => AnimalCategory::query()
                     ->orderBy('id')
-                    ->get(['name'])
-                    ->map(fn (AnimalCategory $row): array => ['name' => (string) $row->name])
+                    ->get(['id', 'name'])
+                    ->map(fn (AnimalCategory $row): array => ['id' => (int) $row->id, 'name' => (string) $row->name])
                     ->all(),
                 'animal_types' => AnimalType::query()
                     ->orderBy('id')
-                    ->get(['name'])
-                    ->map(fn (AnimalType $row): array => ['name' => (string) $row->name])
+                    ->get(['id', 'name'])
+                    ->map(fn (AnimalType $row): array => ['id' => (int) $row->id, 'name' => (string) $row->name])
                     ->all(),
                 'genotype_categories' => AnimalGenotypeCategory::query()
                     ->orderBy('id')
-                    ->get(['name', 'gene_code', 'gene_type'])
+                    ->get(['id', 'name', 'gene_code', 'gene_type'])
                     ->map(fn (AnimalGenotypeCategory $row): array => [
+                        'id' => (int) $row->id,
                         'name' => (string) $row->name,
                         'gene_code' => (string) $row->gene_code,
                         'gene_type' => (string) $row->gene_type,
@@ -62,6 +63,7 @@ class SettingsTransferService
                             ->all();
 
                         return [
+                            'id' => (int) $row->id,
                             'name' => (string) $row->name,
                             'gene_codes' => $geneCodes,
                         ];
@@ -70,8 +72,9 @@ class SettingsTransferService
                 'wintering_stages' => WinteringStage::query()
                     ->orderBy('order')
                     ->orderBy('id')
-                    ->get(['order', 'title', 'duration'])
+                    ->get(['id', 'order', 'title', 'duration'])
                     ->map(fn (WinteringStage $row): array => [
+                        'id' => (int) $row->id,
                         'order' => (int) $row->order,
                         'title' => (string) $row->title,
                         'duration' => (int) $row->duration,
@@ -79,8 +82,9 @@ class SettingsTransferService
                     ->all(),
                 'system_config' => SystemConfig::query()
                     ->orderBy('key')
-                    ->get(['key', 'name', 'value'])
+                    ->get(['id', 'key', 'name', 'value'])
                     ->map(fn (SystemConfig $row): array => [
+                        'id' => (int) $row->id,
                         'key' => (string) $row->key,
                         'name' => (string) $row->name,
                         'value' => (string) $row->value,
@@ -88,8 +92,9 @@ class SettingsTransferService
                     ->all(),
                 'feeds' => Feed::query()
                     ->orderBy('id')
-                    ->get(['name', 'feeding_interval', 'amount', 'last_price'])
+                    ->get(['id', 'name', 'feeding_interval', 'amount', 'last_price'])
                     ->map(fn (Feed $row): array => [
+                        'id' => (int) $row->id,
                         'name' => (string) $row->name,
                         'feeding_interval' => (int) $row->feeding_interval,
                         'amount' => (int) $row->amount,
@@ -98,14 +103,15 @@ class SettingsTransferService
                     ->all(),
                 'finance_categories' => FinanceCategory::query()
                     ->orderBy('id')
-                    ->get(['name'])
-                    ->map(fn (FinanceCategory $row): array => ['name' => (string) $row->name])
+                    ->get(['id', 'name'])
+                    ->map(fn (FinanceCategory $row): array => ['id' => (int) $row->id, 'name' => (string) $row->name])
                     ->all(),
                 'color_groups' => ColorGroup::query()
                     ->orderBy('sort_order')
                     ->orderBy('id')
-                    ->get(['name', 'sort_order', 'is_active'])
+                    ->get(['id', 'name', 'sort_order', 'is_active'])
                     ->map(fn (ColorGroup $row): array => [
+                        'id' => (int) $row->id,
                         'name' => (string) $row->name,
                         'sort_order' => (int) $row->sort_order,
                         'is_active' => (bool) $row->is_active,
@@ -113,8 +119,9 @@ class SettingsTransferService
                     ->all(),
                 'ewelink_devices' => EwelinkDevice::query()
                     ->orderBy('id')
-                    ->get(['device_id', 'name', 'description', 'device_type'])
+                    ->get(['id', 'device_id', 'name', 'description', 'device_type'])
                     ->map(fn (EwelinkDevice $row): array => [
+                        'id' => (int) $row->id,
                         'device_id' => (string) $row->device_id,
                         'name' => (string) $row->name,
                         'description' => (string) ($row->description ?? ''),
@@ -143,7 +150,6 @@ class SettingsTransferService
 
         foreach ($definitions as $sectionKey => $def) {
             $importedRows = $normalizedSections[$sectionKey] ?? [];
-            $existingMap = $this->existingRowsByKey($sectionKey);
             $rows = [];
 
             foreach ($importedRows as $row) {
@@ -152,7 +158,8 @@ class SettingsTransferService
                     continue;
                 }
 
-                $existing = $existingMap[$key] ?? null;
+                $existingModel = $this->findExistingModel($sectionKey, $row);
+                $existing = $existingModel ? $this->modelToRow($sectionKey, $existingModel) : null;
                 $status = 'new';
                 if (is_array($existing)) {
                     $status = $this->rowsEqual($sectionKey, $row, $existing) ? 'same' : 'different';
@@ -258,18 +265,21 @@ class SettingsTransferService
             'animal_categories' => [
                 'label' => 'Kategorie',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                 ],
             ],
             'animal_types' => [
                 'label' => 'Typy',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                 ],
             ],
             'genotype_categories' => [
                 'label' => 'Genotyp: Kategorie',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                     ['key' => 'gene_code', 'label' => 'Kod', 'type' => 'text'],
                     ['key' => 'gene_type', 'label' => 'Typ', 'type' => 'text'],
@@ -278,6 +288,7 @@ class SettingsTransferService
             'traits' => [
                 'label' => 'Genotyp: Traits',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                     ['key' => 'gene_codes', 'label' => 'Gene codes (CSV)', 'type' => 'csv'],
                 ],
@@ -285,6 +296,7 @@ class SettingsTransferService
             'wintering_stages' => [
                 'label' => 'Zimowanie: Etapy',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'order', 'label' => 'Kolejność', 'type' => 'number'],
                     ['key' => 'title', 'label' => 'Nazwa', 'type' => 'text'],
                     ['key' => 'duration', 'label' => 'Czas (dni)', 'type' => 'number'],
@@ -293,6 +305,7 @@ class SettingsTransferService
             'system_config' => [
                 'label' => 'System config',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'key', 'label' => 'Klucz', 'type' => 'text'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                     ['key' => 'value', 'label' => 'Wartość', 'type' => 'textarea'],
@@ -301,6 +314,7 @@ class SettingsTransferService
             'feeds' => [
                 'label' => 'Karma',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                     ['key' => 'feeding_interval', 'label' => 'Interwał', 'type' => 'number'],
                     ['key' => 'amount', 'label' => 'Ilość', 'type' => 'number'],
@@ -310,12 +324,14 @@ class SettingsTransferService
             'finance_categories' => [
                 'label' => 'Kategorie finansowe',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                 ],
             ],
             'color_groups' => [
                 'label' => 'Grupy kolorystyczne',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                     ['key' => 'sort_order', 'label' => 'Sort', 'type' => 'number'],
                     ['key' => 'is_active', 'label' => 'Aktywna', 'type' => 'bool'],
@@ -324,6 +340,7 @@ class SettingsTransferService
             'ewelink_devices' => [
                 'label' => 'eWeLink: Urządzenia',
                 'fields' => [
+                    ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
                     ['key' => 'device_id', 'label' => 'Device ID', 'type' => 'text'],
                     ['key' => 'name', 'label' => 'Nazwa', 'type' => 'text'],
                     ['key' => 'description', 'label' => 'Opis', 'type' => 'text'],
@@ -341,39 +358,47 @@ class SettingsTransferService
     {
         return match ($sectionKey) {
             'animal_categories', 'animal_types', 'finance_categories' => [
+                'id' => $this->normalizeOptionalId($row['id'] ?? null),
                 'name' => $this->normalizeText($row['name'] ?? ''),
             ],
             'genotype_categories' => [
+                'id' => $this->normalizeOptionalId($row['id'] ?? null),
                 'name' => $this->normalizeText($row['name'] ?? ''),
                 'gene_code' => strtolower($this->normalizeText($row['gene_code'] ?? '')),
                 'gene_type' => strtolower(substr($this->normalizeText($row['gene_type'] ?? ''), 0, 2)),
             ],
             'traits' => [
+                'id' => $this->normalizeOptionalId($row['id'] ?? null),
                 'name' => $this->normalizeText($row['name'] ?? ''),
                 'gene_codes' => $this->normalizeGeneCodes($row['gene_codes'] ?? []),
             ],
             'wintering_stages' => [
+                'id' => $this->normalizeOptionalId($row['id'] ?? null),
                 'order' => max(1, (int) ($row['order'] ?? 1)),
                 'title' => $this->normalizeText($row['title'] ?? ''),
                 'duration' => max(0, (int) ($row['duration'] ?? 0)),
             ],
             'system_config' => [
+                'id' => $this->normalizeOptionalId($row['id'] ?? null),
                 'key' => $this->normalizeText($row['key'] ?? ''),
                 'name' => $this->normalizeText($row['name'] ?? ''),
                 'value' => trim((string) ($row['value'] ?? '')),
             ],
             'feeds' => [
+                'id' => $this->normalizeOptionalId($row['id'] ?? null),
                 'name' => $this->normalizeText($row['name'] ?? ''),
                 'feeding_interval' => max(0, (int) ($row['feeding_interval'] ?? 0)),
                 'amount' => max(0, (int) ($row['amount'] ?? 0)),
                 'last_price' => is_numeric($row['last_price'] ?? null) ? (float) $row['last_price'] : 0.0,
             ],
             'color_groups' => [
+                'id' => $this->normalizeOptionalId($row['id'] ?? null),
                 'name' => $this->normalizeText($row['name'] ?? ''),
                 'sort_order' => (int) ($row['sort_order'] ?? 0),
                 'is_active' => (bool) ($row['is_active'] ?? true),
             ],
             'ewelink_devices' => [
+                'id' => $this->normalizeOptionalId($row['id'] ?? null),
                 'device_id' => $this->normalizeText($row['device_id'] ?? ''),
                 'name' => $this->normalizeText($row['name'] ?? ''),
                 'description' => trim((string) ($row['description'] ?? '')),
@@ -406,46 +431,15 @@ class SettingsTransferService
     private function rowKey(string $sectionKey, array $row): string
     {
         return match ($sectionKey) {
-            'animal_categories', 'animal_types', 'finance_categories', 'traits' => strtolower((string) ($row['name'] ?? '')),
-            'genotype_categories' => strtolower((string) ($row['gene_code'] ?? '')),
-            'wintering_stages' => (string) ((int) ($row['order'] ?? 0)),
-            'system_config' => strtolower((string) ($row['key'] ?? '')),
-            'feeds' => strtolower((string) ($row['name'] ?? '')),
-            'color_groups' => strtolower((string) ($row['name'] ?? '')),
-            'ewelink_devices' => strtolower((string) ($row['device_id'] ?? '')),
+            'animal_categories', 'animal_types', 'finance_categories', 'traits' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['name'] ?? ''))),
+            'genotype_categories' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['gene_code'] ?? ''))),
+            'wintering_stages' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), (string) ((int) ($row['order'] ?? 0))),
+            'system_config' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['key'] ?? ''))),
+            'feeds' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['name'] ?? ''))),
+            'color_groups' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['name'] ?? ''))),
+            'ewelink_devices' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['device_id'] ?? ''))),
             default => '',
         };
-    }
-
-    /**
-     * @return array<string, array<string, array<string, mixed>>>
-     */
-    private function existingRowsByKey(string $sectionKey): array
-    {
-        $map = [];
-        $models = match ($sectionKey) {
-            'animal_categories' => AnimalCategory::query()->get(),
-            'animal_types' => AnimalType::query()->get(),
-            'genotype_categories' => AnimalGenotypeCategory::query()->get(),
-            'traits' => AnimalGenotypeTrait::query()->with('genes.category')->get(),
-            'wintering_stages' => WinteringStage::query()->get(),
-            'system_config' => SystemConfig::query()->get(),
-            'feeds' => Feed::query()->get(),
-            'finance_categories' => FinanceCategory::query()->get(),
-            'color_groups' => ColorGroup::query()->get(),
-            'ewelink_devices' => EwelinkDevice::query()->get(),
-            default => collect(),
-        };
-
-        foreach ($models as $model) {
-            $normalized = $this->modelToRow($sectionKey, $model);
-            $key = $this->rowKey($sectionKey, $normalized);
-            if ($key !== '') {
-                $map[$key] = $normalized;
-            }
-        }
-
-        return $map;
     }
 
     /**
@@ -465,6 +459,27 @@ class SettingsTransferService
      */
     private function findExistingModel(string $sectionKey, array $row): mixed
     {
+        $id = (int) ($row['id'] ?? 0);
+        if ($id > 0) {
+            $byId = match ($sectionKey) {
+                'animal_categories' => AnimalCategory::query()->find($id),
+                'animal_types' => AnimalType::query()->find($id),
+                'genotype_categories' => AnimalGenotypeCategory::query()->find($id),
+                'traits' => AnimalGenotypeTrait::query()->find($id),
+                'wintering_stages' => WinteringStage::query()->find($id),
+                'system_config' => SystemConfig::query()->find($id),
+                'feeds' => Feed::query()->find($id),
+                'finance_categories' => FinanceCategory::query()->find($id),
+                'color_groups' => ColorGroup::query()->find($id),
+                'ewelink_devices' => EwelinkDevice::query()->find($id),
+                default => null,
+            };
+
+            if ($byId) {
+                return $byId;
+            }
+        }
+
         return match ($sectionKey) {
             'animal_categories' => AnimalCategory::query()->whereRaw('LOWER(name)=?', [mb_strtolower((string) $row['name'])])->first(),
             'animal_types' => AnimalType::query()->whereRaw('LOWER(name)=?', [mb_strtolower((string) $row['name'])])->first(),
@@ -497,6 +512,7 @@ class SettingsTransferService
                 : [];
 
             return [
+                'id' => (int) $model->id,
                 'name' => $this->normalizeText($model->name),
                 'gene_codes' => $geneCodes,
             ];
@@ -511,43 +527,43 @@ class SettingsTransferService
     private function createModel(string $sectionKey, array $row): void
     {
         match ($sectionKey) {
-            'animal_categories' => AnimalCategory::query()->create(['name' => $row['name']]),
-            'animal_types' => AnimalType::query()->create(['name' => $row['name']]),
-            'genotype_categories' => AnimalGenotypeCategory::query()->create([
+            'animal_categories' => AnimalCategory::query()->forceCreate($this->withIdIfPresent(['name' => $row['name']], $row)),
+            'animal_types' => AnimalType::query()->forceCreate($this->withIdIfPresent(['name' => $row['name']], $row)),
+            'genotype_categories' => AnimalGenotypeCategory::query()->forceCreate($this->withIdIfPresent([
                 'name' => $row['name'],
                 'gene_code' => $row['gene_code'],
                 'gene_type' => $row['gene_type'],
-            ]),
+            ], $row)),
             'traits' => $this->createTrait($row),
-            'wintering_stages' => WinteringStage::query()->create([
+            'wintering_stages' => WinteringStage::query()->forceCreate($this->withIdIfPresent([
                 'order' => $row['order'],
                 'title' => $row['title'],
                 'duration' => $row['duration'],
-            ]),
-            'system_config' => SystemConfig::query()->create([
+            ], $row)),
+            'system_config' => SystemConfig::query()->forceCreate($this->withIdIfPresent([
                 'key' => $row['key'],
                 'name' => $row['name'],
                 'value' => $row['value'],
-            ]),
-            'feeds' => Feed::query()->create([
+            ], $row)),
+            'feeds' => Feed::query()->forceCreate($this->withIdIfPresent([
                 'name' => $row['name'],
                 'feeding_interval' => $row['feeding_interval'],
                 'amount' => $row['amount'],
                 'last_price' => $row['last_price'],
-            ]),
-            'finance_categories' => FinanceCategory::query()->create(['name' => $row['name']]),
-            'color_groups' => ColorGroup::query()->create([
+            ], $row)),
+            'finance_categories' => FinanceCategory::query()->forceCreate($this->withIdIfPresent(['name' => $row['name']], $row)),
+            'color_groups' => ColorGroup::query()->forceCreate($this->withIdIfPresent([
                 'name' => $row['name'],
                 'slug' => $this->generateUniqueColorGroupSlug($row['name']),
                 'sort_order' => $row['sort_order'],
                 'is_active' => $row['is_active'],
-            ]),
-            'ewelink_devices' => EwelinkDevice::query()->create([
+            ], $row)),
+            'ewelink_devices' => EwelinkDevice::query()->forceCreate($this->withIdIfPresent([
                 'device_id' => $row['device_id'],
                 'name' => $row['name'],
                 'description' => $row['description'],
                 'device_type' => $row['device_type'],
-            ]),
+            ], $row)),
             default => null,
         };
     }
@@ -600,9 +616,9 @@ class SettingsTransferService
      */
     private function createTrait(array $row): void
     {
-        $trait = AnimalGenotypeTrait::query()->create([
+        $trait = AnimalGenotypeTrait::query()->forceCreate($this->withIdIfPresent([
             'name' => $row['name'],
-        ]);
+        ], $row));
 
         $this->syncTraitGenes($trait, (array) ($row['gene_codes'] ?? []));
     }
@@ -668,5 +684,40 @@ class SettingsTransferService
     private function normalizeText(mixed $value): string
     {
         return trim((string) $value);
+    }
+
+    private function normalizeOptionalId(mixed $value): ?int
+    {
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        $id = (int) $value;
+
+        return $id > 0 ? $id : null;
+    }
+
+    private function rowIdKeyOr(int $id, string $fallback): string
+    {
+        if ($id > 0) {
+            return 'id:' . $id;
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function withIdIfPresent(array $payload, array $row): array
+    {
+        $id = (int) ($row['id'] ?? 0);
+        if ($id > 0) {
+            $payload['id'] = $id;
+        }
+
+        return $payload;
     }
 }

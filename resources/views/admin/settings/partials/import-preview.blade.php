@@ -82,6 +82,14 @@
                                                                 value="1"
                                                                 @checked((bool) $value)
                                                             >
+                                                        @elseif ($type === 'readonly-number')
+                                                            <input
+                                                                type="number"
+                                                                class="form-control form-control-sm bg-dark text-light"
+                                                                name="rows[{{ $sectionKey }}][{{ $i }}][{{ $key }}]"
+                                                                value="{{ (string) $value }}"
+                                                                readonly
+                                                            >
                                                         @else
                                                             <input
                                                                 type="{{ $type === 'number' ? 'number' : 'text' }}"
@@ -117,4 +125,3 @@
         </div>
     </div>
 @endif
-

@@ -92,6 +92,7 @@ class SettingsTransferController extends Controller
         }
 
         $definitions = $this->service->sectionDefinitions();
+        $previewSections = (array) ($preview['sections'] ?? []);
         $sectionsForApply = [];
         foreach (array_keys($definitions) as $sectionKey) {
             $sectionRows = $rawRows[$sectionKey] ?? [];
@@ -99,14 +100,26 @@ class SettingsTransferController extends Controller
                 $sectionRows = [];
             }
 
-            foreach ($sectionRows as &$row) {
+            $previewRows = (array) (($previewSections[$sectionKey]['rows'] ?? []));
+
+            foreach ($sectionRows as $rowIndex => &$row) {
                 if (!is_array($row)) {
                     $row = [];
                     continue;
                 }
                 foreach ($definitions[$sectionKey]['fields'] as $field) {
+                    $f = (string) ($field['key'] ?? '');
+                    if ($f === '') {
+                        continue;
+                    }
+
+                    if (($field['type'] ?? '') === 'readonly-number') {
+                        $previewValue = $previewRows[$rowIndex]['data'][$f] ?? null;
+                        $row[$f] = is_numeric($previewValue) ? (int) $previewValue : null;
+                        continue;
+                    }
+
                     if (($field['type'] ?? '') === 'bool') {
-                        $f = (string) ($field['key'] ?? '');
                         $row[$f] = !empty($row[$f]) && in_array((string) $row[$f], ['1', 'true', 'on', 'yes'], true);
                     }
                 }
@@ -129,4 +142,3 @@ class SettingsTransferController extends Controller
             ]);
     }
 }
-
