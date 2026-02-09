@@ -1,3 +1,27 @@
+<style>
+    .navbar-quick-search-group {
+        min-width: 370px;
+    }
+
+    .navbar-quick-search-scope {
+        max-width: 120px;
+    }
+
+    .navbar-quick-search-suggestions {
+        background: rgba(33, 37, 41, 0.98);
+        border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .navbar-quick-search-suggestions .dropdown-item {
+        color: #f8f9fa;
+    }
+
+    .navbar-quick-search-suggestions .dropdown-item:hover {
+        background: rgba(13, 110, 253, 0.28);
+        color: #fff;
+    }
+</style>
+
 <nav class="navbar navbar-expand-xl navbar-dark fixed-top navbar-glass">
     <div class="container-fluid">
         <a class="navbar-brand fw-semibold" href="{{ route('panel.home') }}">ZH Panel</a>
@@ -78,7 +102,45 @@
                     </a>
                 @endif
 
-                <div class="dropdown ms-5">
+                @php
+                    $navbarSearchScope = request()->query('scope', 'id');
+                    if (!in_array($navbarSearchScope, ['id', 'public_tag', 'litter_id', 'litter_code'], true)) {
+                        $navbarSearchScope = 'id';
+                    }
+                    $navbarSearchQuery = trim((string) request()->query('q', ''));
+                @endphp
+
+                <form
+                    method="GET"
+                    action="{{ route('panel.navbar-search.go') }}"
+                    class="position-relative"
+                    id="navbarQuickSearchForm"
+                    autocomplete="off"
+                >
+                    <div class="input-group input-group-sm navbar-quick-search-group">
+                        <select class="form-select navbar-quick-search-scope" name="scope" data-role="navbar-quick-search-scope" aria-label="Zakres wyszukiwania">
+                            <option value="id" @selected($navbarSearchScope === 'id')>ID</option>
+                            <option value="public_tag" @selected($navbarSearchScope === 'public_tag')>Public tag</option>
+                            <option value="litter_id" @selected($navbarSearchScope === 'litter_id')>ID Miotu</option>
+                            <option value="litter_code" @selected($navbarSearchScope === 'litter_code')>Kod miotu</option>
+                        </select>
+                        <input
+                            type="text"
+                            class="form-control"
+                            name="q"
+                            value="{{ $navbarSearchQuery }}"
+                            placeholder="Wyszukaj"
+                            data-role="navbar-quick-search-input"
+                        >
+                    </div>
+                    <div
+                        class="dropdown-menu p-0 mt-1 w-100 overflow-auto navbar-quick-search-suggestions"
+                        data-role="navbar-quick-search-suggestions"
+                        style="max-height: 320px;"
+                    ></div>
+                </form>
+
+                <div class="dropdown">
                 <button
                     id="adminMenuToggle"
                     class="btn btn-link text-light p-0"
@@ -256,6 +318,106 @@
             } else {
                 fallback();
             }
+
+            const searchForm = document.getElementById('navbarQuickSearchForm');
+            const searchInput = searchForm?.querySelector('[data-role="navbar-quick-search-input"]');
+            const searchScope = searchForm?.querySelector('[data-role="navbar-quick-search-scope"]');
+            const suggestions = searchForm?.querySelector('[data-role="navbar-quick-search-suggestions"]');
+            const suggestUrl = @json(route('panel.navbar-search.suggest'));
+            let requestId = 0;
+            let debounceTimer = null;
+
+            const closeSuggestions = () => {
+                if (!suggestions) return;
+                suggestions.classList.remove('show');
+                suggestions.innerHTML = '';
+            };
+
+            const escapeHtml = (value) => String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+
+            const renderSuggestions = (items) => {
+                if (!suggestions) return;
+                if (!Array.isArray(items) || items.length === 0) {
+                    closeSuggestions();
+                    return;
+                }
+
+                suggestions.innerHTML = items.map((item) => {
+                    const label = escapeHtml(item.label ?? '');
+                    const subtitle = escapeHtml(item.subtitle ?? '');
+                    const url = escapeHtml(item.url ?? '#');
+                    return `
+                        <a class="dropdown-item py-2 border-bottom border-secondary border-opacity-25" href="${url}">
+                            <div class="fw-semibold">${label}</div>
+                            ${subtitle ? `<div class="small text-light-emphasis">${subtitle}</div>` : ''}
+                        </a>
+                    `;
+                }).join('');
+                suggestions.classList.add('show');
+            };
+
+            const fetchSuggestions = async () => {
+                if (!(searchInput instanceof HTMLInputElement) || !(searchScope instanceof HTMLSelectElement)) {
+                    return;
+                }
+                const q = searchInput.value.trim();
+                if (q.length < 1) {
+                    closeSuggestions();
+                    return;
+                }
+
+                requestId += 1;
+                const currentRequestId = requestId;
+                const params = new URLSearchParams({
+                    scope: searchScope.value,
+                    q,
+                });
+
+                try {
+                    const res = await fetch(`${suggestUrl}?${params.toString()}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            Accept: 'application/json',
+                        },
+                        credentials: 'same-origin',
+                    });
+                    if (!res.ok) {
+                        closeSuggestions();
+                        return;
+                    }
+                    const payload = await res.json();
+                    if (currentRequestId !== requestId) {
+                        return;
+                    }
+                    renderSuggestions(payload.items ?? []);
+                } catch (_) {
+                    closeSuggestions();
+                }
+            };
+
+            const scheduleSuggestions = () => {
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                }
+                debounceTimer = setTimeout(fetchSuggestions, 120);
+            };
+
+            searchInput?.addEventListener('input', scheduleSuggestions);
+            searchInput?.addEventListener('focus', scheduleSuggestions);
+            searchScope?.addEventListener('change', scheduleSuggestions);
+            document.addEventListener('click', (event) => {
+                if (!searchForm || !(event.target instanceof Node)) {
+                    return;
+                }
+                if (!searchForm.contains(event.target)) {
+                    closeSuggestions();
+                }
+            });
         })();
     </script>
 @endpush

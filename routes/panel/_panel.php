@@ -27,4 +27,5 @@ Route::prefix('panel')
         require __DIR__ . '/offers.php';
         require __DIR__ . '/massdata.php';
         require __DIR__ . '/devices.php';
+        require __DIR__ . '/navbar-search.php';
     });
