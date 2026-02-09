@@ -76,7 +76,7 @@ class NavbarSearchController extends Controller
             ->limit(10)
             ->get(['id', 'name', 'public_profile_tag'])
             ->map(fn (Animal $animal): array => [
-                'label' => trim((string) $animal->name) !== '' ? (string) $animal->name : ('Waz #' . $animal->id),
+                'label' => $this->normalizePlainText((string) $animal->name, 'Waz #' . $animal->id),
                 'subtitle' => 'ID: ' . $animal->id . ($animal->public_profile_tag ? ' | Tag: ' . $animal->public_profile_tag : ''),
                 'url' => route('panel.animals.show', $animal->id),
             ])
@@ -95,7 +95,7 @@ class NavbarSearchController extends Controller
             ->limit(10)
             ->get(['id', 'name', 'public_profile_tag'])
             ->map(fn (Animal $animal): array => [
-                'label' => trim((string) $animal->name) !== '' ? (string) $animal->name : ('Waz #' . $animal->id),
+                'label' => $this->normalizePlainText((string) $animal->name, 'Waz #' . $animal->id),
                 'subtitle' => 'Tag: ' . (string) $animal->public_profile_tag . ' | ID: ' . $animal->id,
                 'url' => route('panel.animals.show', $animal->id),
             ])
@@ -117,7 +117,7 @@ class NavbarSearchController extends Controller
             ->limit(10)
             ->get(['id', 'litter_code', 'season'])
             ->map(fn (Litter $litter): array => [
-                'label' => trim((string) $litter->litter_code) !== '' ? (string) $litter->litter_code : ('Miot #' . $litter->id),
+                'label' => $this->normalizePlainText((string) $litter->litter_code, 'Miot #' . $litter->id),
                 'subtitle' => 'ID miotu: ' . $litter->id . ($litter->season ? ' | Sezon: ' . $litter->season : ''),
                 'url' => route('panel.litters.show', $litter->id),
             ])
@@ -136,7 +136,7 @@ class NavbarSearchController extends Controller
             ->limit(10)
             ->get(['id', 'litter_code', 'season'])
             ->map(fn (Litter $litter): array => [
-                'label' => (string) $litter->litter_code,
+                'label' => $this->normalizePlainText((string) $litter->litter_code, 'Miot #' . $litter->id),
                 'subtitle' => 'ID miotu: ' . $litter->id . ($litter->season ? ' | Sezon: ' . $litter->season : ''),
                 'url' => route('panel.litters.show', $litter->id),
             ])
@@ -183,5 +183,12 @@ class NavbarSearchController extends Controller
             ->first(['id']);
 
         return $litter ? route('panel.litters.show', $litter->id) : null;
+    }
+
+    private function normalizePlainText(string $value, string $fallback): string
+    {
+        $normalized = trim(strip_tags($value));
+
+        return $normalized !== '' ? $normalized : $fallback;
     }
 }
