@@ -54,6 +54,7 @@ class GetLitterPlanningPageQuery
         $possibleConnectionsPage = isset($filters['possible_connections_page']) && is_numeric($filters['possible_connections_page'])
             ? max(1, (int) $filters['possible_connections_page'])
             : 1;
+        $possibleConnectionsIncludeExtraGenes = (bool) ($filters['possible_connections_include_extra_genes'] ?? false);
         $hasRoadmapManualInput = isset($filters['roadmap_expected_genes'])
             && trim((string) ($filters['roadmap_expected_genes'] ?? '')) !== '';
         $roadmapSearchInput = trim((string) ($filters['roadmap_expected_genes'] ?? ''));
@@ -223,7 +224,8 @@ class GetLitterPlanningPageQuery
         $possibleConnectionsData = $this->buildPossibleConnectionsData(
             $possibleConnectionsExpectedTraits,
             $possibleConnectionsPage,
-            $filters
+            $filters,
+            $possibleConnectionsIncludeExtraGenes
         );
 
         return new LitterPlanningPageViewModel(
@@ -243,6 +245,7 @@ class GetLitterPlanningPageQuery
             possibleConnectionsSearchInput: $possibleConnectionsSearchInput,
             possibleConnectionsExpectedTraits: $possibleConnectionsExpectedTraits,
             possibleConnectionsGeneSuggestions: $connectionGeneSuggestions,
+            possibleConnectionsIncludeExtraGenes: $possibleConnectionsIncludeExtraGenes,
             possibleConnectionsTotalPairs: (int) ($possibleConnectionsData['total_pairs'] ?? 0),
             possibleConnectionsMatchedPairs: (int) ($possibleConnectionsData['matched_pairs'] ?? 0),
             possibleConnectionsPaginator: $possibleConnectionsData['paginator'],
@@ -370,7 +373,12 @@ class GetLitterPlanningPageQuery
      *     matched_pairs:int
      * }
      */
-    private function buildPossibleConnectionsData(array $expectedTraits, int $page, array $filters): array
+    private function buildPossibleConnectionsData(
+        array $expectedTraits,
+        int $page,
+        array $filters,
+        bool $includeExtraGenes
+    ): array
     {
         $perPage = 50;
         $pageName = 'possible_connections_page';
@@ -378,7 +386,7 @@ class GetLitterPlanningPageQuery
 
         if (!empty($expectedTraits)) {
             $allPairs = $this->possibleConnectionsRepository->getEligiblePairsSorted();
-            $rows = $this->enrichPossibleConnectionsRows($allPairs, $expectedTraits);
+            $rows = $this->enrichPossibleConnectionsRows($allPairs, $expectedTraits, $includeExtraGenes);
             $paginator = $this->paginatePossibleConnectionsRows($rows, $perPage, $page, $pageName);
             $paginator->setPath(route('panel.litters-planning.index'));
             $paginator->appends($queryParams);
@@ -403,7 +411,7 @@ class GetLitterPlanningPageQuery
             ->values()
             ->all();
 
-        $rows = $this->enrichPossibleConnectionsRows($pairs, []);
+        $rows = $this->enrichPossibleConnectionsRows($pairs, [], $includeExtraGenes);
         $paginator->setCollection(collect($rows));
         $paginator->setPath(route('panel.litters-planning.index'));
         $paginator->appends($queryParams);
@@ -442,7 +450,11 @@ class GetLitterPlanningPageQuery
      *     }>
      * }>
      */
-    private function enrichPossibleConnectionsRows(array $pairs, array $expectedTraits): array
+    private function enrichPossibleConnectionsRows(
+        array $pairs,
+        array $expectedTraits,
+        bool $includeExtraGenes
+    ): array
     {
         if (empty($pairs)) {
             return [];
@@ -485,7 +497,7 @@ class GetLitterPlanningPageQuery
                 ->when(
                     !empty($expectedTraits),
                     fn (Collection $collection): Collection => $collection
-                        ->filter(fn (array $row): bool => $this->rowMatchesExpectedTraits($row, $expectedTraits, false))
+                        ->filter(fn (array $row): bool => $this->rowMatchesExpectedTraits($row, $expectedTraits, !$includeExtraGenes))
                 )
                 ->map(fn (array $row): array => $this->mapMatchedRow($row))
                 ->sortByDesc('percentage')

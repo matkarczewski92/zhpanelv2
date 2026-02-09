@@ -24,6 +24,17 @@
                 <div class="form-text text-muted">Mozesz wpisac wiele pozycji po przecinku. Obsluguje tez "het Gen".</div>
             </div>
             <div class="col-12 col-lg-3 d-flex gap-2">
+                <label class="form-check-label small d-flex align-items-center me-2">
+                    <input type="hidden" name="possible_connections_include_extra_genes" value="0">
+                    <input
+                        type="checkbox"
+                        class="form-check-input me-1"
+                        name="possible_connections_include_extra_genes"
+                        value="1"
+                        @checked($page->possibleConnectionsIncludeExtraGenes)
+                    >
+                    Pokaz z dodatkowymi genami
+                </label>
                 <button type="submit" class="btn btn-primary flex-grow-1">Filtruj</button>
                 <a href="{{ route('panel.litters-planning.index', ['tab' => 'possible-connections']) }}" class="btn btn-outline-light">Wyczysc</a>
             </div>

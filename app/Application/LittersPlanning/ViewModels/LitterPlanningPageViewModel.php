@@ -139,6 +139,7 @@ class LitterPlanningPageViewModel
         public readonly string $possibleConnectionsSearchInput,
         public readonly array $possibleConnectionsExpectedTraits,
         public readonly array $possibleConnectionsGeneSuggestions,
+        public readonly bool $possibleConnectionsIncludeExtraGenes,
         public readonly int $possibleConnectionsTotalPairs,
         public readonly int $possibleConnectionsMatchedPairs,
         public readonly LengthAwarePaginator $possibleConnectionsPaginator,
