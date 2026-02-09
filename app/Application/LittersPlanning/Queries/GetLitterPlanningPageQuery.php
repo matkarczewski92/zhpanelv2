@@ -1109,7 +1109,7 @@ class GetLitterPlanningPageQuery
             ->map(function (array $group) use ($stableEggsToIncubationAverage): array {
                 $litters = (array) ($group['litters'] ?? []);
                 $littersCount = count($litters);
-                $avgEggs = $stableEggsToIncubationAverage;
+                $avgEggs = round($stableEggsToIncubationAverage, 0);
                 $percentageSum = (float) ($group['percentage_sum'] ?? 0);
                 $numericCount = round(($percentageSum / 100) * $avgEggs, 0);
 
@@ -1120,7 +1120,7 @@ class GetLitterPlanningPageQuery
                     'percentage_sum' => $percentageSum,
                     'percentage_sum_label' => number_format($percentageSum, 2, ',', ' ') . '%',
                     'avg_eggs_to_incubation' => $avgEggs,
-                    'avg_eggs_to_incubation_label' => number_format($avgEggs, 2, ',', ' '),
+                    'avg_eggs_to_incubation_label' => number_format($avgEggs, 0, ',', ' '),
                     'numeric_count' => $numericCount,
                     'numeric_count_label' => number_format($numericCount, 0, ',', ' '),
                 ];
@@ -1139,7 +1139,7 @@ class GetLitterPlanningPageQuery
             ->where('laying_eggs_ok', '>', 0)
             ->avg('laying_eggs_ok');
 
-        return is_numeric($average) ? (float) $average : 0.0;
+        return is_numeric($average) ? round((float) $average, 0) : 0.0;
     }
 
     /**

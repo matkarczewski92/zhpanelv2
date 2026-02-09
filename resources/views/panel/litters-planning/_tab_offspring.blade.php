@@ -157,8 +157,10 @@
             @php
                 $summaryNumericCountTotal = collect($page->seasonOffspringSummaryRows)
                     ->sum(fn (array $row): float => (float) ($row['numeric_count'] ?? 0));
-                $summaryNumericCountTotalHigher = $summaryNumericCountTotal * 1.5;
-                $summaryNumericCountTotalLower = $summaryNumericCountTotal * 0.5;
+                $summaryNumericCountTotalMinus50 = round($summaryNumericCountTotal * 0.5, 0);
+                $summaryNumericCountTotalMinus25 = round($summaryNumericCountTotal * 0.75, 0);
+                $summaryNumericCountTotalPlus25 = round($summaryNumericCountTotal * 1.25, 0);
+                $summaryNumericCountTotalPlus50 = round($summaryNumericCountTotal * 1.5, 0);
             @endphp
             <tfoot>
                 <tr class="border-top border-light border-opacity-25">
@@ -168,14 +170,26 @@
                     <td></td>
                 </tr>
                 <tr>
-                    <td colspan="3" class="text-end">Suma gdy średnia 50% wyżej</td>
-                    <td class="text-center">{{ number_format($summaryNumericCountTotalHigher, 0, ',', ' ') }}</td>
+                    <td colspan="3" class="text-end">Suma gdy średnia 50% niższa</td>
+                    <td class="text-center">{{ number_format($summaryNumericCountTotalMinus50, 0, ',', ' ') }}</td>
                     <td></td>
                     <td></td>
                 </tr>
                 <tr>
-                    <td colspan="3" class="text-end">Suma gdy średnia 50% niższa</td>
-                    <td class="text-center">{{ number_format($summaryNumericCountTotalLower, 0, ',', ' ') }}</td>
+                    <td colspan="3" class="text-end">Suma gdy średnia 25% niższa</td>
+                    <td class="text-center">{{ number_format($summaryNumericCountTotalMinus25, 0, ',', ' ') }}</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end">Suma gdy średnia 25% wyżej</td>
+                    <td class="text-center">{{ number_format($summaryNumericCountTotalPlus25, 0, ',', ' ') }}</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end">Suma gdy średnia 50% wyżej</td>
+                    <td class="text-center">{{ number_format($summaryNumericCountTotalPlus50, 0, ',', ' ') }}</td>
                     <td></td>
                     <td></td>
                 </tr>
