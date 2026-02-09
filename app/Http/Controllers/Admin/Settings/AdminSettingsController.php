@@ -16,6 +16,9 @@ class AdminSettingsController extends Controller
     {
         $vm = $this->service->getViewModel($request->query('tab'));
 
-        return view('admin.settings.index', ['vm' => $vm]);
+        return view('admin.settings.index', [
+            'vm' => $vm,
+            'importPreview' => $request->session()->get('admin_settings_import_preview'),
+        ]);
     }
 }

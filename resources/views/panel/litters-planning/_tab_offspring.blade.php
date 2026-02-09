@@ -157,11 +157,25 @@
             @php
                 $summaryNumericCountTotal = collect($page->seasonOffspringSummaryRows)
                     ->sum(fn (array $row): float => (float) ($row['numeric_count'] ?? 0));
+                $summaryNumericCountTotalHigher = $summaryNumericCountTotal * 1.5;
+                $summaryNumericCountTotalLower = $summaryNumericCountTotal * 0.5;
             @endphp
             <tfoot>
                 <tr class="border-top border-light border-opacity-25">
                     <td colspan="3" class="text-end fw-semibold">Suma Liczbowo</td>
                     <td class="text-center fw-semibold">{{ number_format($summaryNumericCountTotal, 0, ',', ' ') }}</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end">Suma gdy średnia 50% wyżej</td>
+                    <td class="text-center">{{ number_format($summaryNumericCountTotalHigher, 0, ',', ' ') }}</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end">Suma gdy średnia 50% niższa</td>
+                    <td class="text-center">{{ number_format($summaryNumericCountTotalLower, 0, ',', ' ') }}</td>
                     <td></td>
                     <td></td>
                 </tr>

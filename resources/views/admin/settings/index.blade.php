@@ -8,7 +8,17 @@
             <h1 class="h4 mb-1">Ustawienia portalu</h1>
             <p class="text-muted mb-0">Zarządzanie słownikami i konfiguracją.</p>
         </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.settings.transfer.export') }}" class="btn btn-outline-light btn-sm">Eksport</a>
+            <form method="POST" action="{{ route('admin.settings.transfer.import-preview') }}" enctype="multipart/form-data" class="d-flex align-items-center gap-2">
+                @csrf
+                <input type="file" name="import_file" accept=".json,.txt,application/json,text/plain" class="form-control form-control-sm bg-dark text-light" required>
+                <button type="submit" class="btn btn-primary btn-sm">Import</button>
+            </form>
+        </div>
     </div>
+
+    @include('admin.settings.partials.import-preview', ['importPreview' => $importPreview ?? null])
 
     <ul class="nav nav-pills mb-3" id="settingsTabs" role="tablist">
         @php $tabs = [

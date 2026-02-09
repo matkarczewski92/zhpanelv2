@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\Settings\FinanceCategoryController;
 use App\Http\Controllers\Admin\Settings\ColorGroupController;
 use App\Http\Controllers\Admin\Settings\GeneticsGeneratorController;
 use App\Http\Controllers\Admin\Settings\EwelinkDeviceController;
+use App\Http\Controllers\Admin\Settings\SettingsTransferController;
 
 Route::get('/settings', AdminSettingsController::class)->name('settings.index');
 
@@ -75,3 +76,9 @@ Route::post('/settings/ewelink-devices', [EwelinkDeviceController::class, 'store
 Route::patch('/settings/ewelink-devices/{device}', [EwelinkDeviceController::class, 'update'])->name('settings.ewelink-devices.update');
 Route::delete('/settings/ewelink-devices/{device}', [EwelinkDeviceController::class, 'destroy'])->name('settings.ewelink-devices.destroy');
 Route::post('/settings/ewelink-devices/sync', [EwelinkDeviceController::class, 'sync'])->name('settings.ewelink-devices.sync');
+
+// settings transfer
+Route::get('/settings/transfer/export', [SettingsTransferController::class, 'export'])->name('settings.transfer.export');
+Route::post('/settings/transfer/import-preview', [SettingsTransferController::class, 'importPreview'])->name('settings.transfer.import-preview');
+Route::post('/settings/transfer/reject', [SettingsTransferController::class, 'reject'])->name('settings.transfer.reject');
+Route::post('/settings/transfer/apply', [SettingsTransferController::class, 'apply'])->name('settings.transfer.apply');
