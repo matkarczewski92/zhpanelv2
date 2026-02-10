@@ -14,6 +14,7 @@ class PortalUpdateService
     private const UPDATE_LOCK_KEY = 'portal-update:run-lock';
     private const UPDATE_LOCK_SECONDS = 1800;
     private ?bool $timeoutBinaryAvailable = null;
+    private ?string $composerPath = null;
 
     public function getPanelData(?array $lastCheck = null, ?array $lastRun = null): array
     {
@@ -512,9 +513,22 @@ class PortalUpdateService
      */
     private function composerCommand(array $args): array
     {
+        $configuredBinary = trim((string) config('services.portal_update.composer_binary', ''));
+        if ($configuredBinary !== '') {
+            $configuredParts = $this->splitCommandParts($configuredBinary);
+            if ($configuredParts !== []) {
+                return array_merge($configuredParts, $args);
+            }
+        }
+
         $composerPhar = base_path('composer.phar');
         if (File::exists($composerPhar)) {
             return array_merge([$this->phpCliBinary(), $composerPhar], $args);
+        }
+
+        $composerPath = $this->resolveComposerPath();
+        if (is_string($composerPath) && $composerPath !== '') {
+            return array_merge([$this->phpCliBinary(), $composerPath], $args);
         }
 
         return array_merge(['composer'], $args);
@@ -804,5 +818,75 @@ class PortalUpdateService
         }
 
         return $binary !== '' ? $binary : (PHP_OS_FAMILY === 'Windows' ? 'php.exe' : 'php84');
+    }
+
+    private function resolveComposerPath(): ?string
+    {
+        if ($this->composerPath !== null) {
+            return $this->composerPath;
+        }
+
+        $candidates = [];
+        $probeCommand = PHP_OS_FAMILY === 'Windows' ? ['where', 'composer'] : ['which', 'composer'];
+        $probeOutput = $this->safeGitOutput($probeCommand);
+        if (is_string($probeOutput) && trim($probeOutput) !== '') {
+            $lines = preg_split('/\R+/', $probeOutput) ?: [];
+            foreach ($lines as $line) {
+                $line = trim((string) $line);
+                if ($line !== '') {
+                    $candidates[] = $line;
+                }
+            }
+        }
+
+        $phpDirectory = dirname($this->phpCliBinary());
+        if ($phpDirectory !== '' && $phpDirectory !== '.') {
+            $candidates[] = $phpDirectory . DIRECTORY_SEPARATOR . 'composer';
+            $candidates[] = $phpDirectory . DIRECTORY_SEPARATOR . 'composer.phar';
+        }
+
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $candidates[] = '/usr/local/bin/composer';
+            $candidates[] = '/usr/bin/composer';
+            $candidates[] = '/usr/local/devil/bin/composer';
+        }
+
+        foreach ($candidates as $candidate) {
+            if ($this->isUsableFilePath($candidate)) {
+                $this->composerPath = $candidate;
+
+                return $this->composerPath;
+            }
+        }
+
+        return null;
+    }
+
+    private function isUsableFilePath(string $path): bool
+    {
+        if ($path === '') {
+            return false;
+        }
+
+        if (!File::exists($path)) {
+            return false;
+        }
+
+        return @is_file($path) || @is_executable($path);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function splitCommandParts(string $command): array
+    {
+        $command = trim($command);
+        if ($command === '') {
+            return [];
+        }
+
+        $parts = preg_split('/\s+/', $command) ?: [];
+
+        return array_values(array_filter($parts, static fn (string $part): bool => $part !== ''));
     }
 }
