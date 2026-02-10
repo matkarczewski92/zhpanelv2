@@ -76,6 +76,27 @@ class PortalUpdateService
             @ignore_user_abort(true);
         }
 
+        $updateCheck = $this->checkForUpdates();
+        $beforeSha = $updateCheck['local_sha'] ?? $this->safeGitOutput(['git', 'rev-parse', 'HEAD']);
+
+        if (((int) ($updateCheck['behind'] ?? 0)) === 0) {
+            return [
+                'started_at' => now()->toIso8601String(),
+                'finished_at' => now()->toIso8601String(),
+                'success' => true,
+                'error' => null,
+                'run_migrate' => $runMigrate,
+                'run_build' => $runBuild,
+                'before_sha' => $beforeSha,
+                'before_sha_short' => $this->shortSha($beforeSha),
+                'after_sha' => $beforeSha,
+                'after_sha_short' => $this->shortSha($beforeSha),
+                'updated' => false,
+                'steps_count' => 0,
+                'log_path' => $this->logPath(),
+            ];
+        }
+
         $this->assertCanUseUpdater();
         $this->assertCleanWorkTree();
 
@@ -85,7 +106,6 @@ class PortalUpdateService
         }
 
         $startedAt = now();
-        $beforeSha = $this->safeGitOutput(['git', 'rev-parse', 'HEAD']);
         $steps = [];
         $enteredMaintenance = false;
         $success = true;
