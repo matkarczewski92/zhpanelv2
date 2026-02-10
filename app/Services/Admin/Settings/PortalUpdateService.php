@@ -81,6 +81,8 @@ class PortalUpdateService
         $beforeSha = $updateCheck['local_sha'] ?? $this->safeGitOutput(['git', 'rev-parse', 'HEAD']);
 
         if (((int) ($updateCheck['behind'] ?? 0)) === 0) {
+            $this->clearRunLog();
+
             return [
                 'started_at' => now()->toIso8601String(),
                 'finished_at' => now()->toIso8601String(),
@@ -169,7 +171,11 @@ class PortalUpdateService
             'log_path' => $this->logPath(),
         ];
 
-        $this->appendRunLog($summary, $steps);
+        if ($success) {
+            $this->clearRunLog();
+        } else {
+            $this->appendRunLog($summary, $steps);
+        }
 
         return $summary;
     }
@@ -623,6 +629,18 @@ class PortalUpdateService
     private function logPath(): string
     {
         return storage_path('logs/portal-update.log');
+    }
+
+    private function clearRunLog(): void
+    {
+        if (!File::exists($this->logPath())) {
+            return;
+        }
+
+        try {
+            File::delete($this->logPath());
+        } catch (Throwable) {
+        }
     }
 
     private function releaseLock(Lock $lock): void
