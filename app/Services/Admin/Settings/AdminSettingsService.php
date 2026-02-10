@@ -28,7 +28,11 @@ class AdminSettingsService
         $types = AnimalType::orderBy('id')->get();
         $genes = AnimalGenotypeCategory::orderBy('id')->get();
         $traits = AnimalGenotypeTrait::with('genes.category')->orderBy('id')->get();
-        $winter = WinteringStage::orderBy('order')->get();
+        $winter = WinteringStage::query()
+            ->orderBy('scheme')
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get();
         $system = SystemConfig::orderBy('key')->get();
         $feeds = Feed::orderBy('id')->get();
         $financeCategories = FinanceCategory::withCount('finances')->orderBy('id')->get();

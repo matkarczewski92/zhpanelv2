@@ -10,9 +10,10 @@ class WinteringStage extends Model
     protected $table = 'winterings_stage';
 
     protected $fillable = array (
-  0 => 'order',
-  1 => 'title',
-  2 => 'duration',
+  0 => 'scheme',
+  1 => 'order',
+  2 => 'title',
+  3 => 'duration',
 );
 
     protected $casts = array (

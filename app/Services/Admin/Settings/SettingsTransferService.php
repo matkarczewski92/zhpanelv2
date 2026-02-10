@@ -70,11 +70,13 @@ class SettingsTransferService
                     })
                     ->all(),
                 'wintering_stages' => WinteringStage::query()
+                    ->orderBy('scheme')
                     ->orderBy('order')
                     ->orderBy('id')
-                    ->get(['id', 'order', 'title', 'duration'])
+                    ->get(['id', 'scheme', 'order', 'title', 'duration'])
                     ->map(fn (WinteringStage $row): array => [
                         'id' => (int) $row->id,
+                        'scheme' => (string) $row->scheme,
                         'order' => (int) $row->order,
                         'title' => (string) $row->title,
                         'duration' => (int) $row->duration,
@@ -297,6 +299,7 @@ class SettingsTransferService
                 'label' => 'Zimowanie: Etapy',
                 'fields' => [
                     ['key' => 'id', 'label' => 'ID', 'type' => 'readonly-number'],
+                    ['key' => 'scheme', 'label' => 'Schemat', 'type' => 'text'],
                     ['key' => 'order', 'label' => 'Kolejność', 'type' => 'number'],
                     ['key' => 'title', 'label' => 'Nazwa', 'type' => 'text'],
                     ['key' => 'duration', 'label' => 'Czas (dni)', 'type' => 'number'],
@@ -374,6 +377,7 @@ class SettingsTransferService
             ],
             'wintering_stages' => [
                 'id' => $this->normalizeOptionalId($row['id'] ?? null),
+                'scheme' => $this->normalizeText($row['scheme'] ?? '') ?: 'Zimowanie normalne',
                 'order' => max(1, (int) ($row['order'] ?? 1)),
                 'title' => $this->normalizeText($row['title'] ?? ''),
                 'duration' => max(0, (int) ($row['duration'] ?? 0)),
@@ -433,7 +437,10 @@ class SettingsTransferService
         return match ($sectionKey) {
             'animal_categories', 'animal_types', 'finance_categories', 'traits' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['name'] ?? ''))),
             'genotype_categories' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['gene_code'] ?? ''))),
-            'wintering_stages' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), (string) ((int) ($row['order'] ?? 0))),
+            'wintering_stages' => $this->rowIdKeyOr(
+                (int) ($row['id'] ?? 0),
+                strtolower((string) ($row['scheme'] ?? '')) . '|' . (string) ((int) ($row['order'] ?? 0))
+            ),
             'system_config' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['key'] ?? ''))),
             'feeds' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['name'] ?? ''))),
             'color_groups' => $this->rowIdKeyOr((int) ($row['id'] ?? 0), strtolower((string) ($row['name'] ?? ''))),
@@ -485,7 +492,10 @@ class SettingsTransferService
             'animal_types' => AnimalType::query()->whereRaw('LOWER(name)=?', [mb_strtolower((string) $row['name'])])->first(),
             'genotype_categories' => AnimalGenotypeCategory::query()->whereRaw('LOWER(gene_code)=?', [mb_strtolower((string) $row['gene_code'])])->first(),
             'traits' => AnimalGenotypeTrait::query()->whereRaw('LOWER(name)=?', [mb_strtolower((string) $row['name'])])->first(),
-            'wintering_stages' => WinteringStage::query()->where('order', (int) ($row['order'] ?? 0))->first(),
+            'wintering_stages' => WinteringStage::query()
+                ->where('scheme', (string) ($row['scheme'] ?? 'Zimowanie normalne'))
+                ->where('order', (int) ($row['order'] ?? 0))
+                ->first(),
             'system_config' => SystemConfig::query()->whereRaw('LOWER(`key`)=?', [mb_strtolower((string) $row['key'])])->first(),
             'feeds' => Feed::query()->whereRaw('LOWER(name)=?', [mb_strtolower((string) $row['name'])])->first(),
             'finance_categories' => FinanceCategory::query()->whereRaw('LOWER(name)=?', [mb_strtolower((string) $row['name'])])->first(),
@@ -536,6 +546,7 @@ class SettingsTransferService
             ], $row)),
             'traits' => $this->createTrait($row),
             'wintering_stages' => WinteringStage::query()->forceCreate($this->withIdIfPresent([
+                'scheme' => $row['scheme'],
                 'order' => $row['order'],
                 'title' => $row['title'],
                 'duration' => $row['duration'],
@@ -582,6 +593,7 @@ class SettingsTransferService
             ]),
             'traits' => $this->updateTrait($model, $row),
             'wintering_stages' => $model->update([
+                'scheme' => $row['scheme'],
                 'order' => $row['order'],
                 'title' => $row['title'],
                 'duration' => $row['duration'],
