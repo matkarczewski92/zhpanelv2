@@ -112,6 +112,7 @@ class SaveAnimalWinteringPlanCommand
                     'planned_end_date' => $payload['planned_end_date'] ?? $row->planned_end_date?->toDateString(),
                     'start_date' => $payload['start_date'] ?? $row->start_date?->toDateString(),
                     'end_date' => $payload['end_date'] ?? $row->end_date?->toDateString(),
+                    'end_date_original' => $row->end_date?->toDateString(),
                 ];
             })
             ->all();
@@ -159,6 +160,7 @@ class SaveAnimalWinteringPlanCommand
                     'planned_end_date' => $payload['planned_end_date'] ?? null,
                     'start_date' => $payload['start_date'] ?? null,
                     'end_date' => $payload['end_date'] ?? null,
+                    'end_date_original' => null,
                 ];
             })
             ->all();
@@ -318,6 +320,12 @@ class SaveAnimalWinteringPlanCommand
 
             $previousEndDate = trim((string) ($rows[$index - 1]['end_date'] ?? ''));
             if ($previousEndDate !== '') {
+                continue;
+            }
+
+            $previousOriginalEndDate = trim((string) ($rows[$index - 1]['end_date_original'] ?? ''));
+            $previousWasExplicitlyCleared = $previousOriginalEndDate !== '' && $previousEndDate === '';
+            if ($previousWasExplicitlyCleared) {
                 continue;
             }
 

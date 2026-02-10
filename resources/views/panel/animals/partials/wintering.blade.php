@@ -597,13 +597,35 @@
                         recalculateFrom(index, 'duration');
                     });
 
-                    row.querySelector('.wintering-start-date')?.addEventListener('change', (event) => {
+                    const startInput = row.querySelector('.wintering-start-date');
+                    startInput?.addEventListener('focus', () => {
+                        startInput.dataset.prevValue = startInput.value || '';
+                    });
+
+                    startInput?.addEventListener('change', (event) => {
                         const currentStartValue = event.target?.value || '';
-                        if (index > 0 && currentStartValue !== '') {
+                        const previousStartValue = event.target?.dataset?.prevValue || '';
+
+                        if (index > 0) {
                             const previousRow = rowElements()[index - 1];
                             const previousEndInput = previousRow?.querySelector('.wintering-end-date');
-                            if (previousEndInput && previousEndInput.value === '') {
-                                previousEndInput.value = currentStartValue;
+                            const autoFromNextStart = previousEndInput?.dataset?.autoFromNextStart || '';
+
+                            if (currentStartValue !== '') {
+                                if (previousEndInput && (previousEndInput.value === '' || autoFromNextStart !== '')) {
+                                    previousEndInput.value = currentStartValue;
+                                    previousEndInput.dataset.autoFromNextStart = currentStartValue;
+                                }
+                            } else if (previousEndInput) {
+                                const shouldRollbackPreviousEnd = (
+                                    (autoFromNextStart !== '' && previousEndInput.value === autoFromNextStart)
+                                    || (previousStartValue !== '' && previousEndInput.value === previousStartValue)
+                                );
+
+                                if (shouldRollbackPreviousEnd) {
+                                    previousEndInput.value = '';
+                                    previousEndInput.dataset.autoFromNextStart = '';
+                                }
                             }
                         }
 
@@ -614,6 +636,7 @@
 
                         lastEditedAnchor = { index, field: 'start' };
                         recalculateFrom(index, 'start');
+                        event.target.dataset.prevValue = currentStartValue;
                     });
 
                     row.querySelector('.wintering-end-date')?.addEventListener('change', (event) => {
