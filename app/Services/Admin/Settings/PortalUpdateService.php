@@ -517,7 +517,7 @@ class PortalUpdateService
         if ($configuredBinary !== '') {
             $configuredParts = $this->splitCommandParts($configuredBinary);
             if ($configuredParts !== []) {
-                return array_merge($configuredParts, $args);
+                return $this->composeComposerInvocation($configuredParts, $args);
             }
         }
 
@@ -532,6 +532,20 @@ class PortalUpdateService
         }
 
         return array_merge(['composer'], $args);
+    }
+
+    /**
+     * @param array<int, string> $commandParts
+     * @param array<int, string> $args
+     * @return array<int, string>
+     */
+    private function composeComposerInvocation(array $commandParts, array $args): array
+    {
+        if ($this->shouldWrapComposerWithPhp($commandParts)) {
+            return array_merge([$this->phpCliBinary()], $commandParts, $args);
+        }
+
+        return array_merge($commandParts, $args);
     }
 
     /**
@@ -888,5 +902,45 @@ class PortalUpdateService
         $parts = preg_split('/\s+/', $command) ?: [];
 
         return array_values(array_filter($parts, static fn (string $part): bool => $part !== ''));
+    }
+
+    /**
+     * @param array<int, string> $commandParts
+     */
+    private function shouldWrapComposerWithPhp(array $commandParts): bool
+    {
+        if ($commandParts === []) {
+            return false;
+        }
+
+        $firstPart = trim((string) ($commandParts[0] ?? ''));
+        if ($firstPart === '') {
+            return false;
+        }
+
+        if (count($commandParts) > 1) {
+            return false;
+        }
+
+        $lowerFirst = strtolower($firstPart);
+        if (str_contains($lowerFirst, 'php')) {
+            return false;
+        }
+
+        $looksLikePath = str_contains($firstPart, DIRECTORY_SEPARATOR)
+            || str_contains($firstPart, '/')
+            || str_contains($firstPart, '\\')
+            || str_starts_with($firstPart, '.');
+
+        if (!$looksLikePath) {
+            return false;
+        }
+
+        $basename = strtolower((string) pathinfo($firstPart, PATHINFO_BASENAME));
+        if ($basename === 'composer' || $basename === 'composer.phar') {
+            return true;
+        }
+
+        return str_ends_with($lowerFirst, '.phar');
     }
 }
