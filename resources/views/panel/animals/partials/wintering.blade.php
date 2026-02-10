@@ -155,11 +155,21 @@
                                                     value="{{ $plannedEnd }}"
                                                 >
                                             </td>
-                                            <td class="{{ $realStart !== '' ? 'text-success' : 'text-muted' }}">
-                                                {{ $realStart !== '' ? $realStart : '-' }}
+                                            <td>
+                                                <input
+                                                    type="date"
+                                                    class="form-control form-control-sm wintering-start-date"
+                                                    name="rows[{{ $index }}][start_date]"
+                                                    value="{{ $realStart }}"
+                                                >
                                             </td>
-                                            <td class="{{ $realEnd !== '' ? 'text-success' : 'text-muted' }}">
-                                                {{ $realEnd !== '' ? $realEnd : '-' }}
+                                            <td>
+                                                <input
+                                                    type="date"
+                                                    class="form-control form-control-sm wintering-end-date"
+                                                    name="rows[{{ $index }}][end_date]"
+                                                    value="{{ $realEnd }}"
+                                                >
                                             </td>
                                             <td class="text-end">
                                                 @if ($editorHasCycle && $winteringId > 0)
@@ -191,7 +201,7 @@
                             </table>
                         </div>
                         <div class="small text-muted mt-2">
-                            Po zmianie daty startu lub konca etapu, kolejne etapy sa przeliczane automatycznie.
+                            Po zmianie dat planowanych lub realnych (Start/Koniec), kolejne etapy sa przeliczane automatycznie.
                         </div>
                     </div>
                 </div>
@@ -349,6 +359,24 @@
                     row.querySelector('.wintering-planned-start')?.addEventListener('change', () => recalculateFrom(index, 'start'));
                     row.querySelector('.wintering-planned-end')?.addEventListener('change', () => recalculateFrom(index, 'end'));
                     row.querySelector('.wintering-custom-duration')?.addEventListener('change', () => recalculateFrom(index, 'duration'));
+
+                    row.querySelector('.wintering-start-date')?.addEventListener('change', (event) => {
+                        const plannedInput = row.querySelector('.wintering-planned-start');
+                        if (plannedInput) {
+                            plannedInput.value = event.target?.value || '';
+                        }
+
+                        recalculateFrom(index, 'start');
+                    });
+
+                    row.querySelector('.wintering-end-date')?.addEventListener('change', (event) => {
+                        const plannedInput = row.querySelector('.wintering-planned-end');
+                        if (plannedInput) {
+                            plannedInput.value = event.target?.value || '';
+                        }
+
+                        recalculateFrom(index, 'end');
+                    });
                 });
             };
 
@@ -383,8 +411,12 @@
                             <td>
                                 <input type="date" class="form-control form-control-sm wintering-planned-end" name="rows[${index}][planned_end_date]" value="">
                             </td>
-                            <td class="text-muted">-</td>
-                            <td class="text-muted">-</td>
+                            <td>
+                                <input type="date" class="form-control form-control-sm wintering-start-date" name="rows[${index}][start_date]" value="">
+                            </td>
+                            <td>
+                                <input type="date" class="form-control form-control-sm wintering-end-date" name="rows[${index}][end_date]" value="">
+                            </td>
                             <td class="text-end"><span class="text-muted small">-</span></td>
                         </tr>
                     `;

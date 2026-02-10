@@ -28,6 +28,8 @@ class SaveAnimalWinteringPlanCommand
      *         stage_id:int,
      *         planned_start_date?:string|null,
      *         planned_end_date?:string|null,
+     *         start_date?:string|null,
+     *         end_date?:string|null,
      *         custom_duration?:int|null
      *     }>
      * } $data
@@ -107,8 +109,8 @@ class SaveAnimalWinteringPlanCommand
                     'custom_duration' => $payload['custom_duration'] ?? $row->custom_duration,
                     'planned_start_date' => $payload['planned_start_date'] ?? $row->planned_start_date?->toDateString(),
                     'planned_end_date' => $payload['planned_end_date'] ?? $row->planned_end_date?->toDateString(),
-                    'start_date' => $row->start_date?->toDateString(),
-                    'end_date' => $row->end_date?->toDateString(),
+                    'start_date' => $payload['start_date'] ?? $row->start_date?->toDateString(),
+                    'end_date' => $payload['end_date'] ?? $row->end_date?->toDateString(),
                 ];
             })
             ->all();
@@ -154,8 +156,8 @@ class SaveAnimalWinteringPlanCommand
                     'custom_duration' => $payload['custom_duration'] ?? null,
                     'planned_start_date' => $payload['planned_start_date'] ?? null,
                     'planned_end_date' => $payload['planned_end_date'] ?? null,
-                    'start_date' => null,
-                    'end_date' => null,
+                    'start_date' => $payload['start_date'] ?? null,
+                    'end_date' => $payload['end_date'] ?? null,
                 ];
             })
             ->all();
@@ -178,13 +180,23 @@ class SaveAnimalWinteringPlanCommand
 
             $newStart = trim((string) ($row['planned_start_date'] ?? ''));
             $newEnd = trim((string) ($row['planned_end_date'] ?? ''));
+            $newRealStart = trim((string) ($row['start_date'] ?? ''));
+            $newRealEnd = trim((string) ($row['end_date'] ?? ''));
             $newCustom = $row['custom_duration'];
 
             $oldStart = $existing->planned_start_date?->toDateString() ?? '';
             $oldEnd = $existing->planned_end_date?->toDateString() ?? '';
+            $oldRealStart = $existing->start_date?->toDateString() ?? '';
+            $oldRealEnd = $existing->end_date?->toDateString() ?? '';
             $oldCustom = $existing->custom_duration;
 
-            if ($newStart !== $oldStart || $newEnd !== $oldEnd || (string) $newCustom !== (string) $oldCustom) {
+            if (
+                $newStart !== $oldStart
+                || $newEnd !== $oldEnd
+                || $newRealStart !== $oldRealStart
+                || $newRealEnd !== $oldRealEnd
+                || (string) $newCustom !== (string) $oldCustom
+            ) {
                 return (int) $index;
             }
         }
@@ -200,7 +212,10 @@ class SaveAnimalWinteringPlanCommand
         foreach ($rows as $index => $row) {
             $start = trim((string) ($row['planned_start_date'] ?? ''));
             $end = trim((string) ($row['planned_end_date'] ?? ''));
-            if ($start !== '' || $end !== '') {
+            $realStart = trim((string) ($row['start_date'] ?? ''));
+            $realEnd = trim((string) ($row['end_date'] ?? ''));
+
+            if ($start !== '' || $end !== '' || $realStart !== '' || $realEnd !== '') {
                 return (int) $index;
             }
         }
@@ -225,6 +240,8 @@ class SaveAnimalWinteringPlanCommand
 
             $model->planned_start_date = $this->normalizeDate($row['planned_start_date'] ?? null);
             $model->planned_end_date = $this->normalizeDate($row['planned_end_date'] ?? null);
+            $model->start_date = $this->normalizeDate($row['start_date'] ?? null);
+            $model->end_date = $this->normalizeDate($row['end_date'] ?? null);
             $model->custom_duration = is_numeric($row['custom_duration'] ?? null)
                 ? max(0, (int) $row['custom_duration'])
                 : null;
@@ -245,8 +262,8 @@ class SaveAnimalWinteringPlanCommand
                 'season' => $season,
                 'planned_start_date' => $this->normalizeDate($row['planned_start_date'] ?? null),
                 'planned_end_date' => $this->normalizeDate($row['planned_end_date'] ?? null),
-                'start_date' => null,
-                'end_date' => null,
+                'start_date' => $this->normalizeDate($row['start_date'] ?? null),
+                'end_date' => $this->normalizeDate($row['end_date'] ?? null),
                 'annotations' => null,
                 'stage_id' => (int) $row['stage_id'],
                 'custom_duration' => is_numeric($row['custom_duration'] ?? null)

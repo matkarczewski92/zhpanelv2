@@ -28,6 +28,8 @@ class SaveAnimalWinteringPlanRequest extends FormRequest
                     'stage_id' => $this->normalizeInteger($row['stage_id'] ?? null),
                     'planned_start_date' => $this->normalizeDate($row['planned_start_date'] ?? null),
                     'planned_end_date' => $this->normalizeDate($row['planned_end_date'] ?? null),
+                    'start_date' => $this->normalizeDate($row['start_date'] ?? null),
+                    'end_date' => $this->normalizeDate($row['end_date'] ?? null),
                     'custom_duration' => $this->normalizeInteger($row['custom_duration'] ?? null),
                 ];
             }
@@ -48,6 +50,8 @@ class SaveAnimalWinteringPlanRequest extends FormRequest
             'rows.*.stage_id' => ['required', 'integer', 'exists:winterings_stage,id'],
             'rows.*.planned_start_date' => ['nullable', 'date'],
             'rows.*.planned_end_date' => ['nullable', 'date'],
+            'rows.*.start_date' => ['nullable', 'date'],
+            'rows.*.end_date' => ['nullable', 'date'],
             'rows.*.custom_duration' => ['nullable', 'integer', 'min:0'],
         ];
     }
@@ -80,4 +84,3 @@ class SaveAnimalWinteringPlanRequest extends FormRequest
         return $value !== '' ? $value : null;
     }
 }
-
