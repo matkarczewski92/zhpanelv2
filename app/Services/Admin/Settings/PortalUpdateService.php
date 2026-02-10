@@ -270,17 +270,12 @@ class PortalUpdateService
         if ($runMigrate) {
             $steps[] = [
                 'label' => 'Migracje bazy danych',
-                'command' => $this->artisanCommand(['migrate', '--force']),
+                'command' => $this->artisanCommand(['migrate']),
                 'timeout' => 600,
             ];
         }
 
         if ($runBuild) {
-            $steps[] = [
-                'label' => 'Instalacja zaleznosci frontend (npm ci)',
-                'command' => $this->npmCommand(['ci']),
-                'timeout' => 900,
-            ];
             $steps[] = [
                 'label' => 'Budowanie frontend (npm run build)',
                 'command' => $this->npmCommand(['run', 'build']),

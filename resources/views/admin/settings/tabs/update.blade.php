@@ -70,12 +70,12 @@
                     <form method="POST" action="{{ route('admin.settings.update.run') }}" onsubmit="return confirm('Uruchomic aktualizacje na serwerze?')" class="d-flex flex-wrap gap-3 align-items-center">
                         @csrf
                         <div class="form-check form-check-inline m-0">
-                            <input class="form-check-input" type="checkbox" id="run_migrate" name="run_migrate" value="1" checked>
-                            <label class="form-check-label small" for="run_migrate">migrate --force</label>
+                            <input class="form-check-input" type="checkbox" id="run_migrate" name="run_migrate" value="1">
+                            <label class="form-check-label small" for="run_migrate">migrate</label>
                         </div>
                         <div class="form-check form-check-inline m-0">
                             <input class="form-check-input" type="checkbox" id="run_build" name="run_build" value="1" checked>
-                            <label class="form-check-label small" for="run_build">npm ci + npm run build</label>
+                            <label class="form-check-label small" for="run_build">npm run build</label>
                         </div>
                         <button type="submit" class="btn btn-danger btn-sm">Aktualizuj teraz</button>
                     </form>
