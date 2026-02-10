@@ -4,6 +4,7 @@ namespace App\Application\Dashboard\Queries;
 
 use App\Application\Dashboard\ViewModels\DashboardViewModel;
 use App\Application\Litters\Support\LitterTimelineCalculator;
+use App\Application\Winterings\Support\AnimalWinteringCycleResolver;
 use App\Models\Animal;
 use App\Models\AnimalFeeding;
 use App\Models\AnimalOffer;
@@ -16,7 +17,8 @@ use Carbon\CarbonInterface;
 class DashboardQueryService
 {
     public function __construct(
-        private readonly LitterTimelineCalculator $timelineCalculator
+        private readonly LitterTimelineCalculator $timelineCalculator,
+        private readonly AnimalWinteringCycleResolver $winteringCycleResolver
     ) {
     }
 
@@ -260,6 +262,10 @@ class DashboardQueryService
             ->whereIn('animal_category_id', [1, 2])
             ->orderBy('id')
             ->get(['id', 'name', 'animal_category_id', 'feed_id', 'feed_interval']);
+        $winteringActiveIds = $this->winteringCycleResolver->resolveActiveAnimalIds(
+            $animals->pluck('id')->map(fn ($id): int => (int) $id)->all()
+        );
+        $winteringActiveMap = array_fill_keys($winteringActiveIds, true);
 
         $lastFeedingByAnimal = AnimalFeeding::query()
             ->selectRaw('animal_id, MAX(created_at) as last_feeding_at')
@@ -279,6 +285,11 @@ class DashboardQueryService
         ];
 
         foreach ($animals as $animal) {
+            $isWintering = isset($winteringActiveMap[(int) $animal->id]);
+            if ((int) $animal->animal_category_id === 1 && $isWintering) {
+                continue;
+            }
+
             $lastFeedingAt = $lastFeedingByAnimal->get($animal->id);
             $interval = $animal->feed_interval ?? $animal->feed?->feeding_interval ?? 0;
 

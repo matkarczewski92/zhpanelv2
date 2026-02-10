@@ -295,11 +295,15 @@ body.panel-body {
 }
 
 .row-wintering {
-    color: #9ad0ff;
+    color: inherit;
 }
 
 .row-wintering .link-reset {
     color: inherit;
+}
+
+.wintering-name {
+    color: #9ad0ff !important;
 }
 
 .wintering-icon {

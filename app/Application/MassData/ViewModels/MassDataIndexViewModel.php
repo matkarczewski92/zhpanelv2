@@ -15,7 +15,8 @@ class MassDataIndexViewModel
      *         profile_url:string,
      *         default_feed_id:int|null,
      *         default_amount:int,
-     *         default_feed_check:bool
+     *         default_feed_check:bool,
+     *         is_wintering:bool
      *     }>
      * }> $sections
      */
@@ -25,4 +26,3 @@ class MassDataIndexViewModel
     ) {
     }
 }
-

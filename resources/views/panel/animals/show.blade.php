@@ -129,6 +129,17 @@
             });
         </script>
     @endif
+    @if ($errors->has('scheme') || $errors->has('rows') || collect($errors->keys())->contains(fn ($key) => str_starts_with($key, 'rows.')))
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalEl = document.getElementById('winteringEditModal');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                }
+            });
+        </script>
+    @endif
 @endpush
 
 

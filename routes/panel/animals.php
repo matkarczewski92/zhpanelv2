@@ -12,6 +12,7 @@ use App\Http\Controllers\Animals\AnimalPassportController;
 use App\Http\Controllers\Animals\AnimalLabelController;
 use App\Http\Controllers\Animals\AnimalPublicVisibilityController;
 use App\Http\Controllers\Animals\AnimalColorGroupController;
+use App\Http\Controllers\Animals\AnimalWinteringController;
 
 
 Route::get('/animals', [AnimalController::class, 'index'])
@@ -89,3 +90,10 @@ Route::post('/animals/{animal}/toggle-public', AnimalPublicVisibilityController:
 
 Route::post('/animals/{animal}/color-groups', AnimalColorGroupController::class)
     ->name('animals.color-groups.sync');
+
+Route::post('/animals/{animal}/wintering/save', [AnimalWinteringController::class, 'save'])
+    ->name('animals.wintering.save');
+Route::post('/animals/{animal}/wintering/{wintering}/start', [AnimalWinteringController::class, 'startStage'])
+    ->name('animals.wintering.stage.start');
+Route::post('/animals/{animal}/wintering/{wintering}/end', [AnimalWinteringController::class, 'endStage'])
+    ->name('animals.wintering.stage.end');

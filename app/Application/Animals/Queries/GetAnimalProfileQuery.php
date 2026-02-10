@@ -3,6 +3,7 @@
 namespace App\Application\Animals\Queries;
 
 use App\Application\Animals\ViewModels\AnimalProfileViewModel;
+use App\Application\Winterings\Queries\GetAnimalWinteringProfileQuery;
 use App\Domain\Shared\Enums\Sex;
 use App\Models\Animal;
 use App\Models\AnimalCategory;
@@ -24,7 +25,10 @@ use Illuminate\Support\Facades\Route;
 
 class GetAnimalProfileQuery
 {
-    public function __construct(private readonly AnimalWeightChartService $weightChartService)
+    public function __construct(
+        private readonly AnimalWeightChartService $weightChartService,
+        private readonly GetAnimalWinteringProfileQuery $winteringProfileQuery
+    )
     {
     }
 
@@ -65,7 +69,7 @@ class GetAnimalProfileQuery
             $animal->feedings
         );
 
-        $wintering = $this->buildWintering($animal);
+        $wintering = $this->winteringProfileQuery->handle($animal);
         [$offerSummary, $reservationSummary, $offerForm, $offerExists, $reservationExists] = $this->buildOffer($animal);
         [$littersAsParent, $littersCount] = $this->buildLitters($animal);
 
@@ -334,20 +338,6 @@ class GetAnimalProfileQuery
         })->toArray();
 
         return [$list, $molts->count()];
-    }
-
-    private function buildWintering(Animal $animal): array
-    {
-        $wintering = $animal->winterings()->with('stage')->latest()->first();
-        if (!$wintering) {
-            return ['active' => false];
-        }
-
-        return [
-            'active' => true,
-            'stage' => optional($wintering->stage)->name,
-            'started_at' => optional($wintering->created_at)->toDateString(),
-        ];
     }
 
     private function buildOffer(Animal $animal): array

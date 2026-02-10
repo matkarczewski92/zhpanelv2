@@ -81,7 +81,12 @@
                                         <a href="{{ $animal['profile_url'] }}" class="link-reset">{{ $animal['id'] }}</a>
                                     </td>
                                     <td class="text-start">
-                                        <a href="{{ $animal['profile_url'] }}" class="link-reset">{!! $animal['name_html'] !!}</a>
+                                        <a href="{{ $animal['profile_url'] }}" class="link-reset {{ $animal['is_wintering'] ? 'wintering-name' : '' }}">
+                                            @if($animal['is_wintering'])
+                                                <span class="wintering-icon" aria-hidden="true">&#10052;</span>
+                                            @endif
+                                            {!! $animal['name_html'] !!}
+                                        </a>
                                     </td>
                                     <td>
                                         <input type="hidden" name="rows[{{ $animal['id'] }}][animal_id]" value="{{ $animal['id'] }}">
@@ -115,13 +120,22 @@
                                     </td>
                                     <td class="text-center">
                                         <input type="hidden" name="rows[{{ $animal['id'] }}][feed_check]" value="0">
-                                        <input
-                                            class="form-check-input"
-                                            type="checkbox"
-                                            name="rows[{{ $animal['id'] }}][feed_check]"
-                                            value="1"
-                                            @checked((string) $feedCheckValue === '1')
-                                        >
+                                        @if($animal['is_wintering'])
+                                            <input
+                                                class="form-check-input"
+                                                type="checkbox"
+                                                value="0"
+                                                disabled
+                                            >
+                                        @else
+                                            <input
+                                                class="form-check-input"
+                                                type="checkbox"
+                                                name="rows[{{ $animal['id'] }}][feed_check]"
+                                                value="1"
+                                                @checked((string) $feedCheckValue === '1')
+                                            >
+                                        @endif
                                     </td>
                                     <td class="text-end">
                                         <a href="{{ $animal['profile_url'] }}" class="link-reset">{{ $animal['id'] }}</a>

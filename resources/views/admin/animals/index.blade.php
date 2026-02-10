@@ -181,7 +181,7 @@
                                             @if ($animal['is_wintering'])
                                                 <span class="wintering-icon" aria-hidden="true">&#10052;</span>
                                             @endif
-                                            <a class="link-reset flex-grow-1" href="{{ $animal['profile_url'] }}">
+                                            <a class="link-reset flex-grow-1 {{ $animal['is_wintering'] ? 'wintering-name' : '' }}" href="{{ $animal['profile_url'] }}">
                                                 {!! $animal['name_display_html'] !!}
                                             </a>
                                             <a class="btn btn-outline-light btn-sm d-md-none" href="{{ $animal['profile_url'] }}">

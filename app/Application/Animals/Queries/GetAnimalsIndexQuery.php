@@ -2,6 +2,7 @@
 
 namespace App\Application\Animals\Queries;
 
+use App\Application\Winterings\Support\AnimalWinteringCycleResolver;
 use App\Domain\Shared\Enums\Sex;
 use App\Models\Animal;
 use App\Models\AnimalCategory;
@@ -18,6 +19,11 @@ use Illuminate\Support\Facades\Log;
 
 class GetAnimalsIndexQuery
 {
+    public function __construct(
+        private readonly AnimalWinteringCycleResolver $winteringCycleResolver
+    ) {
+    }
+
     public function handle(Request $request): array
     {
         $search = trim((string) $request->query('q', ''));
@@ -134,10 +140,18 @@ class GetAnimalsIndexQuery
             $leadTimeDays = 7;
         }
 
-        $collection = $paginator->getCollection()->map(function (Animal $animal) use ($leadTimeDays): array {
+        $animalIds = $paginator->getCollection()
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+        $winteringActiveIds = $this->winteringCycleResolver->resolveActiveAnimalIds($animalIds);
+        $winteringActiveMap = array_fill_keys($winteringActiveIds, true);
+
+        $collection = $paginator->getCollection()->map(function (Animal $animal) use ($leadTimeDays, $winteringActiveMap): array {
             $lastFeeding = $animal->last_feeding_at ? Carbon::parse($animal->last_feeding_at) : null;
             $nextFeeding = $lastFeeding ? $lastFeeding->copy()->addDays($leadTimeDays) : null;
             $feedInterval = $animal->feed_interval ?: $animal->feed_interval_default;
+            $isWintering = isset($winteringActiveMap[(int) $animal->id]);
 
             return [
                 'id' => $animal->id,
@@ -152,7 +166,7 @@ class GetAnimalsIndexQuery
                 'next_feed_at' => $nextFeeding ? $nextFeeding->format('Y-m-d') : null,
                 'feed_interval_value' => $feedInterval,
                 'feed_interval_label' => $feedInterval ? $feedInterval . ' dni' : null,
-                'is_wintering' => (int) $animal->animal_category_id === 4,
+                'is_wintering' => $isWintering,
             ];
         });
 

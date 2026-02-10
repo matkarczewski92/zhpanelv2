@@ -4,6 +4,7 @@ namespace App\Application\MassData\Queries;
 
 use App\Application\MassData\Support\MassDataFeedingDueCalculator;
 use App\Application\MassData\ViewModels\MassDataIndexViewModel;
+use App\Application\Winterings\Support\AnimalWinteringCycleResolver;
 use App\Models\Animal;
 use App\Models\AnimalFeeding;
 use App\Models\Feed;
@@ -17,8 +18,10 @@ class GetMassDataIndexQuery
         2 => 'Mioty',
     ];
 
-    public function __construct(private readonly MassDataFeedingDueCalculator $feedingDueCalculator)
-    {
+    public function __construct(
+        private readonly MassDataFeedingDueCalculator $feedingDueCalculator,
+        private readonly AnimalWinteringCycleResolver $winteringCycleResolver
+    ) {
     }
 
     public function handle(): MassDataIndexViewModel
@@ -56,12 +59,20 @@ class GetMassDataIndexQuery
             ])
             ->all();
 
+        $allAnimalIds = $animals
+            ->flatten(1)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+        $winteringActiveIds = $this->winteringCycleResolver->resolveActiveAnimalIds($allAnimalIds);
+        $winteringActiveMap = array_fill_keys($winteringActiveIds, true);
+
         $sections = [];
         foreach (self::SECTIONS as $categoryId => $title) {
             $sections[] = [
                 'category_id' => (int) $categoryId,
                 'title' => $title,
-                'animals' => $this->buildSectionAnimals($animals->get($categoryId, collect())),
+                'animals' => $this->buildSectionAnimals($animals->get($categoryId, collect()), $winteringActiveMap),
             ];
         }
 
@@ -79,19 +90,21 @@ class GetMassDataIndexQuery
      *     profile_url:string,
      *     default_feed_id:int|null,
      *     default_amount:int,
-     *     default_feed_check:bool
+     *     default_feed_check:bool,
+     *     is_wintering:bool
      * }>
      */
-    private function buildSectionAnimals(Collection $animals): array
+    private function buildSectionAnimals(Collection $animals, array $winteringActiveMap): array
     {
         return $animals
-            ->map(function (Animal $animal): array {
+            ->map(function (Animal $animal) use ($winteringActiveMap): array {
                 $lastFeedingAt = $animal->last_feeding_at
                     ? Carbon::parse((string) $animal->last_feeding_at)
                     : null;
 
                 $feedInterval = (int) ($animal->feed_interval ?: $animal->default_feed_interval ?: 0);
                 $timeToFeed = $this->feedingDueCalculator->calculate($lastFeedingAt, $feedInterval);
+                $isWintering = isset($winteringActiveMap[(int) $animal->id]);
 
                 return [
                     'id' => (int) $animal->id,
@@ -99,7 +112,8 @@ class GetMassDataIndexQuery
                     'profile_url' => route('panel.animals.show', $animal->id),
                     'default_feed_id' => $animal->feed_id ? (int) $animal->feed_id : null,
                     'default_amount' => 1,
-                    'default_feed_check' => $timeToFeed <= 0,
+                    'default_feed_check' => !$isWintering && $timeToFeed <= 0,
+                    'is_wintering' => $isWintering,
                 ];
             })
             ->values()
@@ -116,4 +130,3 @@ class GetMassDataIndexQuery
         return strip_tags($value, '<b><i><u>');
     }
 }
-
