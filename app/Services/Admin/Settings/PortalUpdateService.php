@@ -21,6 +21,7 @@ class PortalUpdateService
 
         return [
             'enabled' => $this->enabled(),
+            'process_available' => $this->processAvailable(),
             'git_available' => $this->isGitRepository(),
             'remote' => $this->remote(),
             'branch' => $this->branch(),
@@ -165,6 +166,10 @@ class PortalUpdateService
 
     private function assertCanUseUpdater(): void
     {
+        if (!$this->processAvailable()) {
+            throw new RuntimeException('Updater wymaga proc_open, ale ta funkcja jest niedostepna w PHP na tym serwerze.');
+        }
+
         if (!$this->enabled()) {
             throw new RuntimeException('Updater jest wylaczony. Ustaw PORTAL_UPDATE_ENABLED=true w .env.');
         }
@@ -283,10 +288,32 @@ class PortalUpdateService
      */
     private function executeStep(string $label, array $command, int $timeoutSeconds): array
     {
+        if (!$this->processAvailable()) {
+            return [
+                'label' => $label,
+                'command' => $this->commandToString($command),
+                'success' => false,
+                'exit_code' => 1,
+                'duration_ms' => 0,
+                'output' => 'Brak proc_open w PHP.',
+            ];
+        }
+
         $startedAt = microtime(true);
-        $process = new Process($command, base_path());
-        $process->setTimeout($timeoutSeconds);
-        $process->run();
+        try {
+            $process = new Process($command, base_path());
+            $process->setTimeout($timeoutSeconds);
+            $process->run();
+        } catch (Throwable $exception) {
+            return [
+                'label' => $label,
+                'command' => $this->commandToString($command),
+                'success' => false,
+                'exit_code' => 1,
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                'output' => $this->trimOutput($exception->getMessage()),
+            ];
+        }
 
         $output = trim($process->getOutput() . $process->getErrorOutput());
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
@@ -331,15 +358,39 @@ class PortalUpdateService
      */
     private function safeGitOutput(array $command): ?string
     {
-        $process = new Process($command, base_path());
-        $process->setTimeout(30);
-        $process->run();
+        if (!$this->processAvailable()) {
+            return null;
+        }
+
+        try {
+            $process = new Process($command, base_path());
+            $process->setTimeout(30);
+            $process->run();
+        } catch (Throwable) {
+            return null;
+        }
 
         if (!$process->isSuccessful()) {
             return null;
         }
 
         return trim($process->getOutput());
+    }
+
+    private function processAvailable(): bool
+    {
+        if (!function_exists('proc_open')) {
+            return false;
+        }
+
+        $disabled = (string) ini_get('disable_functions');
+        if ($disabled === '') {
+            return true;
+        }
+
+        $disabledFunctions = array_map('trim', explode(',', $disabled));
+
+        return !in_array('proc_open', $disabledFunctions, true);
     }
 
     /**
@@ -500,5 +551,13 @@ class PortalUpdateService
             $lock->release();
         } catch (Throwable) {
         }
+    }
+
+    /**
+     * @param array<int, string> $command
+     */
+    private function commandToString(array $command): string
+    {
+        return implode(' ', $command);
     }
 }

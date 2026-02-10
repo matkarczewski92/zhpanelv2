@@ -1,5 +1,6 @@
 @php
     $enabled = (bool) ($updatePanel['enabled'] ?? false);
+    $processAvailable = (bool) ($updatePanel['process_available'] ?? false);
     $gitAvailable = (bool) ($updatePanel['git_available'] ?? false);
     $lastCheck = $updatePanel['last_check'] ?? null;
     $lastRun = $updatePanel['last_run'] ?? null;
@@ -17,6 +18,10 @@
             @if(!$enabled)
                 <div class="alert alert-warning mb-0">
                     Updater jest wylaczony. Ustaw <code>PORTAL_UPDATE_ENABLED=true</code> w pliku <code>.env</code>.
+                </div>
+            @elseif(!$processAvailable)
+                <div class="alert alert-danger mb-0">
+                    Na tym serwerze PHP ma wylaczone <code>proc_open</code>. Automatyczna aktualizacja z panelu jest niedostepna.
                 </div>
             @elseif(!$gitAvailable)
                 <div class="alert alert-danger mb-0">
