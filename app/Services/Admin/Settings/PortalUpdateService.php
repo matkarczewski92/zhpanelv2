@@ -258,17 +258,6 @@ class PortalUpdateService
                 'command' => ['git', 'pull', '--ff-only', $remote, $branch],
                 'timeout' => 300,
             ],
-            [
-                'label' => 'Instalacja zaleznosci backend (composer install)',
-                'command' => $this->composerCommand([
-                    'install',
-                    '--no-dev',
-                    '--optimize-autoloader',
-                    '--no-interaction',
-                    '--prefer-dist',
-                ]),
-                'timeout' => 900,
-            ],
         ];
 
         if ($runMigrate) {
@@ -278,6 +267,18 @@ class PortalUpdateService
                 'timeout' => 600,
             ];
         }
+
+        $steps[] = [
+            'label' => 'Instalacja zaleznosci backend (composer install)',
+            'command' => $this->composerCommand([
+                'install',
+                '--no-dev',
+                '--optimize-autoloader',
+                '--no-interaction',
+                '--prefer-dist',
+            ]),
+            'timeout' => 900,
+        ];
 
         if ($runBuild) {
             $steps[] = [
