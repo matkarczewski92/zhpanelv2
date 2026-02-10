@@ -12,7 +12,7 @@
             href="{{ route('admin.settings.index') }}"
             class="block rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100"
         >
-            Ustawienia portalu
+            Administracja
         </a>
         <div class="my-2 border-t border-slate-100"></div>
         <form method="POST" action="{{ route('logout') }}">
