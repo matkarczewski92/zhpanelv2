@@ -6,7 +6,7 @@
     <div class="mb-3 d-flex align-items-center justify-content-between">
         <div>
             <h1 class="h4 mb-1">Administracja - Ustawienia portalu</h1>
-            <p class="text-muted mb-0">Zarządzanie słownikami i konfiguracją.</p>
+            <p class="text-muted mb-0">Zarządzanie słownikami i konfiguracją - przez zmianą wykonaj Eksport ustawień.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <a href="{{ route('admin.settings.transfer.export') }}" class="btn btn-outline-light btn-sm">Eksport</a>
