@@ -49,4 +49,9 @@ class WinteringStageRequest extends FormRequest
             'order.unique' => 'Dla tego schematu istnieje juz etap z taka kolejnoscia.',
         ];
     }
+
+    protected function getRedirectUrl(): string
+    {
+        return route('admin.settings.index', ['tab' => 'winter']);
+    }
 }

@@ -16,18 +16,24 @@ class WinteringStageController extends Controller
     public function store(WinteringStageRequest $request)
     {
         $this->service->store($request->validated());
-        return back()->with('toast', ['type' => 'success', 'message' => 'Etap dodany.']);
+        return redirect()
+            ->route('admin.settings.index', ['tab' => 'winter'])
+            ->with('toast', ['type' => 'success', 'message' => 'Etap dodany.']);
     }
 
     public function update(WinteringStageRequest $request, WinteringStage $stage)
     {
         $this->service->update($stage, $request->validated());
-        return back()->with('toast', ['type' => 'success', 'message' => 'Etap zaktualizowany.']);
+        return redirect()
+            ->route('admin.settings.index', ['tab' => 'winter'])
+            ->with('toast', ['type' => 'success', 'message' => 'Etap zaktualizowany.']);
     }
 
     public function destroy(WinteringStage $stage)
     {
         $result = $this->service->destroy($stage);
-        return back()->with('toast', ['type' => $result['type'], 'message' => $result['message']]);
+        return redirect()
+            ->route('admin.settings.index', ['tab' => 'winter'])
+            ->with('toast', ['type' => $result['type'], 'message' => $result['message']]);
     }
 }
