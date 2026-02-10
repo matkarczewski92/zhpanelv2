@@ -18,6 +18,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/public
 /vendor
 /docs
 /storage
