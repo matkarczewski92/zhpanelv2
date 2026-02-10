@@ -1,6 +1,8 @@
 @php
     $enabled = (bool) ($updatePanel['enabled'] ?? false);
     $processAvailable = (bool) ($updatePanel['process_available'] ?? false);
+    $execAvailable = (bool) ($updatePanel['exec_available'] ?? false);
+    $commandDriver = (string) ($updatePanel['command_driver'] ?? '');
     $gitAvailable = (bool) ($updatePanel['git_available'] ?? false);
     $lastCheck = $updatePanel['last_check'] ?? null;
     $lastRun = $updatePanel['last_run'] ?? null;
@@ -19,15 +21,21 @@
                 <div class="alert alert-warning mb-0">
                     Updater jest wylaczony. Ustaw <code>PORTAL_UPDATE_ENABLED=true</code> w pliku <code>.env</code>.
                 </div>
-            @elseif(!$processAvailable)
+            @elseif(!$processAvailable && !$execAvailable)
                 <div class="alert alert-danger mb-0">
-                    Na tym serwerze PHP ma wylaczone <code>proc_open</code>. Automatyczna aktualizacja z panelu jest niedostepna.
+                    Na tym serwerze PHP ma wylaczone <code>proc_open</code> i <code>exec</code>. Automatyczna aktualizacja z panelu jest niedostepna.
                 </div>
             @elseif(!$gitAvailable)
                 <div class="alert alert-danger mb-0">
                     Ten serwer nie ma poprawnego repozytorium Git. Automatyczna aktualizacja jest niedostepna.
                 </div>
             @else
+                @if($commandDriver === 'exec')
+                    <div class="alert alert-warning mb-3">
+                        Updater dziala w trybie awaryjnym <code>exec</code> (bez <code>proc_open</code>).
+                    </div>
+                @endif
+
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <div class="small text-muted">Repozytorium</div>
@@ -45,6 +53,10 @@
                     <div class="col-md-3">
                         <div class="small text-muted">Biezacy commit</div>
                         <div class="fw-semibold font-monospace">{{ $updatePanel['local_sha_short'] ?? '-' }}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small text-muted">Silnik komend</div>
+                        <div class="fw-semibold">{{ $commandDriver !== '' ? $commandDriver : '-' }}</div>
                     </div>
                 </div>
 

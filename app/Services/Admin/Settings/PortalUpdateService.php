@@ -13,15 +13,19 @@ class PortalUpdateService
 {
     private const UPDATE_LOCK_KEY = 'portal-update:run-lock';
     private const UPDATE_LOCK_SECONDS = 1800;
+    private ?bool $timeoutBinaryAvailable = null;
 
     public function getPanelData(?array $lastCheck = null, ?array $lastRun = null): array
     {
         $currentSha = $this->safeGitOutput(['git', 'rev-parse', 'HEAD']);
         $remoteUrl = $this->safeGitOutput(['git', 'remote', 'get-url', $this->remote()]);
+        $driver = $this->commandDriver();
 
         return [
             'enabled' => $this->enabled(),
             'process_available' => $this->processAvailable(),
+            'exec_available' => $this->execAvailable(),
+            'command_driver' => $driver,
             'git_available' => $this->isGitRepository(),
             'remote' => $this->remote(),
             'branch' => $this->branch(),
@@ -166,8 +170,8 @@ class PortalUpdateService
 
     private function assertCanUseUpdater(): void
     {
-        if (!$this->processAvailable()) {
-            throw new RuntimeException('Updater wymaga proc_open, ale ta funkcja jest niedostepna w PHP na tym serwerze.');
+        if ($this->commandDriver() === null) {
+            throw new RuntimeException('Updater wymaga proc_open lub exec, ale obie funkcje sa niedostepne w PHP.');
         }
 
         if (!$this->enabled()) {
@@ -288,17 +292,31 @@ class PortalUpdateService
      */
     private function executeStep(string $label, array $command, int $timeoutSeconds): array
     {
-        if (!$this->processAvailable()) {
+        $driver = $this->commandDriver();
+        if ($driver === null) {
             return [
                 'label' => $label,
                 'command' => $this->commandToString($command),
                 'success' => false,
                 'exit_code' => 1,
                 'duration_ms' => 0,
-                'output' => 'Brak proc_open w PHP.',
+                'output' => 'Brak proc_open/exec w PHP.',
             ];
         }
 
+        if ($driver === 'process') {
+            return $this->executeWithProcess($label, $command, $timeoutSeconds);
+        }
+
+        return $this->executeWithExec($label, $command, $timeoutSeconds);
+    }
+
+    /**
+     * @param array<int, string> $command
+     * @return array{label:string, command:string, success:bool, exit_code:int, duration_ms:int, output:string}
+     */
+    private function executeWithProcess(string $label, array $command, int $timeoutSeconds): array
+    {
         $startedAt = microtime(true);
         try {
             $process = new Process($command, base_path());
@@ -315,17 +333,7 @@ class PortalUpdateService
             ];
         }
 
-        $output = trim($process->getOutput() . $process->getErrorOutput());
-        $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
-
-        return [
-            'label' => $label,
-            'command' => $process->getCommandLine(),
-            'success' => $process->isSuccessful(),
-            'exit_code' => $process->getExitCode() ?? 1,
-            'duration_ms' => $durationMs,
-            'output' => $this->trimOutput($output),
-        ];
+        return $this->stepResultFromProcess($label, $process, $startedAt);
     }
 
     /**
@@ -358,23 +366,42 @@ class PortalUpdateService
      */
     private function safeGitOutput(array $command): ?string
     {
-        if (!$this->processAvailable()) {
+        $driver = $this->commandDriver();
+        if ($driver === null) {
             return null;
         }
 
-        try {
-            $process = new Process($command, base_path());
-            $process->setTimeout(30);
-            $process->run();
-        } catch (Throwable) {
+        if ($driver === 'process') {
+            try {
+                $process = new Process($command, base_path());
+                $process->setTimeout(30);
+                $process->run();
+            } catch (Throwable) {
+                return null;
+            }
+
+            if (!$process->isSuccessful()) {
+                return null;
+            }
+
+            return trim($process->getOutput());
+        }
+
+        if (!$this->execAvailable()) {
             return null;
         }
 
-        if (!$process->isSuccessful()) {
+        $commandLine = $this->buildExecCommandLine($command, 30);
+        $result = $this->runExecCommand($commandLine);
+        if ($result === null) {
             return null;
         }
 
-        return trim($process->getOutput());
+        if (($result['exit_code'] ?? 1) !== 0) {
+            return null;
+        }
+
+        return trim((string) ($result['output'] ?? ''));
     }
 
     private function processAvailable(): bool
@@ -391,6 +418,35 @@ class PortalUpdateService
         $disabledFunctions = array_map('trim', explode(',', $disabled));
 
         return !in_array('proc_open', $disabledFunctions, true);
+    }
+
+    private function execAvailable(): bool
+    {
+        if (!function_exists('exec')) {
+            return false;
+        }
+
+        $disabled = (string) ini_get('disable_functions');
+        if ($disabled === '') {
+            return true;
+        }
+
+        $disabledFunctions = array_map('trim', explode(',', $disabled));
+
+        return !in_array('exec', $disabledFunctions, true);
+    }
+
+    private function commandDriver(): ?string
+    {
+        if ($this->processAvailable()) {
+            return 'process';
+        }
+
+        if ($this->execAvailable()) {
+            return 'exec';
+        }
+
+        return null;
     }
 
     /**
@@ -559,5 +615,136 @@ class PortalUpdateService
     private function commandToString(array $command): string
     {
         return implode(' ', $command);
+    }
+
+    /**
+     * @param array<int, string> $command
+     */
+    private function buildExecCommandLine(array $command, int $timeoutSeconds): string
+    {
+        $escaped = implode(' ', array_map('escapeshellarg', $command));
+
+        if ($this->canUseTimeoutWrapper() && $timeoutSeconds > 0) {
+            $escaped = sprintf('timeout %ds %s', $timeoutSeconds, $escaped);
+        }
+
+        return $escaped . ' 2>&1';
+    }
+
+    /**
+     * @param array<int, string> $command
+     * @return array{label:string, command:string, success:bool, exit_code:int, duration_ms:int, output:string}
+     */
+    private function executeWithExec(string $label, array $command, int $timeoutSeconds): array
+    {
+        if (!$this->execAvailable()) {
+            return [
+                'label' => $label,
+                'command' => $this->commandToString($command),
+                'success' => false,
+                'exit_code' => 1,
+                'duration_ms' => 0,
+                'output' => 'Brak exec w PHP.',
+            ];
+        }
+
+        $startedAt = microtime(true);
+        $commandLine = $this->buildExecCommandLine($command, $timeoutSeconds);
+
+        $result = $this->runExecCommand($commandLine);
+        if ($result === null) {
+            return [
+                'label' => $label,
+                'command' => $commandLine,
+                'success' => false,
+                'exit_code' => 1,
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                'output' => 'Nie udalo sie wykonac komendy przez exec.',
+            ];
+        }
+
+        $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+        $exitCode = (int) ($result['exit_code'] ?? 1);
+        $output = trim((string) ($result['output'] ?? ''));
+
+        return [
+            'label' => $label,
+            'command' => $commandLine,
+            'success' => $exitCode === 0,
+            'exit_code' => $exitCode,
+            'duration_ms' => $durationMs,
+            'output' => $this->trimOutput($output),
+        ];
+    }
+
+    private function canUseTimeoutWrapper(): bool
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            return false;
+        }
+
+        if (!$this->execAvailable()) {
+            return false;
+        }
+
+        if ($this->timeoutBinaryAvailable !== null) {
+            return $this->timeoutBinaryAvailable;
+        }
+
+        $result = $this->runExecCommand('command -v timeout >/dev/null 2>&1');
+        $this->timeoutBinaryAvailable = is_array($result) && ((int) ($result['exit_code'] ?? 1) === 0);
+
+        return $this->timeoutBinaryAvailable;
+    }
+
+    /**
+     * @return array{output:string, exit_code:int}|null
+     */
+    private function runExecCommand(string $commandLine): ?array
+    {
+        if (!$this->execAvailable()) {
+            return null;
+        }
+
+        $outputLines = [];
+        $exitCode = 1;
+        $originalDirectory = getcwd();
+
+        try {
+            if (!@chdir(base_path())) {
+                return null;
+            }
+
+            @exec($commandLine, $outputLines, $exitCode);
+        } catch (Throwable) {
+            return null;
+        } finally {
+            if (is_string($originalDirectory) && $originalDirectory !== '') {
+                @chdir($originalDirectory);
+            }
+        }
+
+        return [
+            'output' => implode(PHP_EOL, $outputLines),
+            'exit_code' => $exitCode,
+        ];
+    }
+
+    /**
+     * @return array{label:string, command:string, success:bool, exit_code:int, duration_ms:int, output:string}
+     */
+    private function stepResultFromProcess(string $label, Process $process, float $startedAt): array
+    {
+        $output = trim($process->getOutput() . $process->getErrorOutput());
+        $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+        return [
+            'label' => $label,
+            'command' => $process->getCommandLine(),
+            'success' => $process->isSuccessful(),
+            'exit_code' => $process->getExitCode() ?? 1,
+            'duration_ms' => $durationMs,
+            'output' => $this->trimOutput($output),
+        ];
     }
 }
