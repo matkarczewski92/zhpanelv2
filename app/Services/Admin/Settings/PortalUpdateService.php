@@ -800,9 +800,9 @@ class PortalUpdateService
         $binary = (string) PHP_BINARY;
         $basename = strtolower((string) pathinfo($binary, PATHINFO_BASENAME));
         if (str_contains($basename, 'php-fpm') || str_contains($basename, 'php-cgi')) {
-            return PHP_OS_FAMILY === 'Windows' ? 'php.exe' : 'php';
+            return PHP_OS_FAMILY === 'Windows' ? 'php.exe' : 'php84';
         }
 
-        return $binary !== '' ? $binary : (PHP_OS_FAMILY === 'Windows' ? 'php.exe' : 'php');
+        return $binary !== '' ? $binary : (PHP_OS_FAMILY === 'Windows' ? 'php.exe' : 'php84');
     }
 }

@@ -57,7 +57,8 @@ return [
         'enabled' => (bool) env('PORTAL_UPDATE_ENABLED', false),
         'remote' => env('PORTAL_UPDATE_REMOTE', 'origin'),
         'branch' => env('PORTAL_UPDATE_BRANCH', 'main'),
-        'php_binary' => env('PORTAL_UPDATE_PHP_BINARY', ''),
+        'php_binary' => env('PORTAL_UPDATE_PHP_BINARY', PHP_OS_FAMILY === 'Windows' ? 'php.exe' : 'php84'),
+        'composer_binary' => env('PORTAL_UPDATE_COMPOSER_BINARY', ''),
     ],
 
 ];
