@@ -152,7 +152,7 @@
                 <ul class="dropdown-menu dropdown-menu-end" id="adminMenuDropdown">
                     <li>
                         <a class="dropdown-item" href="{{ route('admin.settings.index') }}">
-                            Administracja
+                            Ustwienia
                         </a>
                     </li>
                     <li>
@@ -258,7 +258,7 @@
             </a>
             <div class="border-top border-secondary my-2"></div>
             <a class="nav-link" href="{{ route('admin.settings.index') }}">
-                Administracja
+                Ustwienia
             </a>
             <a class="nav-link" href="{{ route('admin.labels.print') }}">
                 Drukowanie etykiet
