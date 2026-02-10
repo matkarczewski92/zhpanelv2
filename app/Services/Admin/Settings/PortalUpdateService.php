@@ -192,7 +192,10 @@ class PortalUpdateService
 
     private function assertCleanWorkTree(): void
     {
-        $status = $this->requireGitOutput(['git', 'status', '--porcelain'], 'Nie udalo sie sprawdzic statusu Git.');
+        $status = $this->requireGitOutput(
+            ['git', 'status', '--porcelain', '--untracked-files=no'],
+            'Nie udalo sie sprawdzic statusu Git.'
+        );
         if (trim($status) !== '') {
             throw new RuntimeException('Repozytorium ma lokalne zmiany. Aktualizacja zostala zablokowana.');
         }
