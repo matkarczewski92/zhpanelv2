@@ -57,6 +57,7 @@ return [
         'enabled' => (bool) env('PORTAL_UPDATE_ENABLED', false),
         'remote' => env('PORTAL_UPDATE_REMOTE', 'origin'),
         'branch' => env('PORTAL_UPDATE_BRANCH', 'main'),
+        'php_binary' => env('PORTAL_UPDATE_PHP_BINARY', ''),
     ],
 
 ];

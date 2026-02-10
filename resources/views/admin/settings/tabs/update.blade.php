@@ -57,6 +57,7 @@
                     <div class="col-md-3">
                         <div class="small text-muted">Silnik komend</div>
                         <div class="fw-semibold">{{ $commandDriver !== '' ? $commandDriver : '-' }}</div>
+                        <div class="small text-muted text-break mt-1">PHP CLI: {{ $updatePanel['php_cli_binary'] ?? '-' }}</div>
                     </div>
                 </div>
 

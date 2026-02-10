@@ -26,6 +26,7 @@ class PortalUpdateService
             'process_available' => $this->processAvailable(),
             'exec_available' => $this->execAvailable(),
             'command_driver' => $driver,
+            'php_cli_binary' => $this->phpCliBinary(),
             'git_available' => $this->isGitRepository(),
             'remote' => $this->remote(),
             'branch' => $this->branch(),
@@ -496,7 +497,7 @@ class PortalUpdateService
      */
     private function artisanCommand(array $args): array
     {
-        return array_merge([PHP_BINARY, 'artisan'], $args);
+        return array_merge([$this->phpCliBinary(), 'artisan'], $args);
     }
 
     /**
@@ -507,7 +508,7 @@ class PortalUpdateService
     {
         $composerPhar = base_path('composer.phar');
         if (File::exists($composerPhar)) {
-            return array_merge([PHP_BINARY, $composerPhar], $args);
+            return array_merge([$this->phpCliBinary(), $composerPhar], $args);
         }
 
         return array_merge(['composer'], $args);
@@ -769,5 +770,21 @@ class PortalUpdateService
             'duration_ms' => $durationMs,
             'output' => $this->trimOutput($output),
         ];
+    }
+
+    private function phpCliBinary(): string
+    {
+        $configured = trim((string) config('services.portal_update.php_binary', ''));
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        $binary = (string) PHP_BINARY;
+        $basename = strtolower((string) pathinfo($binary, PATHINFO_BASENAME));
+        if (str_contains($basename, 'php-fpm') || str_contains($basename, 'php-cgi')) {
+            return PHP_OS_FAMILY === 'Windows' ? 'php.exe' : 'php';
+        }
+
+        return $binary !== '' ? $binary : (PHP_OS_FAMILY === 'Windows' ? 'php.exe' : 'php');
     }
 }
