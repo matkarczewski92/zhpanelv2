@@ -361,9 +361,18 @@
                     row.querySelector('.wintering-custom-duration')?.addEventListener('change', () => recalculateFrom(index, 'duration'));
 
                     row.querySelector('.wintering-start-date')?.addEventListener('change', (event) => {
+                        const currentStartValue = event.target?.value || '';
+                        if (index > 0 && currentStartValue !== '') {
+                            const previousRow = rowElements()[index - 1];
+                            const previousEndInput = previousRow?.querySelector('.wintering-end-date');
+                            if (previousEndInput && previousEndInput.value === '') {
+                                previousEndInput.value = currentStartValue;
+                            }
+                        }
+
                         const plannedInput = row.querySelector('.wintering-planned-start');
                         if (plannedInput) {
-                            plannedInput.value = event.target?.value || '';
+                            plannedInput.value = currentStartValue;
                         }
 
                         recalculateFrom(index, 'start');

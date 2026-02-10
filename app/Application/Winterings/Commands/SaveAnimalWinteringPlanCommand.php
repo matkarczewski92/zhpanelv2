@@ -71,6 +71,7 @@ class SaveAnimalWinteringPlanCommand
             : $this->resolveAnchorIndexForNewCycle($rows);
 
         $rows = $this->timelineCalculator->recalculateForward($rows, $anchorIndex);
+        $rows = $this->applyPreviousStageEndDateRule($rows);
 
         DB::transaction(function () use ($animalId, $hasCycle, $existingCycle, $rows): void {
             if ($hasCycle) {
@@ -299,5 +300,30 @@ class SaveAnimalWinteringPlanCommand
         }
 
         return Carbon::parse($value)->toDateString();
+    }
+
+    /**
+     * When stage n receives start_date, stage n-1 gets end_date if it is still empty.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyPreviousStageEndDateRule(array $rows): array
+    {
+        for ($index = 1; $index < count($rows); $index++) {
+            $startDate = trim((string) ($rows[$index]['start_date'] ?? ''));
+            if ($startDate === '') {
+                continue;
+            }
+
+            $previousEndDate = trim((string) ($rows[$index - 1]['end_date'] ?? ''));
+            if ($previousEndDate !== '') {
+                continue;
+            }
+
+            $rows[$index - 1]['end_date'] = $startDate;
+        }
+
+        return $rows;
     }
 }
