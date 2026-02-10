@@ -80,6 +80,8 @@ class PortalUpdateService
 
         $updateCheck = $this->checkForUpdates();
         $beforeSha = $updateCheck['local_sha'] ?? $this->safeGitOutput(['git', 'rev-parse', 'HEAD']);
+        $remoteSha = $updateCheck['remote_sha'] ?? null;
+        $shouldRunMigrate = $this->shouldRunMigrateStep($runMigrate, $beforeSha, $remoteSha);
 
         if (((int) ($updateCheck['behind'] ?? 0)) === 0) {
             $this->clearRunLog();
@@ -90,6 +92,7 @@ class PortalUpdateService
                 'success' => true,
                 'error' => null,
                 'run_migrate' => $runMigrate,
+                'run_migrate_effective' => $shouldRunMigrate,
                 'run_build' => $runBuild,
                 'before_sha' => $beforeSha,
                 'before_sha_short' => $this->shortSha($beforeSha),
@@ -116,7 +119,7 @@ class PortalUpdateService
         $errorMessage = null;
 
         try {
-            foreach ($this->buildUpdateSteps($runMigrate, $runBuild) as $step) {
+            foreach ($this->buildUpdateSteps($shouldRunMigrate, $runBuild) as $step) {
                 $result = $this->executeStep(
                     label: $step['label'],
                     command: $step['command'],
@@ -162,6 +165,7 @@ class PortalUpdateService
             'success' => $success,
             'error' => $errorMessage,
             'run_migrate' => $runMigrate,
+            'run_migrate_effective' => $shouldRunMigrate,
             'run_build' => $runBuild,
             'before_sha' => $beforeSha,
             'before_sha_short' => $this->shortSha($beforeSha),
@@ -310,6 +314,36 @@ class PortalUpdateService
         ];
 
         return $steps;
+    }
+
+    private function shouldRunMigrateStep(bool $runMigrate, ?string $fromSha, ?string $toSha): bool
+    {
+        if (!$runMigrate) {
+            return false;
+        }
+
+        if (!$this->isGitSha($fromSha) || !$this->isGitSha($toSha)) {
+            return true;
+        }
+
+        if ($fromSha === $toSha) {
+            return false;
+        }
+
+        $changedFiles = $this->safeGitOutput([
+            'git',
+            'diff',
+            '--name-only',
+            sprintf('%s..%s', $fromSha, $toSha),
+            '--',
+            'database/migrations',
+        ]);
+
+        if (!is_string($changedFiles)) {
+            return true;
+        }
+
+        return trim($changedFiles) !== '';
     }
 
     /**
@@ -549,6 +583,15 @@ class PortalUpdateService
         return substr($sha, 0, 7);
     }
 
+    private function isGitSha(?string $sha): bool
+    {
+        if (!is_string($sha)) {
+            return false;
+        }
+
+        return preg_match('/^[a-f0-9]{40}$/i', $sha) === 1;
+    }
+
     private function resolveGithubRepository(?string $remoteUrl): ?string
     {
         if (!is_string($remoteUrl) || $remoteUrl === '') {
@@ -596,6 +639,9 @@ class PortalUpdateService
             ($summary['run_migrate'] ?? false) ? 'yes' : 'no',
             ($summary['run_build'] ?? false) ? 'yes' : 'no'
         );
+        if (($summary['run_migrate'] ?? false) && !($summary['run_migrate_effective'] ?? false)) {
+            $lines[] = 'Migrate step skipped: brak zmian w database/migrations.';
+        }
 
         if (is_string($summary['error'] ?? null) && $summary['error'] !== '') {
             $lines[] = 'Error: ' . $summary['error'];
