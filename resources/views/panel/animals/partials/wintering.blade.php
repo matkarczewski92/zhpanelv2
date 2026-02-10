@@ -8,21 +8,34 @@
     $selectedScheme = (string) old('scheme', $editor['selected_scheme'] ?? '');
     $initialStartDate = (string) old('wintering_anchor_date', $editor['initial_start_date'] ?? now()->toDateString());
     $showTableStep = $editorHasCycle || (is_array($rows) && $rows !== []);
+    $history = is_array($wintering['history'] ?? null) ? $wintering['history'] : [];
 @endphp
 
 <div class="card cardopacity mb-3" id="wintering">
     <div class="card-header d-flex align-items-center justify-content-between">
         <span>Zimowanie</span>
-        <button
-            type="button"
-            class="btn btn-outline-light btn-sm"
-            data-bs-toggle="modal"
-            data-bs-target="#winteringEditModal"
-            title="Edytuj zimowanie"
-            aria-label="Edytuj zimowanie"
-        >
-            <i class="bi bi-pencil-square"></i>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <button
+                type="button"
+                class="btn btn-outline-light btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#winteringHistoryModal"
+                title="Historia zimowan"
+                aria-label="Historia zimowan"
+            >
+                <i class="bi bi-clock-history"></i>
+            </button>
+            <button
+                type="button"
+                class="btn btn-outline-light btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#winteringEditModal"
+                title="Edytuj zimowanie"
+                aria-label="Edytuj zimowanie"
+            >
+                <i class="bi bi-pencil-square"></i>
+            </button>
+        </div>
     </div>
     <div class="card-body">
         @if (($wintering['exists'] ?? false))
@@ -47,6 +60,84 @@
         @else
             <div class="text-muted small">Brak aktywnego zimowania.</div>
         @endif
+    </div>
+</div>
+
+<div class="modal fade" id="winteringHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content photobg">
+            <div class="modal-header">
+                <h5 class="modal-title">Historia zimowan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+            </div>
+            <div class="modal-body">
+                @if ($history === [])
+                    <div class="text-muted small">Brak zapisanej historii zimowan.</div>
+                @else
+                    @foreach ($history as $cycle)
+                        <div class="card glass-card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <span class="badge text-bg-secondary">Sezon {{ $cycle['season'] ?? '-' }}</span>
+                                    <span class="badge text-bg-dark">{{ $cycle['scheme'] ?? '-' }}</span>
+                                    @if (($cycle['is_current'] ?? false))
+                                        <span class="badge text-bg-primary">Biezacy cykl</span>
+                                    @endif
+                                    @if (($cycle['is_active'] ?? false))
+                                        <span class="badge text-bg-success">Aktywny</span>
+                                    @endif
+                                </div>
+                                <div class="row g-2 small mb-2">
+                                    <div class="col-md-4">
+                                        <span class="text-muted">Etap: </span>
+                                        <span>{{ $cycle['stage'] ?? '-' }}</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <span class="text-muted">Start: </span>
+                                        <span class="{{ ($cycle['start_is_real'] ?? false) ? 'text-success' : 'text-muted' }}">
+                                            {{ $cycle['start'] ?? '-' }}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <span class="text-muted">Koniec: </span>
+                                        <span class="{{ ($cycle['end_is_real'] ?? false) ? 'text-success' : 'text-muted' }}">
+                                            {{ $cycle['end'] ?? '-' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table glass-table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 45%;">Etap</th>
+                                                <th style="width: 27%;">Start</th>
+                                                <th style="width: 27%;">Koniec</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (($cycle['rows'] ?? []) as $row)
+                                                <tr>
+                                                    <td>{{ $row['stage_order'] ?? 0 }}. {{ $row['stage_title'] ?? '-' }}</td>
+                                                    <td class="{{ ($row['start_is_real'] ?? false) ? 'text-success' : 'text-muted' }}">
+                                                        {{ $row['start'] ?? '-' }}
+                                                    </td>
+                                                    <td class="{{ ($row['end_is_real'] ?? false) ? 'text-success' : 'text-muted' }}">
+                                                        {{ $row['end'] ?? '-' }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -202,11 +293,20 @@
                         </div>
                         <div class="small text-muted mt-2">
                             Po zmianie dat planowanych lub realnych (Start/Koniec), kolejne etapy sa przeliczane automatycznie.
+                            Przycisk "Aktualizuj daty" przelicza harmonogram w tyl i w przod wzgledem ostatnio edytowanej daty.
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Anuluj</button>
+                    <button
+                        type="button"
+                        class="btn btn-outline-info"
+                        id="winteringRecalculateBtn"
+                        @if(!$showTableStep) disabled @endif
+                    >
+                        Aktualizuj daty
+                    </button>
                     <button
                         type="submit"
                         class="btn btn-primary"
@@ -250,7 +350,9 @@
             const anchorDateInput = document.getElementById('winteringAnchorDate');
             const buildButton = document.getElementById('winteringBuildStagesBtn');
             const saveButton = document.getElementById('winteringSaveBtn');
+            const recalculateButton = document.getElementById('winteringRecalculateBtn');
             const hasCycle = rowsBody.getAttribute('data-has-cycle') === '1';
+            let lastEditedAnchor = null;
 
             let schemes = {};
             try {
@@ -354,11 +456,146 @@
                 }
             };
 
+            const resolveAnchorStart = (rows, anchorIndex, anchorField) => {
+                const anchorRow = rows[anchorIndex];
+                const anchorDuration = rowDuration(anchorRow);
+                const plannedStartInput = anchorRow?.querySelector('.wintering-planned-start');
+                const plannedEndInput = anchorRow?.querySelector('.wintering-planned-end');
+                const realStartInput = anchorRow?.querySelector('.wintering-start-date');
+                const realEndInput = anchorRow?.querySelector('.wintering-end-date');
+
+                const readStart = () => {
+                    return parseDate(plannedStartInput?.value || '') || parseDate(realStartInput?.value || '');
+                };
+                const readEnd = () => {
+                    return parseDate(plannedEndInput?.value || '') || parseDate(realEndInput?.value || '');
+                };
+
+                if (anchorField === 'planned-end' || anchorField === 'end') {
+                    const endDate = readEnd();
+                    if (endDate) {
+                        return addDays(endDate, -anchorDuration);
+                    }
+                }
+
+                const startDate = readStart();
+                if (startDate) {
+                    return startDate;
+                }
+
+                const endDate = readEnd();
+                if (endDate) {
+                    return addDays(endDate, -anchorDuration);
+                }
+
+                if (anchorIndex > 0) {
+                    const previousEnd = rows[anchorIndex - 1]?.querySelector('.wintering-planned-end');
+                    const previousEndDate = parseDate(previousEnd?.value || '');
+                    if (previousEndDate) {
+                        return previousEndDate;
+                    }
+                }
+
+                return parseDate(anchorDateInput?.value || '') || new Date();
+            };
+
+            const recalculateAroundAnchor = (anchorIndex, anchorField) => {
+                const rows = rowElements();
+                if (!rows.length) {
+                    return;
+                }
+
+                let safeAnchorIndex = parseInt(String(anchorIndex), 10);
+                if (Number.isNaN(safeAnchorIndex) || safeAnchorIndex < 0 || safeAnchorIndex >= rows.length) {
+                    safeAnchorIndex = 0;
+                }
+
+                const anchorRow = rows[safeAnchorIndex];
+                if (anchorField === 'start' || anchorField === 'planned-start') {
+                    const realStartInput = anchorRow?.querySelector('.wintering-start-date');
+                    const plannedStartInput = anchorRow?.querySelector('.wintering-planned-start');
+                    const value = realStartInput?.value || plannedStartInput?.value || '';
+                    if (plannedStartInput && value) {
+                        plannedStartInput.value = value;
+                    }
+                }
+
+                if (anchorField === 'end' || anchorField === 'planned-end') {
+                    const realEndInput = anchorRow?.querySelector('.wintering-end-date');
+                    const plannedEndInput = anchorRow?.querySelector('.wintering-planned-end');
+                    const value = realEndInput?.value || plannedEndInput?.value || '';
+                    if (plannedEndInput && value) {
+                        plannedEndInput.value = value;
+                    }
+                }
+
+                let anchorStart = resolveAnchorStart(rows, safeAnchorIndex, anchorField);
+                const anchorDuration = rowDuration(anchorRow);
+                const anchorEnd = addDays(anchorStart, anchorDuration);
+                const anchorStartInput = anchorRow?.querySelector('.wintering-planned-start');
+                const anchorEndInput = anchorRow?.querySelector('.wintering-planned-end');
+                if (anchorStartInput) {
+                    anchorStartInput.value = formatDate(anchorStart);
+                }
+                if (anchorEndInput) {
+                    anchorEndInput.value = formatDate(anchorEnd);
+                }
+
+                for (let i = safeAnchorIndex + 1; i < rows.length; i++) {
+                    const prevEndInput = rows[i - 1]?.querySelector('.wintering-planned-end');
+                    const prevEndDate = parseDate(prevEndInput?.value || '');
+                    if (!prevEndDate) {
+                        continue;
+                    }
+
+                    const row = rows[i];
+                    const duration = rowDuration(row);
+                    const startInput = row.querySelector('.wintering-planned-start');
+                    const endInput = row.querySelector('.wintering-planned-end');
+                    const endDate = addDays(prevEndDate, duration);
+                    if (startInput) {
+                        startInput.value = formatDate(prevEndDate);
+                    }
+                    if (endInput) {
+                        endInput.value = formatDate(endDate);
+                    }
+                }
+
+                for (let i = safeAnchorIndex - 1; i >= 0; i--) {
+                    const nextStartInput = rows[i + 1]?.querySelector('.wintering-planned-start');
+                    const nextStartDate = parseDate(nextStartInput?.value || '');
+                    if (!nextStartDate) {
+                        continue;
+                    }
+
+                    const row = rows[i];
+                    const duration = rowDuration(row);
+                    const startDate = addDays(nextStartDate, -duration);
+                    const startInput = row.querySelector('.wintering-planned-start');
+                    const endInput = row.querySelector('.wintering-planned-end');
+                    if (startInput) {
+                        startInput.value = formatDate(startDate);
+                    }
+                    if (endInput) {
+                        endInput.value = formatDate(nextStartDate);
+                    }
+                }
+            };
+
             const bindRecalcEvents = () => {
                 rowElements().forEach((row, index) => {
-                    row.querySelector('.wintering-planned-start')?.addEventListener('change', () => recalculateFrom(index, 'start'));
-                    row.querySelector('.wintering-planned-end')?.addEventListener('change', () => recalculateFrom(index, 'end'));
-                    row.querySelector('.wintering-custom-duration')?.addEventListener('change', () => recalculateFrom(index, 'duration'));
+                    row.querySelector('.wintering-planned-start')?.addEventListener('change', () => {
+                        lastEditedAnchor = { index, field: 'planned-start' };
+                        recalculateFrom(index, 'start');
+                    });
+                    row.querySelector('.wintering-planned-end')?.addEventListener('change', () => {
+                        lastEditedAnchor = { index, field: 'planned-end' };
+                        recalculateFrom(index, 'end');
+                    });
+                    row.querySelector('.wintering-custom-duration')?.addEventListener('change', () => {
+                        lastEditedAnchor = { index, field: 'planned-start' };
+                        recalculateFrom(index, 'duration');
+                    });
 
                     row.querySelector('.wintering-start-date')?.addEventListener('change', (event) => {
                         const currentStartValue = event.target?.value || '';
@@ -375,6 +612,7 @@
                             plannedInput.value = currentStartValue;
                         }
 
+                        lastEditedAnchor = { index, field: 'start' };
                         recalculateFrom(index, 'start');
                     });
 
@@ -384,6 +622,7 @@
                             plannedInput.value = event.target?.value || '';
                         }
 
+                        lastEditedAnchor = { index, field: 'end' };
                         recalculateFrom(index, 'end');
                     });
                 });
@@ -437,6 +676,32 @@
 
             bindRecalcEvents();
 
+            if (recalculateButton) {
+                recalculateButton.addEventListener('click', () => {
+                    const rows = rowElements();
+                    if (!rows.length) {
+                        return;
+                    }
+
+                    if (!lastEditedAnchor) {
+                        const fallbackIndex = rows.findIndex((row) => {
+                            const realStart = row.querySelector('.wintering-start-date')?.value || '';
+                            const realEnd = row.querySelector('.wintering-end-date')?.value || '';
+                            const plannedStart = row.querySelector('.wintering-planned-start')?.value || '';
+                            const plannedEnd = row.querySelector('.wintering-planned-end')?.value || '';
+                            return realStart !== '' || realEnd !== '' || plannedStart !== '' || plannedEnd !== '';
+                        });
+
+                        lastEditedAnchor = {
+                            index: fallbackIndex >= 0 ? fallbackIndex : 0,
+                            field: 'planned-start',
+                        };
+                    }
+
+                    recalculateAroundAnchor(lastEditedAnchor.index, lastEditedAnchor.field);
+                });
+            }
+
             if (!hasCycle && buildButton && schemeSelect && tableStep && schemeHidden) {
                 buildButton.addEventListener('click', () => {
                     const selected = schemeSelect.value || '';
@@ -451,6 +716,9 @@
                     schemeStep?.classList.add('d-none');
                     if (saveButton) {
                         saveButton.disabled = false;
+                    }
+                    if (recalculateButton) {
+                        recalculateButton.disabled = false;
                     }
                 });
             }

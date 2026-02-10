@@ -23,6 +23,7 @@ class GetAnimalWinteringProfileQuery
         $cycleRows = $this->cycleResolver->resolveCurrentCycleForAnimal($animal->id);
         $hasCycle = $cycleRows->isNotEmpty();
         $isActive = $this->cycleResolver->isCycleActive($cycleRows);
+        $history = $this->buildWinteringHistory($animal, $cycleRows);
 
         $schemes = WinteringStage::query()
             ->orderBy('scheme')
@@ -76,6 +77,7 @@ class GetAnimalWinteringProfileQuery
             'planned_start' => $startPlanned?->toDateString(),
             'planned_end' => $endPlanned?->toDateString(),
             'notes' => $currentStage?->annotations,
+            'history' => $history,
             'editor' => [
                 'has_cycle' => $hasCycle,
                 'selected_scheme' => $selectedScheme,
@@ -136,5 +138,88 @@ class GetAnimalWinteringProfileQuery
         }
 
         return $rows->last();
+    }
+
+    /**
+     * @param Collection<int, Wintering> $currentCycleRows
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildWinteringHistory(Animal $animal, Collection $currentCycleRows): array
+    {
+        if ($animal->relationLoaded('winterings')) {
+            $rows = $animal->winterings;
+            $rows->loadMissing(['stage:id,scheme,order,title,duration']);
+        } else {
+            $rows = Wintering::query()
+                ->with(['stage:id,scheme,order,title,duration'])
+                ->where('animal_id', $animal->id)
+                ->orderByDesc('season')
+                ->orderByDesc('id')
+                ->get();
+        }
+
+        $rows = $rows
+            ->filter(fn (Wintering $row): bool => $row->stage !== null)
+            ->values();
+
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $currentCycleIds = $currentCycleRows
+            ->pluck('id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+        $currentCycleIdMap = array_fill_keys($currentCycleIds, true);
+
+        return $rows
+            ->groupBy(function (Wintering $row): string {
+                $scheme = trim((string) ($row->stage?->scheme ?? ''));
+                return (string) ((int) $row->season) . '|' . $scheme;
+            })
+            ->map(function (Collection $group, string $key) use ($currentCycleIdMap): array {
+                $ordered = $group
+                    ->sortBy(function (Wintering $row): array {
+                        return [(int) ($row->stage?->order ?? 999), (int) $row->id];
+                    })
+                    ->values();
+
+                $first = $ordered->first();
+                $last = $ordered->last();
+
+                $startReal = $first?->start_date;
+                $startPlanned = $first?->planned_start_date;
+                $endReal = $last?->end_date;
+                $endPlanned = $last?->planned_end_date;
+                $currentStage = $this->resolveCurrentStage($ordered);
+
+                $isCurrentCycle = $ordered->contains(fn (Wintering $row): bool => isset($currentCycleIdMap[(int) $row->id]));
+
+                return [
+                    'key' => $key,
+                    'season' => $first?->season,
+                    'scheme' => trim((string) ($first?->stage?->scheme ?? '')) ?: '-',
+                    'stage' => $currentStage?->stage?->title,
+                    'start' => $startReal?->toDateString() ?? $startPlanned?->toDateString(),
+                    'end' => $endReal?->toDateString() ?? $endPlanned?->toDateString(),
+                    'start_is_real' => $startReal !== null,
+                    'end_is_real' => $endReal !== null,
+                    'is_current' => $isCurrentCycle,
+                    'is_active' => $this->cycleResolver->isCycleActive($ordered),
+                    'rows' => $ordered->map(fn (Wintering $row): array => [
+                        'stage_order' => (int) ($row->stage?->order ?? 0),
+                        'stage_title' => (string) ($row->stage?->title ?? ''),
+                        'start' => $row->start_date?->toDateString() ?? $row->planned_start_date?->toDateString(),
+                        'end' => $row->end_date?->toDateString() ?? $row->planned_end_date?->toDateString(),
+                        'start_is_real' => $row->start_date !== null,
+                        'end_is_real' => $row->end_date !== null,
+                    ])->all(),
+                ];
+            })
+            ->sortByDesc(function (array $cycle): int {
+                return ((int) ($cycle['season'] ?? 0) * 10) + ((int) ($cycle['is_current'] ? 1 : 0));
+            })
+            ->values()
+            ->all();
     }
 }
