@@ -107,11 +107,11 @@ class SaveAnimalWinteringPlanCommand
                     'wintering_id' => (int) $row->id,
                     'stage_id' => (int) $row->stage_id,
                     'default_duration' => (int) ($row->stage?->duration ?? 0),
-                    'custom_duration' => $payload['custom_duration'] ?? $row->custom_duration,
-                    'planned_start_date' => $payload['planned_start_date'] ?? $row->planned_start_date?->toDateString(),
-                    'planned_end_date' => $payload['planned_end_date'] ?? $row->planned_end_date?->toDateString(),
-                    'start_date' => $payload['start_date'] ?? $row->start_date?->toDateString(),
-                    'end_date' => $payload['end_date'] ?? $row->end_date?->toDateString(),
+                    'custom_duration' => $this->payloadValue($payload, 'custom_duration', $row->custom_duration),
+                    'planned_start_date' => $this->payloadValue($payload, 'planned_start_date', $row->planned_start_date?->toDateString()),
+                    'planned_end_date' => $this->payloadValue($payload, 'planned_end_date', $row->planned_end_date?->toDateString()),
+                    'start_date' => $this->payloadValue($payload, 'start_date', $row->start_date?->toDateString()),
+                    'end_date' => $this->payloadValue($payload, 'end_date', $row->end_date?->toDateString()),
                     'end_date_original' => $row->end_date?->toDateString(),
                 ];
             })
@@ -155,11 +155,11 @@ class SaveAnimalWinteringPlanCommand
                     'wintering_id' => null,
                     'stage_id' => (int) $stage->id,
                     'default_duration' => (int) $stage->duration,
-                    'custom_duration' => $payload['custom_duration'] ?? null,
-                    'planned_start_date' => $payload['planned_start_date'] ?? null,
-                    'planned_end_date' => $payload['planned_end_date'] ?? null,
-                    'start_date' => $payload['start_date'] ?? null,
-                    'end_date' => $payload['end_date'] ?? null,
+                    'custom_duration' => $this->payloadValue($payload, 'custom_duration', null),
+                    'planned_start_date' => $this->payloadValue($payload, 'planned_start_date', null),
+                    'planned_end_date' => $this->payloadValue($payload, 'planned_end_date', null),
+                    'start_date' => $this->payloadValue($payload, 'start_date', null),
+                    'end_date' => $this->payloadValue($payload, 'end_date', null),
                     'end_date_original' => null,
                 ];
             })
@@ -302,6 +302,14 @@ class SaveAnimalWinteringPlanCommand
         }
 
         return Carbon::parse($value)->toDateString();
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function payloadValue(array $payload, string $key, mixed $fallback): mixed
+    {
+        return array_key_exists($key, $payload) ? $payload[$key] : $fallback;
     }
 
     /**
