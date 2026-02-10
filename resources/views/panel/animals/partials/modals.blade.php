@@ -10,7 +10,10 @@
                     @csrf
                     <div class="col-md-8">
                         <label class="form-label">Dodaj zdjęcie</label>
-                        <input type="file" name="photo" class="form-control" accept="image/jpeg,image/png,image/webp" required>
+                        <input type="file" name="photo" class="form-control @error('photo') is-invalid @enderror" accept="image/jpeg,image/png,image/webp" required>
+                        @error('photo')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
                     </div>
                     <div class="col-md-4">
                         <button type="submit" class="btn btn-primary w-100 mt-3 mt-md-0">Dodaj nowe zdjęcie</button>

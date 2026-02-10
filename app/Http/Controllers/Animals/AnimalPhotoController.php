@@ -11,6 +11,13 @@ use Illuminate\Http\Request;
 
 class AnimalPhotoController extends Controller
 {
+    private function galleryRedirect(Animal $animal): RedirectResponse
+    {
+        return redirect()
+            ->route('panel.animals.show', $animal->id)
+            ->with('open_modal', 'gallery');
+    }
+
     public function store(Request $request, Animal $animal, PhotoGalleryService $service): RedirectResponse
     {
         $data = $request->validate([
@@ -19,15 +26,16 @@ class AnimalPhotoController extends Controller
 
         try {
             $service->upload($animal, $data['photo']);
-            return redirect()->route('panel.animals.show', $animal->id)->with('toast', [
+
+            return $this->galleryRedirect($animal)->with('toast', [
                 'type' => 'success',
-                'message' => 'Zdjęcie zapisane.',
-            ])->withFragment('galleryModal');
-        } catch (\Throwable $e) {
-            return redirect()->route('panel.animals.show', $animal->id)->with('toast', [
+                'message' => 'Zdjecie zapisane.',
+            ]);
+        } catch (\Throwable) {
+            return $this->galleryRedirect($animal)->with('toast', [
                 'type' => 'error',
-                'message' => 'Nie udało się przetworzyć zdjęcia.',
-            ])->withFragment('galleryModal');
+                'message' => 'Nie udalo sie przetworzyc zdjecia.',
+            ]);
         }
     }
 
@@ -35,29 +43,29 @@ class AnimalPhotoController extends Controller
     {
         $service->delete($animal, $photo);
 
-        return redirect()->route('panel.animals.show', $animal->id)->with('toast', [
+        return $this->galleryRedirect($animal)->with('toast', [
             'type' => 'success',
-            'message' => 'Zdjęcie usunięte.',
-        ])->withFragment('gallery');
+            'message' => 'Zdjecie usuniete.',
+        ]);
     }
 
     public function setMain(Animal $animal, AnimalPhotoGallery $photo, PhotoGalleryService $service): RedirectResponse
     {
         $service->setMain($animal, $photo);
 
-        return redirect()->route('panel.animals.show', $animal->id)->with('toast', [
+        return $this->galleryRedirect($animal)->with('toast', [
             'type' => 'success',
-            'message' => 'Ustawiono jako główne.',
-        ])->withFragment('gallery');
+            'message' => 'Ustawiono jako glowne.',
+        ]);
     }
 
     public function toggleWebsite(Animal $animal, AnimalPhotoGallery $photo, PhotoGalleryService $service): RedirectResponse
     {
         $service->toggleWebsite($animal, $photo);
 
-        return redirect()->route('panel.animals.show', $animal->id)->with('toast', [
+        return $this->galleryRedirect($animal)->with('toast', [
             'type' => 'success',
-            'message' => $photo->webside ? 'Zdjęcie widoczne na stronie.' : 'Zdjęcie ukryte na stronie.',
-        ])->withFragment('gallery');
+            'message' => $photo->webside ? 'Zdjecie widoczne na stronie.' : 'Zdjecie ukryte na stronie.',
+        ]);
     }
 }
