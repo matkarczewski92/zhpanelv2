@@ -53,4 +53,10 @@ return [
         ],
     ],
 
+    'portal_update' => [
+        'enabled' => (bool) env('PORTAL_UPDATE_ENABLED', false),
+        'remote' => env('PORTAL_UPDATE_REMOTE', 'origin'),
+        'branch' => env('PORTAL_UPDATE_BRANCH', 'main'),
+    ],
+
 ];

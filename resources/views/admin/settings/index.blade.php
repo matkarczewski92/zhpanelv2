@@ -33,6 +33,7 @@
             'color-groups' => 'Grupy kolorystyczne',
             'ewelink-devices' => 'eWeLink: Urządzenia',
             'genetics-generator' => 'Generuj genetykę',
+            'update' => 'Aktualizacja',
         ]; @endphp
         @foreach($tabs as $key => $label)
             <li class="nav-item" role="presentation">
@@ -53,5 +54,6 @@
         @include('admin.settings.tabs.color-groups', ['vm' => $vm])
         @include('admin.settings.tabs.ewelink-devices', ['vm' => $vm])
         @include('admin.settings.tabs.genetics-generator', ['vm' => $vm, 'generatedRows' => $generatedRows ?? [], 'selectedAnimalIds' => $selectedAnimalIds ?? null])
+        @include('admin.settings.tabs.update', ['updatePanel' => $updatePanel ?? []])
     </div>
 @endsection

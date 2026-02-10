@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\Settings\ColorGroupController;
 use App\Http\Controllers\Admin\Settings\GeneticsGeneratorController;
 use App\Http\Controllers\Admin\Settings\EwelinkDeviceController;
 use App\Http\Controllers\Admin\Settings\SettingsTransferController;
+use App\Http\Controllers\Admin\Settings\PortalUpdateController;
 
 Route::get('/settings', AdminSettingsController::class)->name('settings.index');
 
@@ -82,3 +83,7 @@ Route::get('/settings/transfer/export', [SettingsTransferController::class, 'exp
 Route::post('/settings/transfer/import-preview', [SettingsTransferController::class, 'importPreview'])->name('settings.transfer.import-preview');
 Route::post('/settings/transfer/reject', [SettingsTransferController::class, 'reject'])->name('settings.transfer.reject');
 Route::post('/settings/transfer/apply', [SettingsTransferController::class, 'apply'])->name('settings.transfer.apply');
+
+// portal updater
+Route::post('/settings/update/check', [PortalUpdateController::class, 'check'])->name('settings.update.check');
+Route::post('/settings/update/run', [PortalUpdateController::class, 'run'])->name('settings.update.run');
