@@ -5,7 +5,7 @@
 @section('content')
     <div class="mb-3 d-flex align-items-center justify-content-between">
         <div>
-            <h1 class="h4 mb-1">Ustawienia portalu - administracja</h1>
+            <h1 class="h4 mb-1">Administracja - Ustawienia portalu</h1>
             <p class="text-muted mb-0">Zarządzanie słownikami i konfiguracją.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
