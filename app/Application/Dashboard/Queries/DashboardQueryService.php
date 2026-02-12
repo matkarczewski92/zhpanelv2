@@ -344,7 +344,7 @@ class DashboardQueryService
 
         $today = Carbon::today();
         $nextFeedDate = $lastFeedingAt->copy()->addDays(max(0, $feedInterval));
-        $daysToFeed = $today->diffInDays($nextFeedDate->copy()->startOfDay(), false);
+        $daysToFeed = (int) $today->diffInDays($nextFeedDate->copy()->startOfDay(), false);
 
         return [
             'next_feed_date' => $nextFeedDate->format('Y-m-d'),
