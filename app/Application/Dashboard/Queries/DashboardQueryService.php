@@ -308,6 +308,7 @@ class DashboardQueryService
                 'feed_name' => $animal->feed?->name ?: 'Brak karmy',
                 'feed_date' => $metrics['next_feed_date'],
                 'days_to_feed' => $metrics['days_to_feed'],
+                'days_to_feed_label' => $metrics['days_to_feed_label'],
                 'profile_url' => route('panel.animals.show', $animal->id),
             ];
 
@@ -337,18 +338,18 @@ class DashboardQueryService
             return [
                 'next_feed_date' => '',
                 'days_to_feed' => 0,
+                'days_to_feed_label' => '0',
             ];
         }
 
-        $nowDate = Carbon::now();
+        $today = Carbon::today();
         $nextFeedDate = $lastFeedingAt->copy()->addDays(max(0, $feedInterval));
-        $diff = $nowDate->copy()->diffInDays($nextFeedDate, false);
-        $diff = $diff < 0 ? $diff - 1 : $diff;
-        $daysToFeed = $nowDate->toDateString() === $nextFeedDate->toDateString() ? $diff : $diff + 1;
+        $daysToFeed = $today->diffInDays($nextFeedDate->copy()->startOfDay(), false);
 
         return [
             'next_feed_date' => $nextFeedDate->format('Y-m-d'),
-            'days_to_feed' => (int) round($daysToFeed, 0, PHP_ROUND_HALF_UP),
+            'days_to_feed' => $daysToFeed,
+            'days_to_feed_label' => $daysToFeed > 0 ? '+' . $daysToFeed : (string) $daysToFeed,
         ];
     }
 

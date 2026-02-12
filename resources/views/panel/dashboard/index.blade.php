@@ -201,7 +201,7 @@
                                         </td>
                                         <td>{{ $row['feed_name'] }}</td>
                                         <td>{{ $row['feed_date'] ?: '—' }}</td>
-                                        <td class="text-center">{{ $row['days_to_feed'] }}</td>
+                                        <td class="text-center">{{ $row['days_to_feed_label'] ?? $row['days_to_feed'] }}</td>
                                     </tr>
                                 @empty
                                     <tr>
