@@ -61,9 +61,9 @@
 
             <div class="modal-footer flex-wrap gap-2">
                 <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Zamknij</button>
-                <button type="submit" form="offerDeleteReservationForm" data-role="delete-reservation" class="btn btn-outline-danger" onclick="return confirm('Usunac rezerwacje?')" @if(empty($profile->offerForm['delete_reservation_url'])) hidden @endif>Usun rezerwacje</button>
-                <button type="submit" form="offerSellForm" data-role="sell-offer" class="btn btn-success" @if(empty($profile->offerForm['sell_url'])) hidden @endif>Sprzedaj</button>
-                <button type="submit" form="offerDeleteForm" data-role="delete-offer" class="btn btn-outline-danger" onclick="return confirm('Usunac oferte?')" @if(empty($profile->offerForm['delete_offer_url'])) hidden @endif>Usun oferte</button>
+                <button type="submit" form="offerDeleteReservationForm" formnovalidate data-role="delete-reservation" class="btn btn-outline-danger" onclick="return confirm('Usunac rezerwacje?')" @if(empty($profile->offerForm['delete_reservation_url'])) hidden @endif>Usun rezerwacje</button>
+                <button type="submit" form="offerSellForm" formnovalidate data-role="sell-offer" class="btn btn-success" @if(empty($profile->offerForm['sell_url'])) hidden @endif>Sprzedaj</button>
+                <button type="submit" form="offerDeleteForm" formnovalidate data-role="delete-offer" class="btn btn-outline-danger" onclick="return confirm('Usunac oferte?')" @if(empty($profile->offerForm['delete_offer_url'])) hidden @endif>Usun oferte</button>
                 <button type="submit" form="offerEditForm" class="btn btn-primary">Zapisz</button>
             </div>
 
