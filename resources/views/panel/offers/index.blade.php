@@ -25,7 +25,8 @@
     @foreach ($offers->groups as $group)
         <div class="card cardopacity mb-3">
             <div class="card-header">
-                {{ $group['type_name'] }}
+                <div class="strike"><span>{{ $group['type_name'] }}</span></div>
+                <div class="text-center text-muted small mt-1">{{ $group['count_label'] ?? ((int) count($group['rows'] ?? [])) . ' zwierząt' }}</div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive glass-table-wrapper">

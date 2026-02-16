@@ -36,6 +36,8 @@ class GetOffersIndexQuery
 
             return [
                 'type_name' => $typeName,
+                'count' => $sorted->count(),
+                'count_label' => $sorted->count() . ' zwierząt',
                 'rows' => $sorted->map(function (AnimalOffer $offer) use (&$sumPrice, &$sumDeposit) {
                     $animal = $offer->animal;
                     $reservation = $offer->reservations?->first();
