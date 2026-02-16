@@ -20,7 +20,26 @@
         background: rgba(13, 110, 253, 0.28);
         color: #fff;
     }
+
+    @media (max-width: 1199.98px) {
+        .navbar-quick-search-mobile .navbar-quick-search-group {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .navbar-quick-search-mobile .navbar-quick-search-scope {
+            max-width: 100px;
+        }
+    }
 </style>
+
+@php
+    $navbarSearchScope = request()->query('scope', 'animals');
+    if (!in_array($navbarSearchScope, ['animals', 'litters'], true)) {
+        $navbarSearchScope = 'animals';
+    }
+    $navbarSearchQuery = trim((string) request()->query('q', ''));
+@endphp
 
 <nav class="navbar navbar-expand-xl navbar-dark fixed-top navbar-glass">
     <div class="container-fluid">
@@ -35,6 +54,37 @@
         >
             <span class="navbar-toggler-icon"></span>
         </button>
+
+        <div class="d-xl-none w-100 mt-2 navbar-quick-search-mobile">
+            <form
+                method="GET"
+                action="{{ route('panel.navbar-search.go') }}"
+                class="position-relative"
+                id="navbarQuickSearchFormMobile"
+                data-role="navbar-quick-search-form"
+                autocomplete="off"
+            >
+                <div class="input-group input-group-sm navbar-quick-search-group">
+                    <select class="form-select navbar-quick-search-scope" name="scope" data-role="navbar-quick-search-scope" aria-label="Zakres wyszukiwania">
+                        <option value="animals" @selected($navbarSearchScope === 'animals')>Zwierze</option>
+                        <option value="litters" @selected($navbarSearchScope === 'litters')>Mioty</option>
+                    </select>
+                    <input
+                        type="text"
+                        class="form-control"
+                        name="q"
+                        value="{{ $navbarSearchQuery }}"
+                        placeholder="Wyszukaj"
+                        data-role="navbar-quick-search-input"
+                    >
+                </div>
+                <div
+                    class="dropdown-menu p-0 mt-1 w-100 overflow-auto navbar-quick-search-suggestions"
+                    data-role="navbar-quick-search-suggestions"
+                    style="max-height: 320px;"
+                ></div>
+            </form>
+        </div>
 
         <div class="d-none d-xl-flex w-100 align-items-center">
             <ul class="navbar-nav me-auto">
@@ -102,19 +152,12 @@
                     </a>
                 @endif
 
-                @php
-                    $navbarSearchScope = request()->query('scope', 'animals');
-                    if (!in_array($navbarSearchScope, ['animals', 'litters'], true)) {
-                        $navbarSearchScope = 'animals';
-                    }
-                    $navbarSearchQuery = trim((string) request()->query('q', ''));
-                @endphp
-
                 <form
                     method="GET"
                     action="{{ route('panel.navbar-search.go') }}"
                     class="position-relative"
-                    id="navbarQuickSearchForm"
+                    id="navbarQuickSearchFormDesktop"
+                    data-role="navbar-quick-search-form"
                     autocomplete="off"
                 >
                     <div class="input-group input-group-sm navbar-quick-search-group">
@@ -317,19 +360,8 @@
                 fallback();
             }
 
-            const searchForm = document.getElementById('navbarQuickSearchForm');
-            const searchInput = searchForm?.querySelector('[data-role="navbar-quick-search-input"]');
-            const searchScope = searchForm?.querySelector('[data-role="navbar-quick-search-scope"]');
-            const suggestions = searchForm?.querySelector('[data-role="navbar-quick-search-suggestions"]');
+            const searchForms = Array.from(document.querySelectorAll('[data-role="navbar-quick-search-form"]'));
             const suggestUrl = @json(route('panel.navbar-search.suggest'));
-            let requestId = 0;
-            let debounceTimer = null;
-
-            const closeSuggestions = () => {
-                if (!suggestions) return;
-                suggestions.classList.remove('show');
-                suggestions.innerHTML = '';
-            };
 
             const escapeHtml = (value) => String(value)
                 .replaceAll('&', '&amp;')
@@ -338,83 +370,98 @@
                 .replaceAll('"', '&quot;')
                 .replaceAll("'", '&#039;');
 
-            const renderSuggestions = (items) => {
-                if (!suggestions) return;
-                if (!Array.isArray(items) || items.length === 0) {
-                    closeSuggestions();
-                    return;
-                }
+            searchForms.forEach((searchForm) => {
+                const searchInput = searchForm.querySelector('[data-role="navbar-quick-search-input"]');
+                const searchScope = searchForm.querySelector('[data-role="navbar-quick-search-scope"]');
+                const suggestions = searchForm.querySelector('[data-role="navbar-quick-search-suggestions"]');
+                let requestId = 0;
+                let debounceTimer = null;
 
-                suggestions.innerHTML = items.map((item) => {
-                    const label = escapeHtml(item.label ?? '');
-                    const subtitle = escapeHtml(item.subtitle ?? '');
-                    const url = escapeHtml(item.url ?? '#');
-                    return `
-                        <a class="dropdown-item py-2 border-bottom border-secondary border-opacity-25" href="${url}">
-                            <div class="fw-semibold">${label}</div>
-                            ${subtitle ? `<div class="small text-light-emphasis">${subtitle}</div>` : ''}
-                        </a>
-                    `;
-                }).join('');
-                suggestions.classList.add('show');
-            };
-
-            const fetchSuggestions = async () => {
                 if (!(searchInput instanceof HTMLInputElement) || !(searchScope instanceof HTMLSelectElement)) {
                     return;
                 }
-                const q = searchInput.value.trim();
-                if (q.length < 1) {
-                    closeSuggestions();
-                    return;
-                }
 
-                requestId += 1;
-                const currentRequestId = requestId;
-                const params = new URLSearchParams({
-                    scope: searchScope.value,
-                    q,
-                });
+                const closeSuggestions = () => {
+                    if (!(suggestions instanceof HTMLElement)) return;
+                    suggestions.classList.remove('show');
+                    suggestions.innerHTML = '';
+                };
 
-                try {
-                    const res = await fetch(`${suggestUrl}?${params.toString()}`, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            Accept: 'application/json',
-                        },
-                        credentials: 'same-origin',
-                    });
-                    if (!res.ok) {
+                const renderSuggestions = (items) => {
+                    if (!(suggestions instanceof HTMLElement)) return;
+                    if (!Array.isArray(items) || items.length === 0) {
                         closeSuggestions();
                         return;
                     }
-                    const payload = await res.json();
-                    if (currentRequestId !== requestId) {
+
+                    suggestions.innerHTML = items.map((item) => {
+                        const label = escapeHtml(item.label ?? '');
+                        const subtitle = escapeHtml(item.subtitle ?? '');
+                        const url = escapeHtml(item.url ?? '#');
+                        return `
+                            <a class="dropdown-item py-2 border-bottom border-secondary border-opacity-25" href="${url}">
+                                <div class="fw-semibold">${label}</div>
+                                ${subtitle ? `<div class="small text-light-emphasis">${subtitle}</div>` : ''}
+                            </a>
+                        `;
+                    }).join('');
+                    suggestions.classList.add('show');
+                };
+
+                const fetchSuggestions = async () => {
+                    const q = searchInput.value.trim();
+                    if (q.length < 1) {
+                        closeSuggestions();
                         return;
                     }
-                    renderSuggestions(payload.items ?? []);
-                } catch (_) {
-                    closeSuggestions();
-                }
-            };
 
-            const scheduleSuggestions = () => {
-                if (debounceTimer) {
-                    clearTimeout(debounceTimer);
-                }
-                debounceTimer = setTimeout(fetchSuggestions, 120);
-            };
+                    requestId += 1;
+                    const currentRequestId = requestId;
+                    const params = new URLSearchParams({
+                        scope: searchScope.value,
+                        q,
+                    });
 
-            searchInput?.addEventListener('input', scheduleSuggestions);
-            searchInput?.addEventListener('focus', scheduleSuggestions);
-            searchScope?.addEventListener('change', scheduleSuggestions);
-            document.addEventListener('click', (event) => {
-                if (!searchForm || !(event.target instanceof Node)) {
-                    return;
-                }
-                if (!searchForm.contains(event.target)) {
-                    closeSuggestions();
-                }
+                    try {
+                        const res = await fetch(`${suggestUrl}?${params.toString()}`, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                Accept: 'application/json',
+                            },
+                            credentials: 'same-origin',
+                        });
+                        if (!res.ok) {
+                            closeSuggestions();
+                            return;
+                        }
+                        const payload = await res.json();
+                        if (currentRequestId !== requestId) {
+                            return;
+                        }
+                        renderSuggestions(payload.items ?? []);
+                    } catch (_) {
+                        closeSuggestions();
+                    }
+                };
+
+                const scheduleSuggestions = () => {
+                    if (debounceTimer) {
+                        clearTimeout(debounceTimer);
+                    }
+                    debounceTimer = setTimeout(fetchSuggestions, 120);
+                };
+
+                searchInput.addEventListener('input', scheduleSuggestions);
+                searchInput.addEventListener('focus', scheduleSuggestions);
+                searchScope.addEventListener('change', scheduleSuggestions);
+                document.addEventListener('click', (event) => {
+                    if (!(event.target instanceof Node)) {
+                        return;
+                    }
+                    if (!searchForm.contains(event.target)) {
+                        closeSuggestions();
+                    }
+                });
             });
         })();
     </script>

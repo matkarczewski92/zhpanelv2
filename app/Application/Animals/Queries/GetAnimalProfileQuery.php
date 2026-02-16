@@ -211,6 +211,7 @@ class GetAnimalProfileQuery
         }
 
         return [
+            ['label' => 'ID węża', 'value' => $animal->id],
             ['label' => 'Typ', 'value' => optional($animal->animalType)->name],
             ['label' => 'Kategoria', 'value' => optional($animal->animalCategory)->name],
             ['label' => 'Płeć', 'value' => Sex::label((int) $animal->sex)],
