@@ -7,7 +7,6 @@
             </div>
             <form id="offerEditForm" method="POST" action="{{ $profile->offerForm['action'] ?? '#' }}">
                 @csrf
-                @method('PUT')
                 <div class="modal-body">
                     <div class="mb-3">
                         <h6 class="text-muted">Wystaw na sprzedaz</h6>
@@ -62,7 +61,7 @@
             <div class="modal-footer flex-wrap gap-2">
                 <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Zamknij</button>
                 <button type="submit" form="offerDeleteReservationForm" formnovalidate data-role="delete-reservation" class="btn btn-outline-danger" onclick="return confirm('Usunac rezerwacje?')" @if(empty($profile->offerForm['delete_reservation_url'])) hidden @endif>Usun rezerwacje</button>
-                <button type="submit" form="offerSellForm" formnovalidate data-role="sell-offer" class="btn btn-success" @if(empty($profile->offerForm['sell_url'])) hidden @endif>Sprzedaj</button>
+                <button type="submit" form="offerEditForm" formmethod="POST" formaction="{{ $profile->offerForm['sell_url'] ?? '#' }}" data-role="sell-offer" class="btn btn-success" @if(empty($profile->offerForm['sell_url'])) hidden @endif>Sprzedaj</button>
                 <button type="submit" form="offerDeleteForm" formnovalidate data-role="delete-offer" class="btn btn-outline-danger" onclick="return confirm('Usunac oferte?')" @if(empty($profile->offerForm['delete_offer_url'])) hidden @endif>Usun oferte</button>
                 <button type="submit" form="offerEditForm" class="btn btn-primary">Zapisz</button>
             </div>
@@ -74,9 +73,6 @@
             <form id="offerDeleteForm" method="POST" action="{{ $profile->offerForm['delete_offer_url'] ?? '#' }}">
                 @csrf
                 @method('DELETE')
-            </form>
-            <form id="offerSellForm" method="POST" action="{{ $profile->offerForm['sell_url'] ?? '#' }}">
-                @csrf
             </form>
         </div>
     </div>

@@ -269,7 +269,6 @@
                 const form = modal.querySelector('#offerEditForm');
                 const deleteReservationForm = modal.querySelector('#offerDeleteReservationForm');
                 const deleteOfferForm = modal.querySelector('#offerDeleteForm');
-                const sellForm = modal.querySelector('#offerSellForm');
 
                 form.action = payload.action ?? '#';
                 form.querySelector('[name=\"price\"]').value = payload.price ?? '';
@@ -298,9 +297,7 @@
                 }
                 if (sellBtn) {
                     sellBtn.hidden = !payload.sell_url;
-                    if (sellForm) {
-                        sellForm.action = payload.sell_url || '#';
-                    }
+                    sellBtn.formAction = payload.sell_url || '#';
                 }
             });
 

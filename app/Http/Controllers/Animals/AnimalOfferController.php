@@ -38,13 +38,14 @@ class AnimalOfferController extends Controller
             ->with('success', 'Oferta zostala usunieta.');
     }
 
-    public function sell(Request $request, AnimalOfferService $service, Animal $animal): RedirectResponse
+    public function sell(AnimalOfferUpdateRequest $request, AnimalOfferService $service, Animal $animal): RedirectResponse
     {
+        $service->updateOffer($animal, $request->validated());
         $service->markAsSold($animal);
 
         return redirect()
             ->route('panel.animals.show', $animal)
-            ->with('success', 'Oferta oznaczona jako sprzedana.');
+            ->with('success', 'Oferta zostala zapisana i oznaczona jako sprzedana.');
     }
 
     public function togglePublic(Animal $animal, Request $request, AnimalOfferService $service): RedirectResponse
