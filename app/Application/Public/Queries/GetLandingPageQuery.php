@@ -33,7 +33,7 @@ class GetLandingPageQuery
 
         $offers = AnimalOffer::query()
             ->with([
-                'reservation:id,offer_id',
+                'reservation',
                 'animal:id,name,sex,date_of_birth,public_profile_tag,animal_category_id,litter_id,animal_type_id',
                 'animal.animalType:id,name',
                 'animal.mainPhoto:id,animal_id,url',
