@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('src/logo_black.png') }}">
+    <link rel="shortcut icon" href="{{ asset('src/logo_black.png') }}">
     <title>Profil publiczny</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
