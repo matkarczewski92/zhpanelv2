@@ -283,7 +283,7 @@ class EwelinkCloudClient
     {
         $token = $this->getSavedToken();
         if (!is_array($token)) {
-            throw new RuntimeException('Brak autoryzacji eWeLink. Wykonaj połączenie konta w zakładce Urządzenia.');
+            throw new RuntimeException('Brak autoryzacji eWeLink. Polacz konto na stronie Urzadzenia (przycisk "Polacz konto eWeLink") lub w Ustawieniach portalu -> eWeLink: Urzadzenia.');
         }
 
         $region = $this->resolveRegion((string) ($token['region'] ?? ''));

@@ -9,6 +9,15 @@
             <p class="text-muted mb-0">Podglad danych z eWeLink dla urzadzen skonfigurowanych w Ustawieniach portalu.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
+            <form method="GET" action="{{ route('panel.devices.authorize') }}">
+                <button
+                    type="submit"
+                    id="connectEwelinkButton"
+                    class="btn btn-sm {{ $hasToken ? 'btn-outline-secondary' : 'btn-outline-warning' }}"
+                >
+                    {{ $hasToken ? 'Polacz ponownie konto eWeLink' : 'Polacz konto eWeLink' }}
+                </button>
+            </form>
             <button
                 type="button"
                 class="btn btn-outline-danger btn-sm"
@@ -52,6 +61,10 @@
             </div>
             <div class="w-100 text-muted">
                 Auto-odswiezanie: co 10s. Ostatnia aktualizacja: <strong id="devicesAutoRefreshTime">-</strong>
+            </div>
+            <div id="devicesAuthHelp" class="w-100 text-warning @if($hasToken) d-none @endif">
+                Brak autoryzacji eWeLink. Uzyj przycisku "Polacz konto eWeLink" lub przejdz do
+                <a href="{{ route('admin.settings.index', ['tab' => 'ewelink-devices']) }}" class="link-warning">Ustawienia portalu -> eWeLink: Urzadzenia</a>.
             </div>
             <div id="devicesAutoRefreshError" class="w-100 text-warning d-none"></div>
         </div>
@@ -274,7 +287,9 @@
             const authState = document.getElementById('devicesAuthState');
             const region = document.getElementById('devicesRegion');
             const refreshTime = document.getElementById('devicesAutoRefreshTime');
+            const authHelp = document.getElementById('devicesAuthHelp');
             const refreshError = document.getElementById('devicesAutoRefreshError');
+            const connectEwelinkButton = document.getElementById('connectEwelinkButton');
             const toastContainer = document.getElementById('globalToastContainer');
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const scheduleModalEl = document.getElementById('scheduleEditorModal');
@@ -400,6 +415,18 @@
 
                 if (authState) {
                     authState.textContent = payload.has_token ? 'polaczono' : 'brak tokenu';
+                }
+
+                if (authHelp) {
+                    authHelp.classList.toggle('d-none', !!payload.has_token);
+                }
+
+                if (connectEwelinkButton) {
+                    connectEwelinkButton.textContent = payload.has_token
+                        ? 'Polacz ponownie konto eWeLink'
+                        : 'Polacz konto eWeLink';
+                    connectEwelinkButton.classList.toggle('btn-outline-secondary', !!payload.has_token);
+                    connectEwelinkButton.classList.toggle('btn-outline-warning', !payload.has_token);
                 }
 
                 if (region) {

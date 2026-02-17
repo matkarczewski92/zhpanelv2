@@ -443,7 +443,7 @@ class DevicesController extends Controller
         }
 
         if (!$this->cloudClient->hasSavedToken()) {
-            throw new RuntimeException('Brak autoryzacji eWeLink. Polacz konto i sprobuj ponownie.');
+            throw new RuntimeException('Brak autoryzacji eWeLink. Polacz konto na stronie Urzadzenia (przycisk "Polacz konto eWeLink") lub w Ustawieniach portalu -> eWeLink: Urzadzenia.');
         }
     }
 
