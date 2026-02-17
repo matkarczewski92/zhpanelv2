@@ -153,6 +153,11 @@
                                         <div class="card-body">
                                             <h4 class="h6 mb-1">#{{ $offer['id'] }} {!! $offer['name_html'] !!}</h4>
                                             <div class="small text-light-emphasis">{{ $offer['sex_label'] }} @if($offer['date_of_birth']) · ur. {{ $offer['date_of_birth'] }} @endif</div>
+                                            @if (!empty($offer['has_reservation']))
+                                                <div class="mt-2">
+                                                    <span class="badge text-bg-warning text-dark">Zarezerwowany</span>
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="card-footer d-flex justify-content-between align-items-center">
                                             <span class="fw-semibold">{{ $offer['price_label'] }}</span>

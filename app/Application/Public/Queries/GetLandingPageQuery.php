@@ -33,6 +33,7 @@ class GetLandingPageQuery
 
         $offers = AnimalOffer::query()
             ->with([
+                'reservation:id,offer_id',
                 'animal:id,name,sex,date_of_birth,public_profile_tag,animal_category_id,litter_id,animal_type_id',
                 'animal.animalType:id,name',
                 'animal.mainPhoto:id,animal_id,url',
@@ -93,6 +94,7 @@ class GetLandingPageQuery
      *         sex_label:string,
      *         date_of_birth:string|null,
      *         price_label:string,
+     *         has_reservation:bool,
      *         profile_url:string|null,
      *         photo_url:string|null
      *     }>
@@ -129,6 +131,7 @@ class GetLandingPageQuery
      *     sex_label:string,
      *     date_of_birth:string|null,
      *     price_label:string,
+     *     has_reservation:bool,
      *     profile_url:string|null,
      *     photo_url:string|null,
      *     color_group_ids:array<int, int>
@@ -147,6 +150,7 @@ class GetLandingPageQuery
                     'sex_label' => Sex::label((int) ($animal?->sex ?? Sex::Unknown->value)),
                     'date_of_birth' => $animal?->date_of_birth?->format('Y-m-d'),
                     'price_label' => number_format((float) ($offer->price ?? 0), 2, ',', ' ') . ' zl',
+                    'has_reservation' => $offer->reservation !== null,
                     'profile_url' => $animal?->public_profile_tag
                         ? route('profile.show', $animal->public_profile_tag)
                         : null,

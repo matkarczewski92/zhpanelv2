@@ -18,6 +18,7 @@ class LandingPageViewModel
      *         sex_label:string,
      *         date_of_birth:string|null,
      *         price_label:string,
+     *         has_reservation:bool,
      *         profile_url:string|null,
      *         photo_url:string|null
      *     }>
