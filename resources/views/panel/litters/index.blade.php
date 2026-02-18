@@ -140,15 +140,37 @@
             }
 
             const table = sourceTable.cloneNode(true);
-            const headerCells = table.querySelectorAll('thead th');
-            if (headerCells.length > 0) {
-                headerCells[headerCells.length - 1].remove();
-            }
+            const removableHeaders = new Set(['sezon', 'data zniosu', 'data klucia', 'status', 'akcje']);
+            const originalHeaderCells = Array.from(table.querySelectorAll('thead th'));
+            const columnIndexesToRemove = originalHeaderCells
+                .map((cell, index) => ({
+                    index: index,
+                    label: (cell.textContent || '').trim().toLowerCase(),
+                }))
+                .filter((item) => removableHeaders.has(item.label))
+                .map((item) => item.index)
+                .sort((a, b) => b - a);
+
+            const remainingColumnCount = Math.max(1, originalHeaderCells.length - columnIndexesToRemove.length);
+
+            columnIndexesToRemove.forEach((columnIndex) => {
+                const headers = table.querySelectorAll('thead th');
+                if (headers[columnIndex]) {
+                    headers[columnIndex].remove();
+                }
+            });
 
             table.querySelectorAll('tbody tr').forEach((row) => {
                 const rowCells = row.querySelectorAll('td');
-                if (rowCells.length > 0) {
-                    rowCells[rowCells.length - 1].remove();
+                if (rowCells.length === 1 && rowCells[0].hasAttribute('colspan')) {
+                    rowCells[0].setAttribute('colspan', String(remainingColumnCount));
+                } else {
+                    columnIndexesToRemove.forEach((columnIndex) => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells[columnIndex]) {
+                            cells[columnIndex].remove();
+                        }
+                    });
                 }
 
                 row.querySelectorAll('a').forEach((link) => {
