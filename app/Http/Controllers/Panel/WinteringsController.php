@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Panel;
 
+use App\Application\Winterings\Commands\RecalculateAllWinteringDatesCommand;
 use App\Application\Winterings\Commands\StartWinteringStageCommand;
 use App\Application\Winterings\Queries\GetWinteringsIndexQuery;
 use App\Http\Controllers\Controller;
@@ -28,6 +29,20 @@ class WinteringsController extends Controller
         return response()->json([
             'rows_html' => view('panel.winterings._rows', ['rows' => $rows])->render(),
             'count' => count($rows),
+        ]);
+    }
+
+    public function recalculateDates(RecalculateAllWinteringDatesCommand $command): JsonResponse
+    {
+        $result = $command->handle();
+
+        return response()->json([
+            'ok' => true,
+            'message' => sprintf(
+                'Zaktualizowano daty: %d cykli, %d etapow.',
+                (int) ($result['cycles'] ?? 0),
+                (int) ($result['rows'] ?? 0)
+            ),
         ]);
     }
 
@@ -61,4 +76,3 @@ class WinteringsController extends Controller
         return (string) ($messages->first() ?? 'Nie udalo sie rozpoczac etapu zimowania.');
     }
 }
-

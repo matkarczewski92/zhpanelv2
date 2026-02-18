@@ -42,6 +42,74 @@ class WinteringTimelineCalculator
     }
 
     /**
+     * Recalculate planned dates forward and backward around selected anchor row.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    public function recalculateAroundAnchor(array $rows, int $anchorIndex = 0, string $anchorField = 'planned-start'): array
+    {
+        if ($rows === []) {
+            return $rows;
+        }
+
+        $anchorIndex = max(0, min($anchorIndex, count($rows) - 1));
+
+        if (in_array($anchorField, ['start', 'planned-start'], true)) {
+            $value = trim((string) ($rows[$anchorIndex]['start_date'] ?? ''));
+            if ($value === '') {
+                $value = trim((string) ($rows[$anchorIndex]['planned_start_date'] ?? ''));
+            }
+
+            if ($value !== '') {
+                $rows[$anchorIndex]['planned_start_date'] = $value;
+            }
+        }
+
+        if (in_array($anchorField, ['end', 'planned-end'], true)) {
+            $value = trim((string) ($rows[$anchorIndex]['end_date'] ?? ''));
+            if ($value === '') {
+                $value = trim((string) ($rows[$anchorIndex]['planned_end_date'] ?? ''));
+            }
+
+            if ($value !== '') {
+                $rows[$anchorIndex]['planned_end_date'] = $value;
+            }
+        }
+
+        $anchorStart = $this->resolveAnchorStartForAroundMode($rows, $anchorIndex, $anchorField);
+        $anchorDuration = $this->resolveDuration($rows[$anchorIndex]);
+
+        $rows[$anchorIndex]['planned_start_date'] = $anchorStart->toDateString();
+        $rows[$anchorIndex]['planned_end_date'] = $anchorStart->copy()->addDays($anchorDuration)->toDateString();
+
+        for ($i = $anchorIndex + 1; $i < count($rows); $i++) {
+            $previousEnd = $this->parseDate($rows[$i - 1]['planned_end_date'] ?? null);
+            if (!$previousEnd instanceof CarbonInterface) {
+                continue;
+            }
+
+            $duration = $this->resolveDuration($rows[$i]);
+            $rows[$i]['planned_start_date'] = $previousEnd->toDateString();
+            $rows[$i]['planned_end_date'] = $previousEnd->copy()->addDays($duration)->toDateString();
+        }
+
+        for ($i = $anchorIndex - 1; $i >= 0; $i--) {
+            $nextStart = $this->parseDate($rows[$i + 1]['planned_start_date'] ?? null);
+            if (!$nextStart instanceof CarbonInterface) {
+                continue;
+            }
+
+            $duration = $this->resolveDuration($rows[$i]);
+            $start = $nextStart->copy()->subDays($duration);
+            $rows[$i]['planned_start_date'] = $start->toDateString();
+            $rows[$i]['planned_end_date'] = $nextStart->toDateString();
+        }
+
+        return $rows;
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $rows
      */
     private function resolveAnchorStart(array $rows, int $anchorIndex): Carbon
@@ -77,6 +145,41 @@ class WinteringTimelineCalculator
     }
 
     /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private function resolveAnchorStartForAroundMode(array $rows, int $anchorIndex, string $anchorField): Carbon
+    {
+        $anchor = $rows[$anchorIndex];
+        $duration = $this->resolveDuration($anchor);
+
+        $readStart = $this->parseDate($anchor['planned_start_date'] ?? null)
+            ?? $this->parseDate($anchor['start_date'] ?? null);
+        $readEnd = $this->parseDate($anchor['planned_end_date'] ?? null)
+            ?? $this->parseDate($anchor['end_date'] ?? null);
+
+        if (in_array($anchorField, ['planned-end', 'end'], true) && $readEnd instanceof CarbonInterface) {
+            return Carbon::instance($readEnd)->subDays($duration);
+        }
+
+        if ($readStart instanceof CarbonInterface) {
+            return Carbon::instance($readStart);
+        }
+
+        if ($readEnd instanceof CarbonInterface) {
+            return Carbon::instance($readEnd)->subDays($duration);
+        }
+
+        if ($anchorIndex > 0) {
+            $previousEnd = $this->parseDate($rows[$anchorIndex - 1]['planned_end_date'] ?? null);
+            if ($previousEnd instanceof CarbonInterface) {
+                return Carbon::instance($previousEnd);
+            }
+        }
+
+        return Carbon::today();
+    }
+
+    /**
      * @param array<string, mixed> $row
      */
     private function resolveDuration(array $row): int
@@ -106,4 +209,3 @@ class WinteringTimelineCalculator
         }
     }
 }
-

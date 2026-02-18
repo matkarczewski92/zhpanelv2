@@ -288,6 +288,11 @@ class EwelinkCloudClient
     private function getValidAccessTokenAndRegion(): array
     {
         $token = $this->getSavedToken();
+        if (!is_array($token) && $this->hasCredentialAuthConfig()) {
+            $state = trim((string) config('services.ewelink.oauth_state', 'panel'));
+            $token = $this->authorizeWithCredentials($state);
+        }
+
         if (!is_array($token)) {
             throw new RuntimeException('Brak autoryzacji eWeLink. Polacz konto na stronie Urzadzenia (przycisk "Polacz konto eWeLink") lub w Ustawieniach portalu -> eWeLink: Urzadzenia.');
         }
@@ -298,8 +303,18 @@ class EwelinkCloudClient
         $shouldRefresh = $expiresAt > 0 && $expiresAt <= ($nowMs + 120000);
 
         if ($shouldRefresh || empty($token['access_token'])) {
-            $token = $this->refreshToken($token, $region);
-            $this->saveToken($token);
+            try {
+                $token = $this->refreshToken($token, $region);
+                $this->saveToken($token);
+            } catch (RuntimeException $exception) {
+                if (!$this->hasCredentialAuthConfig()) {
+                    throw $exception;
+                }
+
+                $state = trim((string) config('services.ewelink.oauth_state', 'panel'));
+                $token = $this->authorizeWithCredentials($state);
+                $region = $this->resolveRegion((string) ($token['region'] ?? $region));
+            }
         }
 
         $accessToken = (string) ($token['access_token'] ?? '');

@@ -7,6 +7,7 @@ Route::get('/zimowanie', [WinteringsController::class, 'index'])
     ->name('winterings.index');
 Route::get('/zimowanie/dane', [WinteringsController::class, 'data'])
     ->name('winterings.data');
+Route::post('/zimowanie/aktualizuj-daty', [WinteringsController::class, 'recalculateDates'])
+    ->name('winterings.recalculate-dates');
 Route::post('/zimowanie/{animal}/etap/{wintering}/kolejny', [WinteringsController::class, 'advanceStage'])
     ->name('winterings.advance-stage');
-

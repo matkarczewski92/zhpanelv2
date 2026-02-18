@@ -12,8 +12,18 @@
             <h1 class="h4 mb-1">Zimowanie</h1>
             <p class="text-muted mb-0">Lista aktywnych cykli zimowania i szybkie przejscie do kolejnego etapu.</p>
         </div>
-        <div class="small text-muted">
-            Pozycji: <span id="winteringsCount">{{ count($rows) }}</span>
+        <div class="d-flex align-items-center gap-2">
+            <button
+                type="button"
+                class="btn btn-outline-info btn-sm"
+                id="winteringsRecalculateAllButton"
+                data-url="{{ route('panel.winterings.recalculate-dates') }}"
+            >
+                Aktualizuj wszystkie daty
+            </button>
+            <div class="small text-muted">
+                Pozycji: <span id="winteringsCount">{{ count($rows) }}</span>
+            </div>
         </div>
     </div>
 
@@ -50,6 +60,7 @@
             const tableBody = document.getElementById('winteringsTableBody');
             const countEl = document.getElementById('winteringsCount');
             const statusEl = document.getElementById('winteringsStatus');
+            const recalculateAllButton = document.getElementById('winteringsRecalculateAllButton');
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const dataUrl = board?.getAttribute('data-url') || '';
 
@@ -91,6 +102,48 @@
                 tableBody.innerHTML = payload.rows_html || '';
                 countEl.textContent = String(payload.count ?? 0);
             };
+
+            const postJson = async (url) => {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: '{}',
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || payload.ok === false) {
+                    throw new Error(payload.message || 'Nie udalo sie wykonac operacji.');
+                }
+
+                return payload;
+            };
+
+            if (recalculateAllButton instanceof HTMLButtonElement) {
+                recalculateAllButton.addEventListener('click', async () => {
+                    const url = recalculateAllButton.getAttribute('data-url');
+                    if (!url) {
+                        return;
+                    }
+
+                    recalculateAllButton.disabled = true;
+                    setStatus('Aktualizowanie dat zimowania...', 'muted');
+
+                    try {
+                        const payload = await postJson(url);
+                        await refreshRows();
+                        setStatus(payload.message || 'Zaktualizowano daty.', 'success');
+                    } catch (error) {
+                        setStatus(error instanceof Error ? error.message : 'Wystapil nieznany blad.', 'danger');
+                    } finally {
+                        recalculateAllButton.disabled = false;
+                    }
+                });
+            }
 
             tableBody.addEventListener('click', async (event) => {
                 const target = event.target;
@@ -139,4 +192,3 @@
         });
     </script>
 @endpush
-
