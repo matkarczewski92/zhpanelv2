@@ -60,7 +60,7 @@
                 <strong id="devicesRegion">{{ $savedRegion ?: '-' }}</strong>
             </div>
             <div class="w-100 text-muted">
-                Auto-odswiezanie: co 10s. Ostatnia aktualizacja: <strong id="devicesAutoRefreshTime">-</strong>
+                Auto-odswiezanie: co 20s. Ostatnia aktualizacja: <strong id="devicesAutoRefreshTime">-</strong>
             </div>
             <div id="devicesAuthHelp" class="w-100 text-warning @if($hasToken) d-none @endif">
                 Brak autoryzacji eWeLink. Uzyj przycisku "Polacz konto eWeLink" lub przejdz do
@@ -326,7 +326,7 @@
             const bulkScheduleBackButton = document.getElementById('bulkScheduleBackButton');
             const bulkScheduleNextButton = document.getElementById('bulkScheduleNextButton');
             const bulkScheduleSubmitButton = document.getElementById('bulkScheduleSubmitButton');
-            const intervalMs = 10000;
+            const intervalMs = 20000;
 
             if (!tableBody) return;
 

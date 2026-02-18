@@ -412,6 +412,26 @@ class DevicesController extends Controller
                 ->route('panel.devices.index')
                 ->with('toast', ['type' => 'success', 'message' => $message]);
         } catch (RuntimeException $exception) {
+            if ($this->cloudClient->hasCredentialAuthConfig()) {
+                try {
+                    $state = trim((string) config('services.ewelink.oauth_state', 'panel'));
+                    $this->cloudClient->authorizeWithCredentials($state);
+                    $syncResult = $this->syncService->syncAll();
+
+                    $message = sprintf(
+                        'Połączono konto eWeLink (fallback backend). Zaktualizowano urządzenia: %d/%d.',
+                        $syncResult['updated'],
+                        $syncResult['total']
+                    );
+
+                    return redirect()
+                        ->route('panel.devices.index')
+                        ->with('toast', ['type' => 'success', 'message' => $message]);
+                } catch (RuntimeException) {
+                    // fall through and show original OAuth exchange error
+                }
+            }
+
             return redirect()
                 ->route('panel.devices.index')
                 ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);

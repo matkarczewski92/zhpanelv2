@@ -113,6 +113,9 @@
                     <a class="nav-link {{ request()->routeIs('panel.massdata.*') ? 'active' : '' }}" href="{{ route('panel.massdata.index') }}">Masowe Dane</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.winterings.*') ? 'active' : '' }}" href="{{ route('panel.winterings.index') }}">Zimowanie</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}" href="{{ route('panel.devices.index') }}">Urządzenia</a>
                 </li>
                 <li class="nav-item">
@@ -286,6 +289,12 @@
                 href="{{ route('panel.massdata.index') }}"
             >
                 Masowe Dane
+            </a>
+            <a
+                class="nav-link {{ request()->routeIs('panel.winterings.*') ? 'active' : '' }}"
+                href="{{ route('panel.winterings.index') }}"
+            >
+                Zimowanie
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}"

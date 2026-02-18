@@ -2,6 +2,7 @@
 
 namespace App\Services\Ewelink;
 
+use App\Models\SystemConfig;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -11,6 +12,11 @@ use RuntimeException;
 class EwelinkCloudClient
 {
     private const TOKEN_CACHE_KEY = 'ewelink.oauth.tokens';
+    private const TOKEN_CONFIG_KEY_REGION = 'ewelinkOauthRegion';
+    private const TOKEN_CONFIG_KEY_ACCESS = 'ewelinkOauthAccessToken';
+    private const TOKEN_CONFIG_KEY_REFRESH = 'ewelinkOauthRefreshToken';
+    private const TOKEN_CONFIG_KEY_ACCESS_EXPIRES = 'ewelinkOauthAccessTokenExpiresAt';
+    private const TOKEN_CONFIG_KEY_REFRESH_EXPIRES = 'ewelinkOauthRefreshTokenExpiresAt';
 
     public function hasCredentialAuthConfig(): bool
     {
@@ -317,7 +323,7 @@ class EwelinkCloudClient
 
         $rtExpiresAt = (int) ($token['refresh_token_expires_at'] ?? 0);
         if ($rtExpiresAt > 0 && $rtExpiresAt <= $this->nowMs()) {
-            Cache::forget(self::TOKEN_CACHE_KEY);
+            $this->clearSavedToken();
             throw new RuntimeException('Refresh token eWeLink wygasł. Połącz konto ponownie.');
         }
 
@@ -449,6 +455,7 @@ class EwelinkCloudClient
     private function saveToken(array $token): void
     {
         Cache::forever(self::TOKEN_CACHE_KEY, $token);
+        $this->saveTokenToSystemConfig($token);
     }
 
     /**
@@ -457,8 +464,150 @@ class EwelinkCloudClient
     private function getSavedToken(): ?array
     {
         $value = Cache::get(self::TOKEN_CACHE_KEY);
+        if (is_array($value)) {
+            return $this->normalizeSavedToken($value);
+        }
 
-        return is_array($value) ? $value : null;
+        $fromDb = $this->loadTokenFromSystemConfig();
+        if (is_array($fromDb)) {
+            Cache::forever(self::TOKEN_CACHE_KEY, $fromDb);
+        }
+
+        return $fromDb;
+    }
+
+    private function clearSavedToken(): void
+    {
+        Cache::forget(self::TOKEN_CACHE_KEY);
+
+        SystemConfig::query()
+            ->whereIn('key', [
+                self::TOKEN_CONFIG_KEY_REGION,
+                self::TOKEN_CONFIG_KEY_ACCESS,
+                self::TOKEN_CONFIG_KEY_REFRESH,
+                self::TOKEN_CONFIG_KEY_ACCESS_EXPIRES,
+                self::TOKEN_CONFIG_KEY_REFRESH_EXPIRES,
+            ])
+            ->delete();
+    }
+
+    /**
+     * @param array<string, mixed> $token
+     */
+    private function saveTokenToSystemConfig(array $token): void
+    {
+        $entries = [
+            self::TOKEN_CONFIG_KEY_REGION => [
+                'value' => $this->resolveRegion((string) ($token['region'] ?? '')),
+                'name' => 'eWeLink OAuth region',
+            ],
+            self::TOKEN_CONFIG_KEY_ACCESS => [
+                'value' => (string) ($token['access_token'] ?? ''),
+                'name' => 'eWeLink OAuth access token',
+            ],
+            self::TOKEN_CONFIG_KEY_REFRESH => [
+                'value' => (string) ($token['refresh_token'] ?? ''),
+                'name' => 'eWeLink OAuth refresh token',
+            ],
+            self::TOKEN_CONFIG_KEY_ACCESS_EXPIRES => [
+                'value' => (string) ((int) ($token['access_token_expires_at'] ?? 0)),
+                'name' => 'eWeLink OAuth access token expires',
+            ],
+            self::TOKEN_CONFIG_KEY_REFRESH_EXPIRES => [
+                'value' => (string) ((int) ($token['refresh_token_expires_at'] ?? 0)),
+                'name' => 'eWeLink OAuth refresh token expires',
+            ],
+        ];
+
+        foreach ($entries as $key => $entry) {
+            $value = trim((string) ($entry['value'] ?? ''));
+            if ($value === '') {
+                continue;
+            }
+
+            SystemConfig::query()->updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => mb_substr($value, 0, 255),
+                    'name' => (string) ($entry['name'] ?? $key),
+                ]
+            );
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function loadTokenFromSystemConfig(): ?array
+    {
+        $rows = SystemConfig::query()
+            ->whereIn('key', [
+                self::TOKEN_CONFIG_KEY_REGION,
+                self::TOKEN_CONFIG_KEY_ACCESS,
+                self::TOKEN_CONFIG_KEY_REFRESH,
+                self::TOKEN_CONFIG_KEY_ACCESS_EXPIRES,
+                self::TOKEN_CONFIG_KEY_REFRESH_EXPIRES,
+            ])
+            ->get(['key', 'value']);
+
+        if ($rows->isEmpty()) {
+            return null;
+        }
+
+        $map = $rows
+            ->mapWithKeys(fn (SystemConfig $row): array => [(string) $row->key => (string) $row->value])
+            ->all();
+
+        $token = [
+            'region' => (string) ($map[self::TOKEN_CONFIG_KEY_REGION] ?? ''),
+            'access_token' => (string) ($map[self::TOKEN_CONFIG_KEY_ACCESS] ?? ''),
+            'refresh_token' => (string) ($map[self::TOKEN_CONFIG_KEY_REFRESH] ?? ''),
+            'access_token_expires_at' => (int) ($map[self::TOKEN_CONFIG_KEY_ACCESS_EXPIRES] ?? 0),
+            'refresh_token_expires_at' => (int) ($map[self::TOKEN_CONFIG_KEY_REFRESH_EXPIRES] ?? 0),
+        ];
+
+        return $this->normalizeSavedToken($token);
+    }
+
+    /**
+     * @param array<string, mixed> $token
+     * @return array<string, mixed>|null
+     */
+    private function normalizeSavedToken(array $token): ?array
+    {
+        $access = trim((string) ($token['access_token'] ?? ''));
+        $refresh = trim((string) ($token['refresh_token'] ?? ''));
+
+        if ($access === '' || $refresh === '') {
+            return null;
+        }
+
+        return [
+            'region' => $this->resolveRegion((string) ($token['region'] ?? '')),
+            'access_token' => $access,
+            'refresh_token' => $refresh,
+            'access_token_expires_at' => (int) ($token['access_token_expires_at'] ?? 0),
+            'refresh_token_expires_at' => (int) ($token['refresh_token_expires_at'] ?? 0),
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveTokenExchangeRegions(?string $requestedRegion): array
+    {
+        $domains = array_keys((array) config('services.ewelink.api_domains', []));
+
+        return collect([
+            $this->resolveRegion($requestedRegion),
+            $this->resolveRegion((string) config('services.ewelink.region', 'eu')),
+            ...$domains,
+        ])
+            ->map(fn (mixed $region): string => $this->resolveRegion((string) $region))
+            ->filter(fn (string $region): bool => $region !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function resolveRegion(?string $region = null): string
