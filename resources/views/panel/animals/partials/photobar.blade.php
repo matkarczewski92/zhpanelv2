@@ -1,6 +1,16 @@
 ﻿<div class="photobar photobg mb-3" id="panelPhotobar">
 @if ($profile->photos['has_photos'])
-    <div class="photobar-track" data-photos='@json(collect($profile->photos['items'])->values()->map(fn($p) => ["url" => $p['url'], "thumb" => $p['thumb_url'] ?? $p['url'], "alt" => $p['label'] ?? "Zdjęcie"]))'>
+    @php
+        $photosPayload = collect($profile->photos['items'])
+            ->values()
+            ->map(fn ($p) => [
+                'url' => $p['url'],
+                'thumb' => $p['thumb_url'] ?? $p['url'],
+                'alt' => $p['label'] ?? 'Zdjęcie',
+            ])
+            ->all();
+    @endphp
+    <div class="photobar-track" data-photos='@json($photosPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'>
         @foreach ($profile->photos['items'] as $index => $photo)
             <button
                 type="button"
