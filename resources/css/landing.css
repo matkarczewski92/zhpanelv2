@@ -130,6 +130,24 @@
     background: rgba(11, 14, 20, 0.72);
 }
 
+.landing-offer-price {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    line-height: 1.25;
+    flex-wrap: wrap;
+}
+
+.landing-offer-price-label {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.landing-offer-price-value {
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
 .landing-type-filter.is-active {
     background: rgba(25, 135, 84, 0.9);
     color: #fff;

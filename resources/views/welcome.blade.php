@@ -162,7 +162,10 @@
                                             @endif
                                         </div>
                                         <div class="card-footer d-flex justify-content-between align-items-center">
-                                            <span class="fw-semibold">{{ $offer['price_label'] }}</span>
+                                            <div class="landing-offer-price">
+                                                <span class="landing-offer-price-label">Wartość hodowlana:</span>
+                                                <span class="landing-offer-price-value">{{ $offer['price_label'] }}</span>
+                                            </div>
                                             @if ($offer['profile_url'])
                                                 <a href="{{ $offer['profile_url'] }}" class="btn btn-sm btn-outline-light">Profil</a>
                                             @endif
