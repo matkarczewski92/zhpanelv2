@@ -2,7 +2,6 @@
 
 namespace App\Application\MassData\Commands;
 
-use App\Application\Winterings\Support\AnimalWinteringCycleResolver;
 use App\Domain\Events\MassDataCommitted;
 use App\Models\Animal;
 use App\Models\AnimalFeeding;
@@ -15,11 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class CommitMassDataCommand
 {
-    public function __construct(
-        private readonly AnimalWinteringCycleResolver $winteringCycleResolver
-    ) {
-    }
-
     /**
      * @param array{
      *     category_id:int,
@@ -54,8 +48,6 @@ class CommitMassDataCommand
                 ->pluck('id');
 
             $this->ensureAllAnimalsBelongToCategory($animalIds, $allowedAnimals, $categoryId);
-            $winteringActiveIds = $this->winteringCycleResolver->resolveActiveAnimalIds($animalIds->all());
-            $winteringActiveMap = array_fill_keys($winteringActiveIds, true);
 
             $feedingsCount = 0;
             $weightsCount = 0;
@@ -63,9 +55,6 @@ class CommitMassDataCommand
             foreach ($rows as $row) {
                 $animalId = (int) $row['animal_id'];
                 $this->recordWeight($animalId, $row['weight'] ?? null, $transactionDate, $weightsCount);
-                if (isset($winteringActiveMap[$animalId])) {
-                    $row['feed_check'] = false;
-                }
                 $this->recordFeeding($animalId, $row, $transactionDate, $feedingsCount);
             }
 

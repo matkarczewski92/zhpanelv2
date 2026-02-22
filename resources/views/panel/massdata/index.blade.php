@@ -120,22 +120,13 @@
                                     </td>
                                     <td class="text-center">
                                         <input type="hidden" name="rows[{{ $animal['id'] }}][feed_check]" value="0">
-                                        @if($animal['is_wintering'])
-                                            <input
-                                                class="form-check-input"
-                                                type="checkbox"
-                                                value="0"
-                                                disabled
-                                            >
-                                        @else
-                                            <input
-                                                class="form-check-input"
-                                                type="checkbox"
-                                                name="rows[{{ $animal['id'] }}][feed_check]"
-                                                value="1"
-                                                @checked((string) $feedCheckValue === '1')
-                                            >
-                                        @endif
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="rows[{{ $animal['id'] }}][feed_check]"
+                                            value="1"
+                                            @checked((string) $feedCheckValue === '1')
+                                        >
                                     </td>
                                     <td class="text-end">
                                         <a href="{{ $animal['profile_url'] }}" class="link-reset">{{ $animal['id'] }}</a>
