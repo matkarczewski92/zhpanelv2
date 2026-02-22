@@ -97,3 +97,5 @@ Route::post('/animals/{animal}/wintering/{wintering}/start', [AnimalWinteringCon
     ->name('animals.wintering.stage.start');
 Route::post('/animals/{animal}/wintering/{wintering}/end', [AnimalWinteringController::class, 'endStage'])
     ->name('animals.wintering.stage.end');
+Route::post('/animals/{animal}/wintering/close', [AnimalWinteringController::class, 'closeWintering'])
+    ->name('animals.wintering.close');

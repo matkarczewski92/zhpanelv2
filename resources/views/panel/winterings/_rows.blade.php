@@ -35,14 +35,27 @@
             {{ $row['cycle_end'] ?? '-' }}
         </td>
         <td class="text-end">
-            @if (!empty($row['can_advance']) && !empty($row['advance_url']))
-                <button
-                    type="button"
-                    class="btn btn-outline-success btn-sm js-wintering-advance"
-                    data-url="{{ $row['advance_url'] }}"
-                >
-                    Kolejny etap
-                </button>
+            @if ((!empty($row['can_advance']) && !empty($row['advance_url'])) || !empty($row['close_url']))
+                <div class="d-flex justify-content-end gap-1">
+                    @if (!empty($row['can_advance']) && !empty($row['advance_url']))
+                        <button
+                            type="button"
+                            class="btn btn-outline-success btn-sm js-wintering-advance"
+                            data-url="{{ $row['advance_url'] }}"
+                        >
+                            Kolejny etap
+                        </button>
+                    @endif
+                    @if (!empty($row['close_url']))
+                        <button
+                            type="button"
+                            class="btn btn-outline-danger btn-sm js-wintering-close"
+                            data-url="{{ $row['close_url'] }}"
+                        >
+                            Zakoncz zimowanie
+                        </button>
+                    @endif
+                </div>
             @else
                 <span class="small text-muted">Brak</span>
             @endif
@@ -53,4 +66,3 @@
         <td colspan="9" class="text-center text-muted">Brak aktywnych zimowan.</td>
     </tr>
 @endforelse
-

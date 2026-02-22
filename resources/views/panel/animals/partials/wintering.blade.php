@@ -9,6 +9,8 @@
     $initialStartDate = (string) old('wintering_anchor_date', $editor['initial_start_date'] ?? now()->toDateString());
     $showTableStep = $editorHasCycle || (is_array($rows) && $rows !== []);
     $history = is_array($wintering['history'] ?? null) ? $wintering['history'] : [];
+    $closeWinteringUrl = (string) ($editor['close_url'] ?? '');
+    $canCloseWintering = (bool) ($editor['is_active'] ?? false) && $closeWinteringUrl !== '';
 @endphp
 
 <div class="card cardopacity mb-3" id="wintering">
@@ -299,6 +301,15 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Anuluj</button>
+                    @if($canCloseWintering)
+                        <button
+                            type="submit"
+                            class="btn btn-outline-danger"
+                            form="winteringCloseCycleForm"
+                        >
+                            Zakoncz zimowanie
+                        </button>
+                    @endif
                     <button
                         type="button"
                         class="btn btn-outline-info"
@@ -332,6 +343,11 @@
             </form>
         @endif
     @endforeach
+@endif
+@if ($canCloseWintering)
+    <form id="winteringCloseCycleForm" method="POST" action="{{ $closeWinteringUrl }}">
+        @csrf
+    </form>
 @endif
 
 @push('scripts')

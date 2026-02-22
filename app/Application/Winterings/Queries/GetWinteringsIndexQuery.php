@@ -128,6 +128,7 @@ class GetWinteringsIndexQuery
             'advance_url' => $nextStageRow instanceof Wintering
                 ? route('panel.winterings.advance-stage', [$animal->id, $nextStageRow->id])
                 : null,
+            'close_url' => route('panel.winterings.close', $animal->id),
         ];
     }
 
@@ -184,4 +185,3 @@ class GetWinteringsIndexQuery
         return trim(strip_tags((string) $value));
     }
 }
-

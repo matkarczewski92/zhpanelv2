@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Panel;
 
+use App\Application\Winterings\Commands\CloseAnimalWinteringCommand;
 use App\Application\Winterings\Commands\RecalculateAllWinteringDatesCommand;
 use App\Application\Winterings\Commands\StartWinteringStageCommand;
 use App\Application\Winterings\Queries\GetWinteringsIndexQuery;
@@ -63,6 +64,25 @@ class WinteringsController extends Controller
         return response()->json([
             'ok' => true,
             'message' => 'Etap zimowania rozpoczety.',
+        ]);
+    }
+
+    public function closeWintering(
+        Animal $animal,
+        CloseAnimalWinteringCommand $command
+    ): JsonResponse {
+        try {
+            $command->handle((int) $animal->id);
+        } catch (ValidationException $exception) {
+            return response()->json([
+                'ok' => false,
+                'message' => $this->validationMessage($exception),
+            ], 422);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Zimowanie zakonczone.',
         ]);
     }
 

@@ -80,8 +80,10 @@ class GetAnimalWinteringProfileQuery
             'history' => $history,
             'editor' => [
                 'has_cycle' => $hasCycle,
+                'is_active' => $isActive,
                 'selected_scheme' => $selectedScheme,
                 'save_url' => route('panel.animals.wintering.save', $animal->id),
+                'close_url' => $isActive ? route('panel.animals.wintering.close', $animal->id) : null,
                 'schemes' => $schemes,
                 'rows' => $editorRows,
                 'initial_start_date' => now()->toDateString(),

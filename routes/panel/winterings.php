@@ -11,3 +11,5 @@ Route::post('/zimowanie/aktualizuj-daty', [WinteringsController::class, 'recalcu
     ->name('winterings.recalculate-dates');
 Route::post('/zimowanie/{animal}/etap/{wintering}/kolejny', [WinteringsController::class, 'advanceStage'])
     ->name('winterings.advance-stage');
+Route::post('/zimowanie/{animal}/zakoncz', [WinteringsController::class, 'closeWintering'])
+    ->name('winterings.close');

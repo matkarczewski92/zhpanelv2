@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Animals;
 
+use App\Application\Winterings\Commands\CloseAnimalWinteringCommand;
 use App\Application\Winterings\Commands\EndWinteringStageCommand;
 use App\Application\Winterings\Commands\SaveAnimalWinteringPlanCommand;
 use App\Application\Winterings\Commands\StartWinteringStageCommand;
@@ -77,5 +78,23 @@ class AnimalWinteringController extends Controller
         return redirect()
             ->to($this->winteringUrl($animal))
             ->with('toast', ['type' => 'success', 'message' => 'Etap zimowania zakonczony.']);
+    }
+
+    public function closeWintering(
+        Animal $animal,
+        CloseAnimalWinteringCommand $command
+    ): RedirectResponse {
+        try {
+            $command->handle((int) $animal->id);
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->to($this->winteringUrl($animal))
+                ->withErrors($exception->errors())
+                ->withInput();
+        }
+
+        return redirect()
+            ->to($this->winteringUrl($animal))
+            ->with('toast', ['type' => 'success', 'message' => 'Zimowanie zakonczone.']);
     }
 }

@@ -257,7 +257,7 @@
                     return;
                 }
 
-                const button = target.closest('.js-wintering-advance');
+                const button = target.closest('.js-wintering-advance, .js-wintering-close');
                 if (!(button instanceof HTMLButtonElement)) {
                     return;
                 }
@@ -267,8 +267,9 @@
                     return;
                 }
 
+                const isCloseAction = button.classList.contains('js-wintering-close');
                 button.disabled = true;
-                setStatus('Zapisywanie etapu...', 'muted');
+                setStatus(isCloseAction ? 'Zamykanie zimowania...' : 'Zapisywanie etapu...', 'muted');
 
                 try {
                     const response = await fetch(url, {
@@ -284,11 +285,15 @@
 
                     const payload = await response.json().catch(() => ({}));
                     if (!response.ok || payload.ok === false) {
-                        throw new Error(payload.message || 'Nie udalo sie rozpoczac etapu zimowania.');
+                        throw new Error(payload.message || (isCloseAction
+                            ? 'Nie udalo sie zakonczyc zimowania.'
+                            : 'Nie udalo sie rozpoczac etapu zimowania.'));
                     }
 
                     await refreshRows();
-                    setStatus(payload.message || 'Etap zimowania rozpoczety.', 'success');
+                    setStatus(payload.message || (isCloseAction
+                        ? 'Zimowanie zakonczone.'
+                        : 'Etap zimowania rozpoczety.'), 'success');
                 } catch (error) {
                     setStatus(error instanceof Error ? error.message : 'Wystapil nieznany blad.', 'danger');
                 } finally {
