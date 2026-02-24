@@ -1,4 +1,4 @@
-<div class="glass-card glass-table-wrapper">
+<div class="glass-card glass-table-wrapper connections-autocomplete-host">
     <div class="card-header">
         <div class="strike"><span>Wyszukiwarka polaczen</span></div>
     </div>

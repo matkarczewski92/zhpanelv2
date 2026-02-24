@@ -1366,6 +1366,10 @@ class GetLitterPlanningPageQuery
      */
     private function buildConnectionGeneSuggestions(array $traitGeneAliasMap = []): array
     {
+        $manualSuggestions = collect([
+            'Ultramel',
+        ]);
+
         $geneSuggestions = AnimalGenotypeCategory::query()
             ->whereNotNull('name')
             ->select('name')
@@ -1386,6 +1390,7 @@ class GetLitterPlanningPageQuery
 
         return collect($geneSuggestions)
             ->merge($traitSuggestions)
+            ->merge($manualSuggestions)
             ->filter()
             ->map(fn (string $value): string => trim($value))
             ->unique(fn (string $value): string => strtolower($value))
@@ -2562,8 +2567,29 @@ class GetLitterPlanningPageQuery
                 return false;
             }
 
+            if ($expected === 'ultramel') {
+                if (!$this->matchesUltramelExpectation(
+                    $normalizedVisualTraits,
+                    $normalizedCarrierTraits,
+                    $resolvedCarrierGenes,
+                    $normalizedTraitsName
+                )) {
+                    return false;
+                }
+
+                continue;
+            }
+
             if (str_starts_with($expected, 'het ')) {
                 $expectedHetGene = $this->normalizeTrait((string) preg_replace('/^het\s+/i', '', $expected));
+                if ($expectedHetGene === 'ultramel') {
+                    if (!$this->matchesUltramelCarrierExpectation($normalizedCarrierTraits, $resolvedCarrierGenes)) {
+                        return false;
+                    }
+
+                    continue;
+                }
+
                 $isAmbiguousExpected = str_contains($expectedHetGene, '/');
 
                 $isMatched = $isAmbiguousExpected
@@ -2602,6 +2628,49 @@ class GetLitterPlanningPageQuery
         }
 
         return true;
+    }
+
+    /**
+     * @param array<int, string> $normalizedVisualTraits
+     * @param array<int, string> $normalizedCarrierTraits
+     * @param array<int, string> $resolvedCarrierGenes
+     */
+    private function matchesUltramelExpectation(
+        array $normalizedVisualTraits,
+        array $normalizedCarrierTraits,
+        array $resolvedCarrierGenes,
+        string $normalizedTraitsName
+    ): bool {
+        $hasVisualUltramel = collect($normalizedVisualTraits)
+            ->contains(fn (string $visual): bool => $this->matchesWholeTrait($visual, 'ultramel'))
+            || $this->matchesWholeTrait($normalizedTraitsName, 'ultramel');
+
+        if ($hasVisualUltramel) {
+            return true;
+        }
+
+        return $this->matchesUltramelCarrierExpectation($normalizedCarrierTraits, $resolvedCarrierGenes);
+    }
+
+    /**
+     * @param array<int, string> $normalizedCarrierTraits
+     * @param array<int, string> $resolvedCarrierGenes
+     */
+    private function matchesUltramelCarrierExpectation(array $normalizedCarrierTraits, array $resolvedCarrierGenes): bool
+    {
+        $hasCombinedCarrier = collect($normalizedCarrierTraits)
+            ->contains(fn (string $carrier): bool => in_array($carrier, ['het amel/ultra', 'het ultra/amel'], true));
+
+        if ($hasCombinedCarrier) {
+            return true;
+        }
+
+        $hasAmelCarrier = collect($resolvedCarrierGenes)
+            ->contains(fn (string $carrierGene): bool => $this->matchesWholeTrait($carrierGene, 'amel'));
+        $hasUltraCarrier = collect($resolvedCarrierGenes)
+            ->contains(fn (string $carrierGene): bool => $this->matchesWholeTrait($carrierGene, 'ultra'));
+
+        return $hasAmelCarrier && $hasUltraCarrier;
     }
 
     /**

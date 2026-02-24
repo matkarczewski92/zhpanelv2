@@ -1,4 +1,5 @@
 const appId = 'littersPlanningApp';
+const AUTOCOMPLETE_MAX_SUGGESTIONS = 30;
 
 const getCsrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -158,7 +159,7 @@ const initGeneAutocomplete = (app, inputRole, suggestionsRole) => {
 
         const matches = allSuggestions
             .filter((item) => needle.length < 1 || normalize(item).includes(needle))
-            .slice(0, 8);
+            .slice(0, AUTOCOMPLETE_MAX_SUGGESTIONS);
 
         if (matches.length === 0) {
             hideSuggestions();

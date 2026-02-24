@@ -28,13 +28,21 @@
             top: calc(100% + 4px);
             left: 0;
             z-index: 1050;
-            max-height: 260px;
+            max-height: min(60vh, 360px);
             overflow-y: auto;
             padding: 0.25rem;
             border-radius: 0.5rem;
             border: 1px solid rgba(255, 255, 255, 0.18);
             background: rgba(20, 24, 31, 0.98);
             box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        #littersPlanningApp .connections-autocomplete-host {
+            overflow: visible;
+        }
+
+        #littersPlanningApp .connections-autocomplete-host .card-body {
+            overflow: visible;
         }
 
         #littersPlanningApp .connections-suggestion-item {

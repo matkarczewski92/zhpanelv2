@@ -1,4 +1,4 @@
-<div class="glass-card glass-table-wrapper">
+<div class="glass-card glass-table-wrapper connections-autocomplete-host">
     @php
         $activeRoadmap = collect($page->roadmaps ?? [])->firstWhere('id', $page->activeRoadmapId ?? 0);
     @endphp
