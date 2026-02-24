@@ -2570,7 +2570,6 @@ class GetLitterPlanningPageQuery
             if ($expected === 'ultramel') {
                 if (!$this->matchesUltramelExpectation(
                     $normalizedVisualTraits,
-                    $normalizedCarrierTraits,
                     $resolvedCarrierGenes,
                     $normalizedTraitsName
                 )) {
@@ -2583,7 +2582,7 @@ class GetLitterPlanningPageQuery
             if (str_starts_with($expected, 'het ')) {
                 $expectedHetGene = $this->normalizeTrait((string) preg_replace('/^het\s+/i', '', $expected));
                 if ($expectedHetGene === 'ultramel') {
-                    if (!$this->matchesUltramelCarrierExpectation($normalizedCarrierTraits, $resolvedCarrierGenes)) {
+                    if (!$this->matchesUltramelCarrierExpectation($resolvedCarrierGenes)) {
                         return false;
                     }
 
@@ -2632,12 +2631,10 @@ class GetLitterPlanningPageQuery
 
     /**
      * @param array<int, string> $normalizedVisualTraits
-     * @param array<int, string> $normalizedCarrierTraits
      * @param array<int, string> $resolvedCarrierGenes
      */
     private function matchesUltramelExpectation(
         array $normalizedVisualTraits,
-        array $normalizedCarrierTraits,
         array $resolvedCarrierGenes,
         string $normalizedTraitsName
     ): bool {
@@ -2649,22 +2646,14 @@ class GetLitterPlanningPageQuery
             return true;
         }
 
-        return $this->matchesUltramelCarrierExpectation($normalizedCarrierTraits, $resolvedCarrierGenes);
+        return $this->matchesUltramelCarrierExpectation($resolvedCarrierGenes);
     }
 
     /**
-     * @param array<int, string> $normalizedCarrierTraits
      * @param array<int, string> $resolvedCarrierGenes
      */
-    private function matchesUltramelCarrierExpectation(array $normalizedCarrierTraits, array $resolvedCarrierGenes): bool
+    private function matchesUltramelCarrierExpectation(array $resolvedCarrierGenes): bool
     {
-        $hasCombinedCarrier = collect($normalizedCarrierTraits)
-            ->contains(fn (string $carrier): bool => in_array($carrier, ['het amel/ultra', 'het ultra/amel'], true));
-
-        if ($hasCombinedCarrier) {
-            return true;
-        }
-
         $hasAmelCarrier = collect($resolvedCarrierGenes)
             ->contains(fn (string $carrierGene): bool => $this->matchesWholeTrait($carrierGene, 'amel'));
         $hasUltraCarrier = collect($resolvedCarrierGenes)
