@@ -559,6 +559,7 @@ class GetAnimalProfileQuery
                 'sex' => $animal->sex,
                 'date_of_birth' => optional($animal->date_of_birth)->toDateString(),
                 'feed_id' => $animal->feed_id,
+                'feed_interval' => $animal->feed_interval,
                 'feeding_interval' => $animal->feed_interval,
                 'secret_tag' => $animal->secret_tag,
                 'public_profile_tag' => $animal->public_profile_tag,
