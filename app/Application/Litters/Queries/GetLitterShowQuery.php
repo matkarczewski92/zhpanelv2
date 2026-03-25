@@ -9,6 +9,7 @@ use App\Models\Animal;
 use App\Models\AnimalGenotypeCategory;
 use App\Models\Litter;
 use App\Services\Genetics\GenotypeCalculator;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 
 class GetLitterShowQuery
@@ -103,6 +104,14 @@ class GetLitterShowQuery
         $totalForSale = collect($offspring)->filter(fn (array $row) => $row['has_offer'])->count();
         $soldCount = collect($offspring)->filter(fn (array $row) => $row['is_sold'])->count();
         $planning = $this->timelineCalculator->buildPlanning($litter, $planningInput);
+        $estimatedLayingDate = $this->timelineCalculator->estimatedLayingDate($litter);
+        $estimatedHatchingDate = $this->timelineCalculator->estimatedHatchingDate($litter);
+        $layingDateDisplay = $litter->laying_date
+            ? $this->formatDateWithDays($litter->laying_date, $litter->connection_date)
+            : ($estimatedLayingDate ? 'plan. ' . $this->formatDateWithDays($estimatedLayingDate, $litter->connection_date ?? $litter->planned_connection_date) : '-');
+        $hatchingDateDisplay = $litter->hatching_date
+            ? $this->formatDateWithDays($litter->hatching_date, $litter->laying_date)
+            : ($estimatedHatchingDate ? 'plan. ' . $this->formatDateWithDays($estimatedHatchingDate, $litter->laying_date ?? $estimatedLayingDate) : '-');
 
         return new LitterShowViewModel(
             litter: [
@@ -129,7 +138,9 @@ class GetLitterShowQuery
                 'planned_connection_date' => $litter->planned_connection_date?->format('Y-m-d'),
                 'connection_date' => $litter->connection_date?->format('Y-m-d'),
                 'laying_date' => $litter->laying_date?->format('Y-m-d'),
+                'laying_date_display' => $layingDateDisplay,
                 'hatching_date' => $litter->hatching_date?->format('Y-m-d'),
+                'hatching_date_display' => $hatchingDateDisplay,
                 'laying_eggs_total' => (int) ($litter->laying_eggs_total ?? 0),
                 'laying_eggs_ok' => (int) ($litter->laying_eggs_ok ?? 0),
                 'hatching_eggs' => (int) ($litter->hatching_eggs ?? 0),
@@ -145,8 +156,8 @@ class GetLitterShowQuery
                 'sold_rows' => $soldRows,
             ],
             timeline: [
-                'estimated_laying_date' => $this->timelineCalculator->estimatedLayingDate($litter)?->format('Y-m-d'),
-                'estimated_hatching_date' => $this->timelineCalculator->estimatedHatchingDate($litter)?->format('Y-m-d'),
+                'estimated_laying_date' => $estimatedLayingDate?->format('Y-m-d'),
+                'estimated_hatching_date' => $estimatedHatchingDate?->format('Y-m-d'),
                 'planning' => $planning,
             ],
         );
@@ -283,6 +294,19 @@ class GetLitterShowQuery
     {
         $value = trim(strip_tags((string) $name));
         return $value !== '' ? $value : '-';
+    }
+
+    private function formatDateWithDays(CarbonInterface $date, ?CarbonInterface $referenceDate): string
+    {
+        $formatted = $date->format('Y-m-d');
+
+        if (!$referenceDate) {
+            return $formatted;
+        }
+
+        $days = $referenceDate->diffInDays($date, false);
+
+        return sprintf('%s (%d dni)', $formatted, $days);
     }
 
     /**

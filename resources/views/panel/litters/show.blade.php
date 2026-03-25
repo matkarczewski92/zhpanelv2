@@ -152,11 +152,11 @@
                         </div>
                         <div class="col-12 col-md-4">
                             <div class="small text-muted">Data zniosu</div>
-                            <div>{{ $litter['laying_date'] ?: ($timeline['estimated_laying_date'] ? 'plan. ' . $timeline['estimated_laying_date'] : '-') }}</div>
+                            <div>{{ $litter['laying_date_display'] ?? '-' }}</div>
                         </div>
                         <div class="col-12 col-md-4">
                             <div class="small text-muted">Data wyklucia</div>
-                            <div>{{ $litter['hatching_date'] ?: ($timeline['estimated_hatching_date'] ? 'plan. ' . $timeline['estimated_hatching_date'] : '-') }}</div>
+                            <div>{{ $litter['hatching_date_display'] ?? '-' }}</div>
                         </div>
                         <div class="col-12 col-md-4">
                             <div class="small text-muted">Ilosc zniesionych jaj</div>
