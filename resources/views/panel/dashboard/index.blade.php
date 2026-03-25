@@ -186,8 +186,8 @@
                         <table class="table glass-table table-sm align-middle mb-0 dashboard-feeding-table">
                             <thead>
                                 <tr class="small text-muted">
-                                    <th>Nazwa zwierzęcia</th>
                                     <th>Rodzaj karmy</th>
+                                    <th>Nazwa zwierzęcia</th>
                                     <th>Data karmienia</th>
                                     <th class="text-center">Dni do karmienia</th>
                                 </tr>
@@ -195,11 +195,11 @@
                             <tbody>
                                 @forelse ($table['rows'] as $row)
                                     <tr class="{{ $row['days_to_feed'] < 0 ? 'text-danger' : ($row['days_to_feed'] === 0 ? 'text-success' : '') }}">
+                                        <td>{{ $row['feed_name'] }}</td>
                                         <td>
                                             {{ $row['id'] }}.
                                             <a href="{{ $row['profile_url'] }}" class="link-light text-decoration-none">{{ $row['name'] }}</a>
                                         </td>
-                                        <td>{{ $row['feed_name'] }}</td>
                                         <td>{{ $row['feed_date'] ?: '—' }}</td>
                                         <td class="text-center">{{ $row['days_to_feed_label'] ?? $row['days_to_feed'] }}</td>
                                     </tr>
