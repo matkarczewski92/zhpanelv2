@@ -218,6 +218,7 @@ class GetAnimalProfileQuery
             ['label' => 'Data urodzenia', 'value' => optional($animal->date_of_birth)->format('Y-m-d')],
             ['label' => 'Miot', 'value_html' => $litterValueHtml],
             ['label' => 'Domyślna karma', 'value' => optional($animal->feed)->name],
+            ['label' => 'Domyślna ilość karmy', 'value' => $this->resolveFeedQuantity($animal)],
             ['label' => 'Interwał karmienia', 'value' => $this->resolveFeedingInterval($animal)],
             ['label' => 'Secret tag', 'value' => $animal->secret_tag],
             ['label' => 'Publiczny tag', 'value' => $animal->public_profile_tag],
@@ -420,7 +421,7 @@ class GetAnimalProfileQuery
         $today = Carbon::now()->toDateString();
         return [
             'feed_id' => $animal->feed_id,
-            'quantity' => 1,
+            'quantity' => $this->resolveFeedQuantity($animal),
             'date' => $today,
             'date_iso' => $today,
         ];
@@ -433,6 +434,11 @@ class GetAnimalProfileQuery
         }
 
         return optional($animal->feed)->feeding_interval;
+    }
+
+    private function resolveFeedQuantity(Animal $animal): int
+    {
+        return max(1, (int) ($animal->feed_quantity ?? 1));
     }
 
     private function buildGenotypeChips(Animal $animal): array
@@ -560,6 +566,7 @@ class GetAnimalProfileQuery
                 'date_of_birth' => optional($animal->date_of_birth)->toDateString(),
                 'feed_id' => $animal->feed_id,
                 'feed_interval' => $animal->feed_interval,
+                'feed_quantity' => $this->resolveFeedQuantity($animal),
                 'feeding_interval' => $animal->feed_interval,
                 'secret_tag' => $animal->secret_tag,
                 'public_profile_tag' => $animal->public_profile_tag,

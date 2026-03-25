@@ -26,6 +26,7 @@ class RegisterAnimalCommand
             'litter_id',
             'feed_id',
             'feed_interval',
+            'feed_quantity',
             'animal_category_id',
             'public_profile',
             'public_profile_tag',
@@ -45,6 +46,8 @@ class RegisterAnimalCommand
         if (empty($payload['secret_tag'])) {
             $payload['secret_tag'] = $this->secretTagGenerator->generate();
         }
+
+        $payload['feed_quantity'] = max(1, (int) ($payload['feed_quantity'] ?? 1));
 
         $payload = array_filter($payload, static fn ($value) => $value !== null);
 

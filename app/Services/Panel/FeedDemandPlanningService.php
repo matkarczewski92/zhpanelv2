@@ -54,17 +54,17 @@ class FeedDemandPlanningService
         ];
     }
 
-    private function buildRow(Feed $feed, int $animalsCount, int $orderQty, int $leadTimeDays, Carbon $today): array
+    private function buildRow(Feed $feed, int $demandUnits, int $orderQty, int $leadTimeDays, Carbon $today): array
     {
         $stock = (float) ($feed->amount ?? 0);
         $unitPrice = $feed->last_price !== null ? (float) $feed->last_price : null;
         $orderQty = max(0, $orderQty);
 
-        $dk = $this->calculateDk($stock, $animalsCount);
+        $dk = $this->calculateDk($stock, $demandUnits);
         $dz = $this->calculateOrderDate($dk, (int) $feed->feeding_interval, $leadTimeDays, $today);
 
         $newStock = $stock + $orderQty;
-        $newDk = $this->calculateDk($newStock, $animalsCount);
+        $newDk = $this->calculateDk($newStock, $demandUnits);
         $newDz = $this->calculateOrderDate($newDk, (int) $feed->feeding_interval, $leadTimeDays, $today);
 
         $rowCost = $unitPrice !== null ? $orderQty * $unitPrice : 0.0;
@@ -73,7 +73,7 @@ class FeedDemandPlanningService
             'feed_id' => $feed->id,
             'name' => $feed->name,
             'stock' => $stock,
-            'animals_count' => $animalsCount,
+            'demand_units' => $demandUnits,
             'dk' => $dk,
             'dk_label' => (string) $dk,
             'dz' => $dz ? $dz->format('Y-m-d') : null,
@@ -90,13 +90,13 @@ class FeedDemandPlanningService
         ];
     }
 
-    private function calculateDk(float $stock, int $animalsCount): int
+    private function calculateDk(float $stock, int $demandUnits): int
     {
-        if ($animalsCount <= 0) {
+        if ($demandUnits <= 0) {
             return (int) floor($stock);
         }
 
-        return (int) floor($stock / $animalsCount);
+        return (int) floor($stock / $demandUnits);
     }
 
     private function calculateOrderDate(int $dk, int $feedingInterval, int $leadTimeDays, Carbon $today): ?Carbon
@@ -112,11 +112,11 @@ class FeedDemandPlanningService
     private function demandPerFeed(): Collection
     {
         return Animal::query()
-            ->selectRaw('feed_id, COUNT(*) as animals_count')
+            ->selectRaw('feed_id, SUM(CASE WHEN feed_quantity IS NULL OR feed_quantity < 1 THEN 1 ELSE feed_quantity END) as demand_units')
             ->whereNotNull('feed_id')
             ->whereNotIn('animal_category_id', [3, 5]) // exclude categories not used for feeding plans
             ->groupBy('feed_id')
-            ->pluck('animals_count', 'feed_id')
+            ->pluck('demand_units', 'feed_id')
             ->map(fn ($value) => (int) $value);
     }
 

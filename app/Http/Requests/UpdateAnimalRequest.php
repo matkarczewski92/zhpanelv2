@@ -24,6 +24,7 @@ class UpdateAnimalRequest extends FormRequest
             'litter_id' => ['sometimes', 'nullable', 'exists:litters,id'],
             'feed_id' => ['sometimes', 'nullable', 'exists:feeds,id'],
             'feed_interval' => ['sometimes', 'nullable', 'integer'],
+            'feed_quantity' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'animal_category_id' => ['required', 'exists:animal_category,id'],
             'public_profile' => ['sometimes', 'nullable', 'boolean'],
             'public_profile_tag' => ['sometimes', 'nullable', 'string', 'max:255'],

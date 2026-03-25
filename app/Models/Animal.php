@@ -20,15 +20,17 @@ class Animal extends Model
   5 => 'litter_id',
   6 => 'feed_id',
   7 => 'feed_interval',
-  8 => 'animal_category_id',
-  9 => 'public_profile',
-  10 => 'public_profile_tag',
-  11 => 'secret_tag',
-  12 => 'web_gallery',
+  8 => 'feed_quantity',
+  9 => 'animal_category_id',
+  10 => 'public_profile',
+  11 => 'public_profile_tag',
+  12 => 'secret_tag',
+  13 => 'web_gallery',
 );
 
     protected $casts = array (
   'date_of_birth' => 'date',
+  'feed_quantity' => 'integer',
   'created_at' => 'datetime',
   'updated_at' => 'datetime',
 );

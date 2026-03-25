@@ -32,6 +32,7 @@ class UpdateAnimalCommand
             'litter_id',
             'feed_id',
             'feed_interval',
+            'feed_quantity',
             'animal_category_id',
             'public_profile',
             'web_gallery',
@@ -39,6 +40,7 @@ class UpdateAnimalCommand
 
         // Preserve existing tag; generate if missing.
         $payload['public_profile_tag'] = $animal->public_profile_tag ?: $this->generateTag();
+        $payload['feed_quantity'] = max(1, (int) ($payload['feed_quantity'] ?? $animal->feed_quantity ?? 1));
 
         return DB::transaction(function () use ($animal, $payload): Animal {
             $animal->fill($payload);

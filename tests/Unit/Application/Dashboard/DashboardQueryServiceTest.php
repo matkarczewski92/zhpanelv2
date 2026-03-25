@@ -43,4 +43,39 @@ class DashboardQueryServiceTest extends TestCase
         $this->assertSame(-4, $past['days_to_feed']);
         $this->assertSame('-4', $past['days_to_feed_label']);
     }
+
+    public function test_sorts_feeding_rows_by_feed_name_and_sums_feed_quantity_in_summary(): void
+    {
+        $service = new DashboardQueryService(
+            new LitterTimelineCalculator(),
+            new AnimalWinteringCycleResolver()
+        );
+
+        $sortMethod = new ReflectionMethod($service, 'sortFeedingRows');
+        $sortMethod->setAccessible(true);
+        $summaryMethod = new ReflectionMethod($service, 'buildFeedingSummary');
+        $summaryMethod->setAccessible(true);
+
+        $rows = [
+            ['id' => 15, 'name' => 'Zulu', 'feed_name' => 'Mysz 30g+', 'feed_quantity' => 2, 'days_to_feed' => 0],
+            ['id' => 2, 'name' => 'Alpha', 'feed_name' => 'Mysz 23-29g', 'feed_quantity' => 1, 'days_to_feed' => 0],
+            ['id' => 7, 'name' => 'Beta', 'feed_name' => 'Mysz 23-29g', 'feed_quantity' => 3, 'days_to_feed' => -2],
+        ];
+
+        $sorted = $sortMethod->invoke($service, $rows);
+        $summary = $summaryMethod->invoke($service, $sorted, false);
+        $pastSummary = $summaryMethod->invoke($service, $sorted, true);
+
+        $this->assertSame('Mysz 23-29g', $sorted[0]['feed_name']);
+        $this->assertSame('Mysz 23-29g', $sorted[1]['feed_name']);
+        $this->assertSame('Mysz 30g+', $sorted[2]['feed_name']);
+        $this->assertSame([
+            'Mysz 23-29g' => 4,
+            'Mysz 30g+' => 2,
+        ], $summary);
+        $this->assertSame([
+            'Mysz 23-29g' => 4,
+            'Mysz 30g+' => 2,
+        ], $pastSummary);
+    }
 }

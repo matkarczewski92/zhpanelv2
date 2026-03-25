@@ -187,6 +187,7 @@
                             <thead>
                                 <tr class="small text-muted">
                                     <th>Rodzaj karmy</th>
+                                    <th class="text-center">Ilość karmy</th>
                                     <th>Nazwa zwierzęcia</th>
                                     <th>Data karmienia</th>
                                     <th class="text-center">Dni do karmienia</th>
@@ -196,6 +197,7 @@
                                 @forelse ($table['rows'] as $row)
                                     <tr class="{{ $row['days_to_feed'] < 0 ? 'text-danger' : ($row['days_to_feed'] === 0 ? 'text-success' : '') }}">
                                         <td>{{ $row['feed_name'] }}</td>
+                                        <td class="text-center">{{ $row['feed_quantity'] }}</td>
                                         <td>
                                             {{ $row['id'] }}.
                                             <a href="{{ $row['profile_url'] }}" class="link-light text-decoration-none">{{ $row['name'] }}</a>
@@ -205,7 +207,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center text-secondary">Brak zwierząt do karmienia.</td>
+                                        <td colspan="5" class="text-center text-secondary">Brak zwierząt do karmienia.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

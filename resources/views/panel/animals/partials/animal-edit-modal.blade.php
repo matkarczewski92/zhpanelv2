@@ -70,6 +70,11 @@
                             @error('feed_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label">Ilość karmy</label>
+                            <input type="number" name="feed_quantity" min="1" class="form-control @error('feed_quantity') is-invalid @enderror" value="{{ old('feed_quantity', $profile->edit['values']['feed_quantity'] ?? 1) }}">
+                            @error('feed_quantity')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">Secret tag</label>
                             <input type="text" class="form-control" value="{{ $profile->edit['values']['secret_tag'] ?? '-' }}" disabled readonly>
                         </div>

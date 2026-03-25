@@ -260,8 +260,7 @@ class DashboardQueryService
         $animals = Animal::query()
             ->with(['feed:id,name,feeding_interval'])
             ->whereIn('animal_category_id', [1, 2])
-            ->orderBy('id')
-            ->get(['id', 'name', 'animal_category_id', 'feed_id', 'feed_interval']);
+            ->get(['id', 'name', 'animal_category_id', 'feed_id', 'feed_interval', 'feed_quantity']);
         $winteringActiveIds = $this->winteringCycleResolver->resolveActiveAnimalIds(
             $animals->pluck('id')->map(fn ($id): int => (int) $id)->all()
         );
@@ -306,6 +305,7 @@ class DashboardQueryService
                 'id' => $animal->id,
                 'name' => trim(strip_tags((string) $animal->name)),
                 'feed_name' => $animal->feed?->name ?: 'Brak karmy',
+                'feed_quantity' => max(1, (int) ($animal->feed_quantity ?? 1)),
                 'feed_date' => $metrics['next_feed_date'],
                 'days_to_feed' => $metrics['days_to_feed'],
                 'days_to_feed_label' => $metrics['days_to_feed_label'],
@@ -321,6 +321,8 @@ class DashboardQueryService
             }
         }
 
+        $tables['breeding']['rows'] = $this->sortFeedingRows($tables['breeding']['rows']);
+        $tables['litters']['rows'] = $this->sortFeedingRows($tables['litters']['rows']);
         $tables['breeding']['summary'] = $this->buildFeedingSummary($tables['breeding']['rows'], false);
         $tables['breeding']['summary_past'] = $this->buildFeedingSummary($tables['breeding']['rows'], true);
         $tables['litters']['summary'] = $this->buildFeedingSummary($tables['litters']['rows'], false);
@@ -367,10 +369,38 @@ class DashboardQueryService
             }
 
             $feedName = (string) ($row['feed_name'] ?? 'Brak karmy');
-            $grouped[$feedName] = ($grouped[$feedName] ?? 0) + 1;
+            $grouped[$feedName] = ($grouped[$feedName] ?? 0) + max(1, (int) ($row['feed_quantity'] ?? 1));
         }
 
         return $grouped;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function sortFeedingRows(array $rows): array
+    {
+        usort($rows, static function (array $left, array $right): int {
+            $feedComparison = strnatcasecmp((string) ($left['feed_name'] ?? ''), (string) ($right['feed_name'] ?? ''));
+            if ($feedComparison !== 0) {
+                return $feedComparison;
+            }
+
+            $quantityComparison = ((int) ($left['feed_quantity'] ?? 1)) <=> ((int) ($right['feed_quantity'] ?? 1));
+            if ($quantityComparison !== 0) {
+                return $quantityComparison;
+            }
+
+            $nameComparison = strnatcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+            if ($nameComparison !== 0) {
+                return $nameComparison;
+            }
+
+            return ((int) ($left['id'] ?? 0)) <=> ((int) ($right['id'] ?? 0));
+        });
+
+        return $rows;
     }
 
     private function formatCurrency(float $value): string

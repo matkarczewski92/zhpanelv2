@@ -24,6 +24,7 @@ class StoreAnimalRequest extends FormRequest
             'litter_id' => ['nullable', 'exists:litters,id'],
             'feed_id' => ['nullable', 'exists:feeds,id'],
             'feed_interval' => ['nullable', 'integer'],
+            'feed_quantity' => ['nullable', 'integer', 'min:1'],
             'animal_category_id' => ['nullable', 'exists:animal_category,id'],
             'public_profile' => ['nullable', 'boolean'],
             'public_profile_tag' => ['nullable', 'string', 'max:255'],

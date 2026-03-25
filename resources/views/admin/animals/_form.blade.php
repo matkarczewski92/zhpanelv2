@@ -149,6 +149,20 @@
         @enderror
     </div>
     <div class="col-md-6">
+        <label class="form-label" for="feed_quantity">Ilość karmy</label>
+        <input
+            id="feed_quantity"
+            name="feed_quantity"
+            type="number"
+            min="1"
+            class="form-control @error('feed_quantity') is-invalid @enderror"
+            value="{{ old('feed_quantity', $animal->feed_quantity ?? 1) }}"
+        />
+        @error('feed_quantity')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+    <div class="col-md-6">
         <label class="form-label" for="litter_id">Miot (ID)</label>
         <input
             id="litter_id"

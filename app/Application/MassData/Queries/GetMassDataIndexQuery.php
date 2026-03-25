@@ -42,6 +42,7 @@ class GetMassDataIndexQuery
                 'animals.name',
                 'animals.feed_id',
                 'animals.feed_interval',
+                'animals.feed_quantity',
                 'animals.animal_category_id',
             ])
             ->addSelect('default_feed.feeding_interval as default_feed_interval')
@@ -111,7 +112,7 @@ class GetMassDataIndexQuery
                     'name_html' => $this->sanitizeName($animal->name),
                     'profile_url' => route('panel.animals.show', $animal->id),
                     'default_feed_id' => $animal->feed_id ? (int) $animal->feed_id : null,
-                    'default_amount' => 1,
+                    'default_amount' => max(1, (int) ($animal->feed_quantity ?? 1)),
                     'default_feed_check' => !$isWintering && $timeToFeed <= 0,
                     'is_wintering' => $isWintering,
                 ];
