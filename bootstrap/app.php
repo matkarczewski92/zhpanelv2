@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,11 +18,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (NotFoundHttpException $exception, $request) {
+        $exceptions->render(function (HttpExceptionInterface $exception, $request) {
             if ($request->expectsJson()) {
                 return null;
             }
 
-            return response()->view('errors.404', [], 404);
+            return match ($exception->getStatusCode()) {
+                404 => response()->view('errors.404', [], 404),
+                503 => response()->view('errors.503', [], 503),
+                default => null,
+            };
         });
     })->create();
