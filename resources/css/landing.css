@@ -18,6 +18,34 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.landing-nav-maintenance {
+    background:
+        linear-gradient(90deg, rgba(90, 44, 0, 0.96), rgba(140, 64, 0, 0.92)),
+        rgba(8, 10, 14, 0.9);
+    border-bottom: 1px solid rgba(255, 193, 7, 0.52);
+    box-shadow: 0 10px 28px rgba(255, 152, 0, 0.18);
+}
+
+.landing-nav-maintenance .nav-link {
+    color: rgba(255, 244, 214, 0.88);
+}
+
+.landing-nav-maintenance .nav-link.active,
+.landing-nav-maintenance .nav-link:hover,
+.landing-nav-maintenance .navbar-brand {
+    color: #fff;
+}
+
+.landing-maintenance-badge {
+    background: linear-gradient(135deg, #ffe082, #ffb300);
+    color: #2a1700;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
 .landing-hero {
     position: relative;
     min-height: 42vh;

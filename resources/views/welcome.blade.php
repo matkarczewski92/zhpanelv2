@@ -15,12 +15,18 @@
         $offerGroups = $page->offerGroups ?? [];
         $offerColorGroups = $page->offerColorGroups ?? [];
         $breedingPlans = $page->breedingPlans ?? [];
+        $isMaintenanceMode = app()->maintenanceMode()->active();
     @endphp
 
     <header class="landing-nav-wrap">
-        <nav class="navbar navbar-expand-lg navbar-dark landing-nav">
+        <nav class="navbar navbar-expand-lg navbar-dark landing-nav @if($isMaintenanceMode) landing-nav-maintenance @endif">
             <div class="container">
-                <a class="navbar-brand fw-semibold" href="#top">MAKS SNAKE</a>
+                <a class="navbar-brand fw-semibold d-inline-flex align-items-center gap-2" href="#top">
+                    <span>MAKS SNAKE</span>
+                    @if($isMaintenanceMode)
+                        <span class="badge rounded-pill landing-maintenance-badge">Maintenance</span>
+                    @endif
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landingNav" aria-controls="landingNav" aria-expanded="false" aria-label="Przełącz nawigację">
                     <span class="navbar-toggler-icon"></span>
                 </button>
