@@ -71,9 +71,10 @@ class PortalUpdateController extends Controller
     public function artisan(PortalArtisanRunRequest $request): RedirectResponse
     {
         $payload = $request->validated();
+        $confirmed = (bool) ($payload['confirmed'] ?? false);
 
         try {
-            $result = $this->service->runArtisanCommand((string) $payload['command']);
+            $result = $this->service->runArtisanCommand((string) $payload['command'], $confirmed);
         } catch (RuntimeException $exception) {
             return $this->redirectToTab()
                 ->withInput()

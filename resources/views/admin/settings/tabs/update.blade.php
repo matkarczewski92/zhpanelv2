@@ -12,6 +12,10 @@
     $maintenanceAllowedIps = $updatePanel['maintenance_allowed_ips'] ?? [];
     $lastMaintenanceRun = $updatePanel['last_maintenance_run'] ?? null;
     $logTail = (string) ($updatePanel['log_tail'] ?? '');
+    $artisanRestrictions = $artisanRestrictions ?? [];
+    $availableCommands = $artisanRestrictions['available_commands'] ?? [];
+    $confirmCommands = $artisanRestrictions['confirm_commands'] ?? [];
+    $blockedCommands = $artisanRestrictions['blocked_commands'] ?? [];
 @endphp
 
 <div class="tab-pane fade @if($vm->activeTab==='update') show active @endif" id="tab-update" role="tabpanel">
@@ -213,12 +217,14 @@
                     Formularz i tak uruchamia wylacznie polecenia artisan po stronie serwera.
                 </p>
 
-                <form method="POST" action="{{ route('admin.settings.update.artisan') }}" class="mb-3" onsubmit="return confirm('Uruchomic komende artisan na serwerze?')">
+                <form method="POST" action="{{ route('admin.settings.update.artisan') }}" class="mb-3">
                     @csrf
+                    <input type="hidden" name="confirmed" id="artisanCommandConfirmed" value="0">
                     <div class="input-group">
                         <span class="input-group-text bg-dark text-light border-secondary font-monospace">php artisan</span>
                         <input
                             type="text"
+                            id="artisanCommandInput"
                             name="command"
                             class="form-control bg-dark text-light border-secondary font-monospace"
                             value="{{ old('command', is_array($lastArtisanRun) ? ($lastArtisanRun['input'] ?? '') : '') }}"
@@ -235,6 +241,27 @@
                 <div class="small text-muted mb-3">
                     Silnik komend: <span class="fw-semibold">{{ $commandDriver !== '' ? $commandDriver : '-' }}</span>,
                     PHP CLI: <span class="font-monospace">{{ $updatePanel['php_cli_binary'] ?? '-' }}</span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-4">
+                        <div class="small text-muted mb-2">Dozwolone</div>
+                        <div class="small bg-black border rounded p-3 h-100">
+                            {{ count($availableCommands) ? implode(', ', $availableCommands) : 'Brak.' }}
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="small text-muted mb-2">Wymagaja potwierdzenia</div>
+                        <div class="small bg-black border rounded p-3 h-100">
+                            {{ count($confirmCommands) ? implode(', ', $confirmCommands) : 'Brak.' }}
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="small text-muted mb-2">Zablokowane</div>
+                        <div class="small bg-black border rounded p-3 h-100">
+                            {{ count($blockedCommands) ? implode(', ', $blockedCommands) : 'Brak.' }}
+                        </div>
+                    </div>
                 </div>
 
                 @if(is_array($lastArtisanRun))
@@ -301,20 +328,78 @@
         document.addEventListener('DOMContentLoaded', () => {
             const modalElement = document.getElementById('maintenanceModeModal');
             const inputElement = document.getElementById('maintenanceAllowedIp');
+            const artisanCommandInput = document.getElementById('artisanCommandInput');
+            const artisanCommandConfirmed = document.getElementById('artisanCommandConfirmed');
+            const artisanCommandForm = artisanCommandInput?.closest('form');
+            const confirmCommands = @json(array_values($confirmCommands));
 
             if (!modalElement || !inputElement) {
-                return;
+                if (!artisanCommandForm || !artisanCommandInput || !artisanCommandConfirmed) {
+                    return;
+                }
             }
 
-            modalElement.addEventListener('shown.bs.modal', () => {
-                inputElement.focus();
-                inputElement.select();
-            });
+            const normalizeArtisanCommand = (value) => {
+                const trimmed = value.trim();
 
-            @if($errors->has('allowed_ip'))
-                const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
-                modalInstance.show();
-            @endif
+                if (trimmed === '') {
+                    return '';
+                }
+
+                const parts = trimmed.match(/"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|\S+/g) ?? [];
+                const cleaned = parts.map((part) => {
+                    if ((part.startsWith('"') && part.endsWith('"')) || (part.startsWith("'") && part.endsWith("'"))) {
+                        return part.slice(1, -1);
+                    }
+
+                    return part;
+                });
+
+                if (['php', 'php.exe'].includes((cleaned[0] ?? '').toLowerCase()) && (cleaned[1] ?? '').toLowerCase() === 'artisan') {
+                    cleaned.splice(0, 2);
+                } else if ((cleaned[0] ?? '').toLowerCase() === 'artisan') {
+                    cleaned.splice(0, 1);
+                }
+
+                return cleaned.join(' ').trim();
+            };
+
+            const commandMatchesPattern = (commandInput, pattern) => {
+                return commandInput === pattern || commandInput.startsWith(`${pattern} `);
+            };
+
+            if (artisanCommandForm && artisanCommandInput && artisanCommandConfirmed) {
+                artisanCommandForm.addEventListener('submit', (event) => {
+                    const normalizedCommand = normalizeArtisanCommand(artisanCommandInput.value);
+                    const requiresConfirmation = confirmCommands.some((pattern) => commandMatchesPattern(normalizedCommand, pattern));
+
+                    artisanCommandConfirmed.value = '0';
+
+                    if (!requiresConfirmation) {
+                        return;
+                    }
+
+                    const accepted = window.confirm(`Ta komenda wymaga dodatkowego potwierdzenia:\n\nphp artisan ${normalizedCommand}\n\nKontynuowac?`);
+                    if (!accepted) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    artisanCommandConfirmed.value = '1';
+                });
+            }
+
+            if (modalElement && inputElement) {
+                modalElement.addEventListener('shown.bs.modal', () => {
+                    inputElement.focus();
+                    inputElement.select();
+                });
+
+                @if($errors->has('allowed_ip'))
+                    const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+                    modalInstance.show();
+                @endif
+            }
         });
     </script>
 @endpush

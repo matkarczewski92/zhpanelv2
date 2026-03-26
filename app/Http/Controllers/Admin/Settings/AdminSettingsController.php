@@ -24,11 +24,13 @@ class AdminSettingsController extends Controller
             $request->session()->get('admin_update_last_artisan_run'),
             $request->session()->get('admin_update_last_maintenance_run')
         );
+        $artisanRestrictions = $this->portalUpdateService->artisanConsoleRestrictions();
 
         return view('admin.settings.index', [
             'vm' => $vm,
             'importPreview' => $request->session()->get('admin_settings_import_preview'),
             'updatePanel' => $updatePanel,
+            'artisanRestrictions' => $artisanRestrictions,
         ]);
     }
 }

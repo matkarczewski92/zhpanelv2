@@ -15,6 +15,7 @@ class PortalArtisanRunRequest extends FormRequest
     {
         return [
             'command' => ['required', 'string', 'max:500'],
+            'confirmed' => ['sometimes', 'boolean'],
         ];
     }
 }

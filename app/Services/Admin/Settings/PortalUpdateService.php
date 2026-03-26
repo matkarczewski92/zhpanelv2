@@ -14,6 +14,67 @@ class PortalUpdateService
 {
     private const UPDATE_LOCK_KEY = 'portal-update:run-lock';
     private const UPDATE_LOCK_SECONDS = 1800;
+    private const ARTISAN_AVAILABLE_COMMANDS = [
+        'up',
+        'about',
+        'route:list',
+        'schedule:list',
+        'schedule:run',
+        'queue:restart',
+        'queue:failed',
+        'optimize:clear',
+        'config:cache',
+        'route:cache',
+        'view:cache',
+        'event:cache',
+        'storage:link',
+        'custom:sync-data',
+        'custom:reindex',
+        'custom:refresh-stats',
+        'custom:rebuild-cache',
+        'custom:import-data',
+    ];
+    private const ARTISAN_CONFIRM_COMMANDS = [
+        'migrate --force',
+        'db:seed --force',
+        'cache:clear',
+        'config:clear',
+        'route:clear',
+        'view:clear',
+        'event:clear',
+        'queue:retry',
+        'queue:retry all',
+    ];
+    private const ARTISAN_BLOCKED_COMMANDS = [
+        'down',
+        'migrate:fresh',
+        'migrate:refresh',
+        'migrate:reset',
+        'migrate:rollback',
+        'db:wipe',
+        'queue:flush',
+        'queue:work',
+        'queue:listen',
+        'key:generate',
+        'make:controller',
+        'make:model',
+        'make:migration',
+        'make:command',
+        'make:job',
+        'make:seeder',
+        'make:factory',
+        'make:policy',
+        'make:mail',
+        'make:notification',
+        'make:event',
+        'make:listener',
+        'vendor:publish',
+        'optimize',
+        'serve',
+        'test',
+        'tinker',
+        'inspire',
+    ];
     private ?bool $timeoutBinaryAvailable = null;
     private ?string $composerPath = null;
 
@@ -59,11 +120,12 @@ class PortalUpdateService
         ];
     }
 
-    public function runArtisanCommand(string $input): array
+    public function runArtisanCommand(string $input, bool $confirmed = false): array
     {
         $this->assertCommandExecutionAvailable();
 
         $normalized = $this->normalizeArtisanCommand($input);
+        $this->guardArtisanCommand($normalized['input'], $confirmed);
         $startedAt = now();
         $result = $this->executeStep(
             label: 'Komenda artisan',
@@ -81,6 +143,15 @@ class PortalUpdateService
             'exit_code' => $result['exit_code'],
             'duration_ms' => $result['duration_ms'],
             'output' => $result['output'],
+        ];
+    }
+
+    public function artisanConsoleRestrictions(): array
+    {
+        return [
+            'available_commands' => self::ARTISAN_AVAILABLE_COMMANDS,
+            'confirm_commands' => self::ARTISAN_CONFIRM_COMMANDS,
+            'blocked_commands' => self::ARTISAN_BLOCKED_COMMANDS,
         ];
     }
 
@@ -369,15 +440,32 @@ class PortalUpdateService
             throw new RuntimeException('Podaj komende po "artisan", np. cache:clear albo route:list.');
         }
 
-        if (in_array(strtolower($parts[0]), ['down', 'up'], true)) {
-            throw new RuntimeException('Dla maintenance mode uzyj dedykowanego kafelka z przyciskami ON/OFF.');
-        }
-
         return [
             'input' => $this->commandToString($parts),
             'display' => 'php artisan ' . $this->commandToString($parts),
             'args' => array_values($parts),
         ];
+    }
+
+    private function guardArtisanCommand(string $commandInput, bool $confirmed): void
+    {
+        if ($this->matchesAnyCommandPattern($commandInput, self::ARTISAN_BLOCKED_COMMANDS)) {
+            throw new RuntimeException('Ta komenda jest zablokowana w konsoli panelu.');
+        }
+
+        if ($this->matchesAnyCommandPattern($commandInput, self::ARTISAN_CONFIRM_COMMANDS)) {
+            if (!$confirmed) {
+                throw new RuntimeException('Ta komenda wymaga dodatkowego potwierdzenia.');
+            }
+
+            return;
+        }
+
+        if ($this->matchesAnyCommandPattern($commandInput, self::ARTISAN_AVAILABLE_COMMANDS)) {
+            return;
+        }
+
+        throw new RuntimeException('Ta komenda nie jest dozwolona w konsoli panelu.');
     }
 
     private function remote(): string
@@ -927,6 +1015,25 @@ class PortalUpdateService
     private function commandToString(array $command): string
     {
         return implode(' ', $command);
+    }
+
+    /**
+     * @param array<int, string> $patterns
+     */
+    private function matchesAnyCommandPattern(string $commandInput, array $patterns): bool
+    {
+        foreach ($patterns as $pattern) {
+            if ($this->commandMatchesPattern($commandInput, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function commandMatchesPattern(string $commandInput, string $pattern): bool
+    {
+        return $commandInput === $pattern || str_starts_with($commandInput, $pattern . ' ');
     }
 
     /**
