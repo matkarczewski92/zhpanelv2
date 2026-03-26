@@ -86,7 +86,8 @@ class PortalUpdateService
         ?array $lastCheck = null,
         ?array $lastRun = null,
         ?array $lastArtisanRun = null,
-        ?array $lastMaintenanceRun = null
+        ?array $lastMaintenanceRun = null,
+        ?string $currentRequestIp = null
     ): array
     {
         $currentSha = $this->safeGitOutput(['git', 'rev-parse', 'HEAD']);
@@ -115,6 +116,7 @@ class PortalUpdateService
             'maintenance_data' => $maintenanceData,
             'maintenance_allowed_ips' => $this->maintenanceAllowedIps(),
             'last_maintenance_run' => $lastMaintenanceRun,
+            'current_request_ip' => $currentRequestIp,
             'log_tail' => $this->readLogTail(),
             'log_path' => $this->logPath(),
         ];

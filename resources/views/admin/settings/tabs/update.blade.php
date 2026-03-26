@@ -11,6 +11,7 @@
     $maintenanceActive = (bool) ($updatePanel['maintenance_active'] ?? false);
     $maintenanceAllowedIps = $updatePanel['maintenance_allowed_ips'] ?? [];
     $lastMaintenanceRun = $updatePanel['last_maintenance_run'] ?? null;
+    $currentRequestIp = (string) ($updatePanel['current_request_ip'] ?? '');
     $logTail = (string) ($updatePanel['log_tail'] ?? '');
     $artisanRestrictions = $artisanRestrictions ?? [];
     $availableCommands = $artisanRestrictions['available_commands'] ?? [];
@@ -159,6 +160,11 @@
                             {{ count($maintenanceAllowedIps) ? implode(', ', $maintenanceAllowedIps) : 'Brak whitelisty IP.' }}
                         </div>
 
+                        <div class="small text-muted mb-1">Wykryte IP aktualnego uzytkownika</div>
+                        <div class="font-monospace mb-3">
+                            {{ $currentRequestIp !== '' ? $currentRequestIp : 'Brak danych.' }}
+                        </div>
+
                         @if(is_array($lastMaintenanceRun))
                             <div class="alert @if(!empty($lastMaintenanceRun['success'])) alert-success @else alert-danger @endif mb-0">
                                 <div class="fw-semibold mb-1">Ostatnia operacja: {{ $lastMaintenanceRun['finished_at'] ?? '-' }}</div>
@@ -243,27 +249,6 @@
                     PHP CLI: <span class="font-monospace">{{ $updatePanel['php_cli_binary'] ?? '-' }}</span>
                 </div>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-lg-4">
-                        <div class="small text-muted mb-2">Dozwolone</div>
-                        <div class="small bg-black border rounded p-3 h-100">
-                            {{ count($availableCommands) ? implode(', ', $availableCommands) : 'Brak.' }}
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="small text-muted mb-2">Wymagaja potwierdzenia</div>
-                        <div class="small bg-black border rounded p-3 h-100">
-                            {{ count($confirmCommands) ? implode(', ', $confirmCommands) : 'Brak.' }}
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="small text-muted mb-2">Zablokowane</div>
-                        <div class="small bg-black border rounded p-3 h-100">
-                            {{ count($blockedCommands) ? implode(', ', $blockedCommands) : 'Brak.' }}
-                        </div>
-                    </div>
-                </div>
-
                 @if(is_array($lastArtisanRun))
                     <div class="alert @if(!empty($lastArtisanRun['success'])) alert-success @else alert-danger @endif mb-3">
                         <div class="fw-semibold mb-1">Ostatnie uruchomienie: {{ $lastArtisanRun['finished_at'] ?? '-' }}</div>
@@ -302,7 +287,8 @@
                             id="maintenanceAllowedIp"
                             name="allowed_ip"
                             class="form-control bg-dark text-light border-secondary font-monospace"
-                            value="{{ old('allowed_ip', request()->ip()) }}"
+                            value="{{ old('allowed_ip', $currentRequestIp) }}"
+                            data-current-ip="{{ $currentRequestIp }}"
                             placeholder="np. 83.8.224.29"
                             required
                         >
@@ -312,6 +298,11 @@
                         <div class="small text-muted mt-3">
                             To IP bedzie przepuszczone przez maintenance mode. Pozostali uzytkownicy zobacza strone 503.
                         </div>
+                        @if($currentRequestIp !== '')
+                            <div class="small text-muted mt-2">
+                                Aktualnie wykryte IP tej osoby: <span class="font-monospace">{{ $currentRequestIp }}</span>
+                            </div>
+                        @endif
                     </div>
                     <div class="modal-footer border-secondary">
                         <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Anuluj</button>
@@ -391,6 +382,12 @@
 
             if (modalElement && inputElement) {
                 modalElement.addEventListener('shown.bs.modal', () => {
+                    @unless($errors->has('allowed_ip'))
+                        const currentIp = inputElement.dataset.currentIp || '';
+                        if (currentIp !== '') {
+                            inputElement.value = currentIp;
+                        }
+                    @endunless
                     inputElement.focus();
                     inputElement.select();
                 });

@@ -22,7 +22,8 @@ class AdminSettingsController extends Controller
             $request->session()->get('admin_update_last_check'),
             $request->session()->get('admin_update_last_run'),
             $request->session()->get('admin_update_last_artisan_run'),
-            $request->session()->get('admin_update_last_maintenance_run')
+            $request->session()->get('admin_update_last_maintenance_run'),
+            $request->ip()
         );
         $artisanRestrictions = $this->portalUpdateService->artisanConsoleRestrictions();
 
