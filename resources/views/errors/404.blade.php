@@ -10,18 +10,22 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="landing-body">
-    <main class="landing-404" style="--landing-404-bg: url('{{ asset('images/landing/404.png') }}');">
-        <div class="landing-404-backdrop"></div>
-        <div class="container position-relative">
+    <main class="landing-404">
+        <div class="landing-404-stage">
+            <img
+                src="{{ asset('images/landing/404.png') }}"
+                alt="Ilustracja błędu 404"
+                class="landing-404-image"
+            >
+
             <div class="landing-404-card">
                 <span class="landing-404-code">404</span>
-                <h1 class="landing-404-title">Tej strony nie udało się odnaleźć</h1>
+                <h1 class="landing-404-title">Nie znaleziono strony</h1>
                 <p class="landing-404-text">
-                    Możliwe, że adres jest nieaktualny albo strona została przeniesiona.
-                    Wróć na stronę główną i przejdź dalej stamtąd.
+                    Adres jest nieaktualny albo strona została przeniesiona.
                 </p>
-                <div class="d-flex flex-wrap gap-2 justify-content-center">
-                    <a href="{{ url('/') }}" class="btn btn-primary">Wróć na stronę główną</a>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url('/') }}" class="btn btn-primary">Strona główna</a>
                     <a href="{{ url()->previous() }}" class="btn btn-outline-light">Cofnij</a>
                 </div>
             </div>
