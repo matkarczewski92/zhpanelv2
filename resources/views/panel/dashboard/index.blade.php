@@ -24,7 +24,7 @@
             <div class="col-12 col-md-6 col-xl-3">
                 <div class="dashboard-kpi h-100">
                     <div class="dashboard-kpi__value">{{ $management['for_sale_count'] }}</div>
-                    <div class="dashboard-kpi__label">Ilość maluchów na sprzedaż</div>
+                    <div class="dashboard-kpi__label">Ilość zwierząt na sprzedaż</div>
                 </div>
             </div>
             <div class="col-12 col-md-6 col-xl-3">

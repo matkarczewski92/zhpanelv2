@@ -57,8 +57,18 @@ class DashboardQueryService
         return [
             'eggs_in_incubation' => $eggsInIncubation,
             'eggs_in_incubators_total' => $eggsInIncubation,
-            'for_sale_count' => (int) Animal::query()->where('animal_category_id', 2)->count(),
-            'planned_income' => (float) AnimalOffer::query()->whereNull('sold_date')->sum('price'),
+            'for_sale_count' => (int) AnimalOffer::query()
+                ->whereNull('sold_date')
+                ->whereHas('animal', function ($query) {
+                    $query->whereIn('animal_category_id', [1, 2]);
+                })
+                ->count(),
+            'planned_income' => (float) AnimalOffer::query()
+                ->whereNull('sold_date')
+                ->whereHas('animal', function ($query) {
+                    $query->whereIn('animal_category_id', [1, 2]);
+                })
+                ->sum('price'),
             'litter_count' => (int) Litter::query()->where('category', 1)->count(),
         ];
     }
