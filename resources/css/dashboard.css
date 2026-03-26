@@ -105,6 +105,33 @@ body.panel-body {
     min-height: var(--panel-navbar-height);
 }
 
+.navbar-glass-maintenance {
+    background:
+        linear-gradient(90deg, rgba(90, 44, 0, 0.96), rgba(140, 64, 0, 0.92)),
+        rgba(12, 12, 12, 0.9);
+    border-bottom: 1px solid rgba(255, 193, 7, 0.52);
+    box-shadow: 0 10px 28px rgba(255, 152, 0, 0.2);
+}
+
+.navbar-glass-maintenance .nav-link {
+    color: rgba(255, 244, 214, 0.88);
+}
+
+.navbar-glass-maintenance .nav-link.active,
+.navbar-glass-maintenance .nav-link:hover {
+    color: #fff;
+}
+
+.navbar-maintenance-badge {
+    background: linear-gradient(135deg, #ffe082, #ffb300);
+    color: #2a1700;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
 .cardopacity {
     background-color: rgba(18, 18, 18, 0.72);
     border: none;

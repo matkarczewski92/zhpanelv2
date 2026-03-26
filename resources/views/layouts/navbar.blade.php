@@ -39,11 +39,17 @@
         $navbarSearchScope = 'animals';
     }
     $navbarSearchQuery = trim((string) request()->query('q', ''));
+    $isMaintenanceMode = app()->maintenanceMode()->active();
 @endphp
 
-<nav class="navbar navbar-expand-xl navbar-dark fixed-top navbar-glass">
+<nav class="navbar navbar-expand-xl navbar-dark fixed-top navbar-glass @if($isMaintenanceMode) navbar-glass-maintenance @endif">
     <div class="container-fluid">
-        <a class="navbar-brand fw-semibold" href="{{ route('panel.home') }}">ZH Panel</a>
+        <a class="navbar-brand fw-semibold d-inline-flex align-items-center gap-2" href="{{ route('panel.home') }}">
+            <span>ZH Panel</span>
+            @if($isMaintenanceMode)
+                <span class="badge rounded-pill navbar-maintenance-badge">Maintenance</span>
+            @endif
+        </a>
         <button
             class="navbar-toggler"
             type="button"
