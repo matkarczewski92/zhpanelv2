@@ -3,9 +3,11 @@
     $processAvailable = (bool) ($updatePanel['process_available'] ?? false);
     $execAvailable = (bool) ($updatePanel['exec_available'] ?? false);
     $commandDriver = (string) ($updatePanel['command_driver'] ?? '');
+    $artisanConsoleAvailable = (bool) ($updatePanel['artisan_console_available'] ?? false);
     $gitAvailable = (bool) ($updatePanel['git_available'] ?? false);
     $lastCheck = $updatePanel['last_check'] ?? null;
     $lastRun = $updatePanel['last_run'] ?? null;
+    $lastArtisanRun = $updatePanel['last_artisan_run'] ?? null;
     $logTail = (string) ($updatePanel['log_tail'] ?? '');
 @endphp
 
@@ -120,6 +122,69 @@
                     <div class="small text-muted mb-2">Log aktualizacji (tail)</div>
                     <pre class="bg-black border rounded p-3 text-light small mb-0" style="max-height: 360px; overflow:auto; white-space: pre-wrap;">{{ $logTail !== '' ? $logTail : 'Brak logow aktualizacji.' }}</pre>
                 </div>
+            @endif
+        </div>
+    </div>
+
+    <div class="card cardopacity mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Konsola artisan</span>
+            <span class="badge text-bg-secondary">php artisan</span>
+        </div>
+
+        <div class="card-body">
+            @if(!$artisanConsoleAvailable)
+                <div class="alert alert-danger mb-0">
+                    Na tym serwerze PHP ma wylaczone <code>proc_open</code> i <code>exec</code>. Konsola artisan jest niedostepna.
+                </div>
+            @else
+                <p class="text-muted small mb-3">
+                    Wpisz sama komende (np. <code>cache:clear</code>) albo caly prefiks <code>php artisan ...</code>.
+                    Formularz i tak uruchamia wylacznie polecenia artisan po stronie serwera.
+                </p>
+
+                <form method="POST" action="{{ route('admin.settings.update.artisan') }}" class="mb-3" onsubmit="return confirm('Uruchomic komende artisan na serwerze?')">
+                    @csrf
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark text-light border-secondary font-monospace">php artisan</span>
+                        <input
+                            type="text"
+                            name="command"
+                            class="form-control bg-dark text-light border-secondary font-monospace"
+                            value="{{ old('command', is_array($lastArtisanRun) ? ($lastArtisanRun['input'] ?? '') : '') }}"
+                            placeholder="np. cache:clear albo route:list"
+                            required
+                        >
+                        <button type="submit" class="btn btn-outline-light">Uruchom</button>
+                    </div>
+                    @error('command')
+                        <div class="text-danger small mt-2">{{ $message }}</div>
+                    @enderror
+                </form>
+
+                <div class="small text-muted mb-3">
+                    Silnik komend: <span class="fw-semibold">{{ $commandDriver !== '' ? $commandDriver : '-' }}</span>,
+                    PHP CLI: <span class="font-monospace">{{ $updatePanel['php_cli_binary'] ?? '-' }}</span>
+                </div>
+
+                @if(is_array($lastArtisanRun))
+                    <div class="alert @if(!empty($lastArtisanRun['success'])) alert-success @else alert-danger @endif mb-3">
+                        <div class="fw-semibold mb-1">Ostatnie uruchomienie: {{ $lastArtisanRun['finished_at'] ?? '-' }}</div>
+                        <div class="small">
+                            Komenda: <span class="font-monospace">{{ $lastArtisanRun['command_display'] ?? '-' }}</span>
+                        </div>
+                        <div class="small mt-1">
+                            Status: @if(!empty($lastArtisanRun['success'])) sukces @else blad @endif,
+                            Exit code: {{ $lastArtisanRun['exit_code'] ?? '-' }},
+                            Czas: {{ $lastArtisanRun['duration_ms'] ?? 0 }} ms
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="small text-muted mb-2">Output komendy</div>
+                        <pre class="bg-black border rounded p-3 text-light small mb-0" style="max-height: 360px; overflow:auto; white-space: pre-wrap;">{{ ($lastArtisanRun['output'] ?? '') !== '' ? $lastArtisanRun['output'] : 'Brak outputu.' }}</pre>
+                    </div>
+                @endif
             @endif
         </div>
     </div>

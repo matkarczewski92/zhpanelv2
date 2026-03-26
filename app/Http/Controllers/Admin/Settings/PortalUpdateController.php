@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Settings\PortalArtisanRunRequest;
 use App\Http\Requests\Admin\Settings\PortalUpdateRunRequest;
 use App\Services\Admin\Settings\PortalUpdateService;
 use Illuminate\Http\RedirectResponse;
@@ -64,6 +65,28 @@ class PortalUpdateController extends Controller
 
         return $this->redirectToTab()
             ->with('toast', ['type' => $type, 'message' => $message]);
+    }
+
+    public function artisan(PortalArtisanRunRequest $request): RedirectResponse
+    {
+        $payload = $request->validated();
+
+        try {
+            $result = $this->service->runArtisanCommand((string) $payload['command']);
+        } catch (RuntimeException $exception) {
+            return $this->redirectToTab()
+                ->withInput()
+                ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
+        }
+
+        $request->session()->put('admin_update_last_artisan_run', $result);
+
+        $message = !empty($result['success'])
+            ? 'Komenda artisan zostala wykonana.'
+            : sprintf('Komenda artisan zakonczyla sie bledem (exit code: %d).', (int) ($result['exit_code'] ?? 1));
+
+        return $this->redirectToTab()
+            ->with('toast', ['type' => !empty($result['success']) ? 'success' : 'error', 'message' => $message]);
     }
 
     private function redirectToTab(): RedirectResponse

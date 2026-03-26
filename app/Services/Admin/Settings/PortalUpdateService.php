@@ -16,7 +16,7 @@ class PortalUpdateService
     private ?bool $timeoutBinaryAvailable = null;
     private ?string $composerPath = null;
 
-    public function getPanelData(?array $lastCheck = null, ?array $lastRun = null): array
+    public function getPanelData(?array $lastCheck = null, ?array $lastRun = null, ?array $lastArtisanRun = null): array
     {
         $currentSha = $this->safeGitOutput(['git', 'rev-parse', 'HEAD']);
         $remoteUrl = $this->safeGitOutput(['git', 'remote', 'get-url', $this->remote()]);
@@ -37,8 +37,35 @@ class PortalUpdateService
             'local_sha_short' => $this->shortSha($currentSha),
             'last_check' => $lastCheck,
             'last_run' => $lastRun,
+            'artisan_console_available' => $driver !== null,
+            'last_artisan_run' => $lastArtisanRun,
             'log_tail' => $this->readLogTail(),
             'log_path' => $this->logPath(),
+        ];
+    }
+
+    public function runArtisanCommand(string $input): array
+    {
+        $this->assertCommandExecutionAvailable();
+
+        $normalized = $this->normalizeArtisanCommand($input);
+        $startedAt = now();
+        $result = $this->executeStep(
+            label: 'Komenda artisan',
+            command: $this->artisanCommand($normalized['args']),
+            timeoutSeconds: 1800
+        );
+        $finishedAt = now();
+
+        return [
+            'started_at' => $startedAt->toIso8601String(),
+            'finished_at' => $finishedAt->toIso8601String(),
+            'input' => $normalized['input'],
+            'command_display' => $normalized['display'],
+            'success' => $result['success'],
+            'exit_code' => $result['exit_code'],
+            'duration_ms' => $result['duration_ms'],
+            'output' => $result['output'],
         ];
     }
 
@@ -188,6 +215,48 @@ class PortalUpdateService
     private function enabled(): bool
     {
         return (bool) config('services.portal_update.enabled', false);
+    }
+
+    private function assertCommandExecutionAvailable(): void
+    {
+        if ($this->commandDriver() === null) {
+            throw new RuntimeException('Konsola artisan wymaga proc_open lub exec, ale obie funkcje sa niedostepne w PHP.');
+        }
+    }
+
+    /**
+     * @return array{input:string, display:string, args:array<int, string>}
+     */
+    private function normalizeArtisanCommand(string $input): array
+    {
+        $normalizedInput = trim($input);
+        if ($normalizedInput === '') {
+            throw new RuntimeException('Wpisz komende artisan.');
+        }
+
+        $parts = $this->splitCommandParts($normalizedInput);
+        if ($parts === []) {
+            throw new RuntimeException('Nie udalo sie odczytac komendy artisan.');
+        }
+
+        $first = strtolower($parts[0] ?? '');
+        $second = strtolower($parts[1] ?? '');
+
+        if (in_array($first, ['php', 'php.exe'], true) && $second === 'artisan') {
+            $parts = array_slice($parts, 2);
+        } elseif ($first === 'artisan') {
+            $parts = array_slice($parts, 1);
+        }
+
+        if ($parts === []) {
+            throw new RuntimeException('Podaj komende po "artisan", np. cache:clear albo route:list.');
+        }
+
+        return [
+            'input' => $this->commandToString($parts),
+            'display' => 'php artisan ' . $this->commandToString($parts),
+            'args' => array_values($parts),
+        ];
     }
 
     private function remote(): string
@@ -927,7 +996,26 @@ class PortalUpdateService
             return [];
         }
 
-        $parts = preg_split('/\s+/', $command) ?: [];
+        $pattern = '/"((?:\\\\.|[^"\\\\])*)"|\'((?:\\\\.|[^\'\\\\])*)\'|([^\s]+)/';
+        preg_match_all($pattern, $command, $matches, PREG_SET_ORDER);
+
+        $parts = [];
+
+        foreach ($matches as $match) {
+            if (($match[1] ?? '') !== '') {
+                $parts[] = stripcslashes($match[1]);
+                continue;
+            }
+
+            if (($match[2] ?? '') !== '') {
+                $parts[] = str_replace(["\\'", '\\\\'], ["'", '\\'], $match[2]);
+                continue;
+            }
+
+            if (($match[3] ?? '') !== '') {
+                $parts[] = $match[3];
+            }
+        }
 
         return array_values(array_filter($parts, static fn (string $part): bool => $part !== ''));
     }

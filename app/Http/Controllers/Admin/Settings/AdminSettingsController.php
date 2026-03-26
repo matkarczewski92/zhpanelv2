@@ -20,7 +20,8 @@ class AdminSettingsController extends Controller
         $vm = $this->service->getViewModel($request->query('tab'));
         $updatePanel = $this->portalUpdateService->getPanelData(
             $request->session()->get('admin_update_last_check'),
-            $request->session()->get('admin_update_last_run')
+            $request->session()->get('admin_update_last_run'),
+            $request->session()->get('admin_update_last_artisan_run')
         );
 
         return view('admin.settings.index', [

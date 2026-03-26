@@ -87,3 +87,4 @@ Route::post('/settings/transfer/apply', [SettingsTransferController::class, 'app
 // portal updater
 Route::post('/settings/update/check', [PortalUpdateController::class, 'check'])->name('settings.update.check');
 Route::post('/settings/update/run', [PortalUpdateController::class, 'run'])->name('settings.update.run');
+Route::post('/settings/update/artisan', [PortalUpdateController::class, 'artisan'])->name('settings.update.artisan');
