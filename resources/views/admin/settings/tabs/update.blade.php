@@ -8,6 +8,9 @@
     $lastCheck = $updatePanel['last_check'] ?? null;
     $lastRun = $updatePanel['last_run'] ?? null;
     $lastArtisanRun = $updatePanel['last_artisan_run'] ?? null;
+    $maintenanceActive = (bool) ($updatePanel['maintenance_active'] ?? false);
+    $maintenanceAllowedIps = $updatePanel['maintenance_allowed_ips'] ?? [];
+    $lastMaintenanceRun = $updatePanel['last_maintenance_run'] ?? null;
     $logTail = (string) ($updatePanel['log_tail'] ?? '');
 @endphp
 
@@ -128,6 +131,73 @@
 
     <div class="card cardopacity mt-3">
         <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Maintenance mode</span>
+            <span class="badge {{ $maintenanceActive ? 'text-bg-warning text-dark' : 'text-bg-secondary' }}">
+                {{ $maintenanceActive ? 'AKTYWNY' : 'NIEAKTYWNY' }}
+            </span>
+        </div>
+
+        <div class="card-body">
+            @if(!$artisanConsoleAvailable)
+                <div class="alert alert-danger mb-0">
+                    Na tym serwerze PHP ma wylaczone <code>proc_open</code> i <code>exec</code>. Sterowanie maintenance mode jest niedostepne.
+                </div>
+            @else
+                <div class="row g-3 align-items-start">
+                    <div class="col-lg-8">
+                        <div class="small text-muted mb-1">Status</div>
+                        <div class="fw-semibold mb-2">
+                            {{ $maintenanceActive ? 'Aplikacja dziala w maintenance mode.' : 'Aplikacja dziala normalnie.' }}
+                        </div>
+
+                        <div class="small text-muted mb-1">Przepuszczone IP</div>
+                        <div class="font-monospace mb-3">
+                            {{ count($maintenanceAllowedIps) ? implode(', ', $maintenanceAllowedIps) : 'Brak whitelisty IP.' }}
+                        </div>
+
+                        @if(is_array($lastMaintenanceRun))
+                            <div class="alert @if(!empty($lastMaintenanceRun['success'])) alert-success @else alert-danger @endif mb-0">
+                                <div class="fw-semibold mb-1">Ostatnia operacja: {{ $lastMaintenanceRun['finished_at'] ?? '-' }}</div>
+                                <div class="small">
+                                    Akcja: <span class="font-monospace">{{ $lastMaintenanceRun['action'] ?? '-' }}</span>
+                                    @if(!empty($lastMaintenanceRun['allowed_ip']))
+                                        , IP: <span class="font-monospace">{{ $lastMaintenanceRun['allowed_ip'] }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="d-grid gap-2">
+                            <button
+                                type="button"
+                                class="btn btn-warning"
+                                data-bs-toggle="modal"
+                                data-bs-target="#maintenanceModeModal"
+                            >
+                                Maintenance mode ON
+                            </button>
+
+                            <form method="POST" action="{{ route('admin.settings.update.maintenance.off') }}" onsubmit="return confirm('Wylaczyc maintenance mode?')">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-light w-100" @if(!$maintenanceActive) disabled @endif>
+                                    Maintenance mode OFF
+                                </button>
+                            </form>
+                        </div>
+
+                        <p class="text-muted small mt-3 mb-0">
+                            Po kliknieciu <code>ON</code> pojawi sie okno z prosba o IP, ktore ma zachowac dostep do panelu podczas maintenance.
+                        </p>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <div class="card cardopacity mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <span>Konsola artisan</span>
             <span class="badge text-bg-secondary">php artisan</span>
         </div>
@@ -188,4 +258,63 @@
             @endif
         </div>
     </div>
+
+    <div class="modal fade" id="maintenanceModeModal" tabindex="-1" aria-labelledby="maintenanceModeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="maintenanceModeModalLabel">Maintenance mode ON</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+                </div>
+                <form method="POST" action="{{ route('admin.settings.update.maintenance.on') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <label for="maintenanceAllowedIp" class="form-label">Adres IP, ktory ma zachowac dostep</label>
+                        <input
+                            type="text"
+                            id="maintenanceAllowedIp"
+                            name="allowed_ip"
+                            class="form-control bg-dark text-light border-secondary font-monospace"
+                            value="{{ old('allowed_ip', request()->ip()) }}"
+                            placeholder="np. 83.8.224.29"
+                            required
+                        >
+                        @error('allowed_ip')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
+                        <div class="small text-muted mt-3">
+                            To IP bedzie przepuszczone przez maintenance mode. Pozostali uzytkownicy zobacza strone 503.
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-warning">Wlacz maintenance</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalElement = document.getElementById('maintenanceModeModal');
+            const inputElement = document.getElementById('maintenanceAllowedIp');
+
+            if (!modalElement || !inputElement) {
+                return;
+            }
+
+            modalElement.addEventListener('shown.bs.modal', () => {
+                inputElement.focus();
+                inputElement.select();
+            });
+
+            @if($errors->has('allowed_ip'))
+                const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modalInstance.show();
+            @endif
+        });
+    </script>
+@endpush

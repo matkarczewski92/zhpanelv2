@@ -3,6 +3,7 @@
 namespace App\Services\Admin\Settings;
 
 use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
@@ -16,11 +17,21 @@ class PortalUpdateService
     private ?bool $timeoutBinaryAvailable = null;
     private ?string $composerPath = null;
 
-    public function getPanelData(?array $lastCheck = null, ?array $lastRun = null, ?array $lastArtisanRun = null): array
+    public function __construct(private readonly Application $app)
+    {
+    }
+
+    public function getPanelData(
+        ?array $lastCheck = null,
+        ?array $lastRun = null,
+        ?array $lastArtisanRun = null,
+        ?array $lastMaintenanceRun = null
+    ): array
     {
         $currentSha = $this->safeGitOutput(['git', 'rev-parse', 'HEAD']);
         $remoteUrl = $this->safeGitOutput(['git', 'remote', 'get-url', $this->remote()]);
         $driver = $this->commandDriver();
+        $maintenanceData = $this->maintenanceData();
 
         return [
             'enabled' => $this->enabled(),
@@ -39,6 +50,10 @@ class PortalUpdateService
             'last_run' => $lastRun,
             'artisan_console_available' => $driver !== null,
             'last_artisan_run' => $lastArtisanRun,
+            'maintenance_active' => $this->app->maintenanceMode()->active(),
+            'maintenance_data' => $maintenanceData,
+            'maintenance_allowed_ips' => $this->maintenanceAllowedIps(),
+            'last_maintenance_run' => $lastMaintenanceRun,
             'log_tail' => $this->readLogTail(),
             'log_path' => $this->logPath(),
         ];
@@ -65,6 +80,67 @@ class PortalUpdateService
             'success' => $result['success'],
             'exit_code' => $result['exit_code'],
             'duration_ms' => $result['duration_ms'],
+            'output' => $result['output'],
+        ];
+    }
+
+    public function enableMaintenanceMode(string $allowedIp): array
+    {
+        $this->assertCommandExecutionAvailable();
+
+        $normalizedIp = trim($allowedIp);
+        if ($normalizedIp === '') {
+            throw new RuntimeException('Podaj adres IP do przepuszczenia przez maintenance mode.');
+        }
+
+        $this->writeMaintenanceAllowedIps([$normalizedIp]);
+
+        $result = $this->executeStep(
+            label: 'Wlaczenie maintenance mode',
+            command: $this->artisanCommand(['down', '--refresh=15']),
+            timeoutSeconds: 120
+        );
+
+        if (!$result['success']) {
+            $this->clearMaintenanceAllowedIps();
+
+            throw new RuntimeException(
+                'Nie udalo sie wlaczyc maintenance mode.' . ($result['output'] !== '' ? ' ' . $result['output'] : '')
+            );
+        }
+
+        return [
+            'finished_at' => now()->toIso8601String(),
+            'action' => 'down',
+            'allowed_ip' => $normalizedIp,
+            'success' => true,
+            'output' => $result['output'],
+        ];
+    }
+
+    public function disableMaintenanceMode(): array
+    {
+        $this->assertCommandExecutionAvailable();
+
+        $result = $this->executeStep(
+            label: 'Wylaczenie maintenance mode',
+            command: $this->artisanCommand(['up']),
+            timeoutSeconds: 120
+        );
+
+        if (!$result['success']) {
+            throw new RuntimeException(
+                'Nie udalo sie wylaczyc maintenance mode.' . ($result['output'] !== '' ? ' ' . $result['output'] : '')
+            );
+        }
+
+        $this->clearMaintenanceAllowedIps();
+
+        return [
+            'finished_at' => now()->toIso8601String(),
+            'action' => 'up',
+            'allowed_ip' => null,
+            'success' => true,
             'output' => $result['output'],
         ];
     }
@@ -217,6 +293,47 @@ class PortalUpdateService
         return (bool) config('services.portal_update.enabled', false);
     }
 
+    private function maintenanceData(): ?array
+    {
+        if (!$this->app->maintenanceMode()->active()) {
+            return null;
+        }
+
+        try {
+            $data = $this->app->maintenanceMode()->data();
+        } catch (Throwable) {
+            return null;
+        }
+
+        return is_array($data) ? $data : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function maintenanceAllowedIps(): array
+    {
+        $path = $this->maintenanceAllowedIpsPath();
+
+        if (!File::exists($path)) {
+            return [];
+        }
+
+        try {
+            $decoded = json_decode((string) File::get($path), true, 512, JSON_THROW_ON_ERROR);
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $ips = array_values(array_filter($decoded, static fn ($ip): bool => is_string($ip) && $ip !== ''));
+
+        return array_values(array_unique($ips));
+    }
+
     private function assertCommandExecutionAvailable(): void
     {
         if ($this->commandDriver() === null) {
@@ -250,6 +367,10 @@ class PortalUpdateService
 
         if ($parts === []) {
             throw new RuntimeException('Podaj komende po "artisan", np. cache:clear albo route:list.');
+        }
+
+        if (in_array(strtolower($parts[0]), ['down', 'up'], true)) {
+            throw new RuntimeException('Dla maintenance mode uzyj dedykowanego kafelka z przyciskami ON/OFF.');
         }
 
         return [
@@ -754,6 +875,30 @@ class PortalUpdateService
     private function logPath(): string
     {
         return storage_path('logs/portal-update.log');
+    }
+
+    /**
+     * @param array<int, string> $ips
+     */
+    private function writeMaintenanceAllowedIps(array $ips): void
+    {
+        File::ensureDirectoryExists(dirname($this->maintenanceAllowedIpsPath()));
+        File::put(
+            $this->maintenanceAllowedIpsPath(),
+            json_encode(array_values(array_unique($ips)), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+        );
+    }
+
+    private function clearMaintenanceAllowedIps(): void
+    {
+        if (File::exists($this->maintenanceAllowedIpsPath())) {
+            File::delete($this->maintenanceAllowedIpsPath());
+        }
+    }
+
+    private function maintenanceAllowedIpsPath(): string
+    {
+        return storage_path('framework/maintenance-allowed-ips.json');
     }
 
     private function clearRunLog(): void

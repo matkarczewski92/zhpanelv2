@@ -88,3 +88,5 @@ Route::post('/settings/transfer/apply', [SettingsTransferController::class, 'app
 Route::post('/settings/update/check', [PortalUpdateController::class, 'check'])->name('settings.update.check');
 Route::post('/settings/update/run', [PortalUpdateController::class, 'run'])->name('settings.update.run');
 Route::post('/settings/update/artisan', [PortalUpdateController::class, 'artisan'])->name('settings.update.artisan');
+Route::post('/settings/update/maintenance/on', [PortalUpdateController::class, 'maintenanceOn'])->name('settings.update.maintenance.on');
+Route::post('/settings/update/maintenance/off', [PortalUpdateController::class, 'maintenanceOff'])->name('settings.update.maintenance.off');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Settings\PortalArtisanRunRequest;
+use App\Http\Requests\Admin\Settings\PortalMaintenanceRequest;
 use App\Http\Requests\Admin\Settings\PortalUpdateRunRequest;
 use App\Services\Admin\Settings\PortalUpdateService;
 use Illuminate\Http\RedirectResponse;
@@ -87,6 +88,42 @@ class PortalUpdateController extends Controller
 
         return $this->redirectToTab()
             ->with('toast', ['type' => !empty($result['success']) ? 'success' : 'error', 'message' => $message]);
+    }
+
+    public function maintenanceOn(PortalMaintenanceRequest $request): RedirectResponse
+    {
+        $payload = $request->validated();
+
+        try {
+            $result = $this->service->enableMaintenanceMode((string) $payload['allowed_ip']);
+        } catch (RuntimeException $exception) {
+            return $this->redirectToTab()
+                ->withInput()
+                ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
+        }
+
+        $request->session()->put('admin_update_last_maintenance_run', $result);
+
+        return $this->redirectToTab()
+            ->with('toast', [
+                'type' => 'success',
+                'message' => sprintf('Maintenance mode wlaczony. Przepuszczone IP: %s.', $result['allowed_ip'] ?? '-'),
+            ]);
+    }
+
+    public function maintenanceOff(Request $request): RedirectResponse
+    {
+        try {
+            $result = $this->service->disableMaintenanceMode();
+        } catch (RuntimeException $exception) {
+            return $this->redirectToTab()
+                ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
+        }
+
+        $request->session()->put('admin_update_last_maintenance_run', $result);
+
+        return $this->redirectToTab()
+            ->with('toast', ['type' => 'success', 'message' => 'Maintenance mode wylaczony.']);
     }
 
     private function redirectToTab(): RedirectResponse
