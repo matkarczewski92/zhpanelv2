@@ -54,6 +54,9 @@
         @if (($report['type'] ?? null) === 'sales')
             <div>Zakres: {{ $report['meta']['range_label'] ?? '-' }}</div>
             <div>Suma: {{ $report['meta']['total_amount_label'] ?? '-' }}</div>
+        @elseif (($report['type'] ?? null) === 'qr_scanner_session')
+            <div>Sesja: {{ $report['meta']['session_label'] ?? '-' }}</div>
+            <div>Karmienia / Wazenia / Wylinki: {{ $report['meta']['feedings_count'] ?? 0 }} / {{ $report['meta']['weights_count'] ?? 0 }} / {{ $report['meta']['molts_count'] ?? 0 }}</div>
         @else
             <div>Data: {{ $report['meta']['report_date_label'] ?? '-' }}</div>
             <div>Karmienia / Wazenia / Wylinki: {{ $report['meta']['feedings_count'] ?? 0 }} / {{ $report['meta']['weights_count'] ?? 0 }} / {{ $report['meta']['molts_count'] ?? 0 }}</div>

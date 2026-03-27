@@ -53,12 +53,17 @@ class GetReportsIndexQuery
         return match ($type) {
             'sales' => 'Raport sprzedazy',
             'daily_entered_data' => 'Raport wprowadzonych danych',
+            'qr_scanner_session' => 'Raport sesji skanera QR',
             default => $type,
         };
     }
 
     private function selectionLabel(object $report): string
     {
+        if ($report->report_type === 'qr_scanner_session') {
+            return (string) data_get($report->report_payload, 'meta.session_label', '-');
+        }
+
         if ($report->report_date) {
             return (string) optional($report->report_date)->format('Y-m-d');
         }

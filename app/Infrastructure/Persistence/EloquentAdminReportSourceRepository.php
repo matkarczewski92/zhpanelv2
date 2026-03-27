@@ -109,6 +109,25 @@ class EloquentAdminReportSourceRepository implements AdminReportSourceRepository
             ->values();
     }
 
+    public function getAnimalSnapshotsByIds(array $animalIds): Collection
+    {
+        if ($animalIds === []) {
+            return collect();
+        }
+
+        return Animal::query()
+            ->whereIn('id', $animalIds)
+            ->orderBy('id')
+            ->get(['id', 'name', 'second_name', 'public_profile_tag'])
+            ->map(function (Animal $animal): array {
+                return [
+                    'animal_id' => (int) $animal->id,
+                    'animal_name' => $this->formatAnimalName($animal->name, $animal->second_name),
+                    'public_tag' => $animal->public_profile_tag ?: null,
+                ];
+            });
+    }
+
     private function formatAnimalName(?string $name, ?string $secondName): string
     {
         $main = trim(strip_tags((string) $name, '<b><i><u><strong><em><br>'));

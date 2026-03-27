@@ -52,6 +52,13 @@ class RenderAdminReportPdfService
             return 'Sale_' . ($report['filters']['date_from'] ?? 'unknown') . '_' . ($report['filters']['date_to'] ?? 'unknown');
         }
 
+        if (($report['type'] ?? null) === BuildAdminReportDataService::TYPE_QR_SCANNER_SESSION) {
+            $startedAt = $report['filters']['session_started_at'] ?? 'unknown';
+            $safeStartedAt = preg_replace('/[^0-9A-Za-z_-]+/', '_', str_replace(['T', ':'], ['_', '-'], (string) $startedAt));
+
+            return 'ScannerSession_' . trim((string) $safeStartedAt, '_');
+        }
+
         return 'Insert_' . ($report['filters']['report_date'] ?? 'unknown');
     }
 }

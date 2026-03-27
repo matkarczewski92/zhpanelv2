@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Panel;
 
+use App\Application\Admin\Commands\GenerateQrScannerSessionReportCommand;
 use App\Application\Animals\Commands\RecordQrFeedingCommand;
 use App\Application\Animals\Commands\RecordQrMoltCommand;
 use App\Application\Animals\Commands\RecordQrWeightCommand;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Panel\ResolveQrAnimalRequest;
 use App\Http\Requests\Panel\StoreQrFeedingRequest;
 use App\Http\Requests\Panel\StoreQrMoltRequest;
+use App\Http\Requests\Panel\StoreQrSessionSummaryReportRequest;
 use App\Http\Requests\Panel\StoreQrWeightRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -50,5 +52,14 @@ class QrScannerController extends Controller
         $result = $command->handle($request->validated());
 
         return response()->json($result->toArray(), $result->statusCode());
+    }
+
+    public function storeSessionSummary(
+        StoreQrSessionSummaryReportRequest $request,
+        GenerateQrScannerSessionReportCommand $command
+    ): JsonResponse {
+        $result = $command->handle($request->validated());
+
+        return response()->json($result, ($result['status'] ?? null) === 'ok' ? 200 : 422);
     }
 }

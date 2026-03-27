@@ -11,4 +11,5 @@ Route::prefix('qr-scanner')
         Route::post('/feedings', [QrScannerController::class, 'storeFeeding'])->name('feedings.store');
         Route::post('/weights', [QrScannerController::class, 'storeWeight'])->name('weights.store');
         Route::post('/molts', [QrScannerController::class, 'storeMolt'])->name('molts.store');
+        Route::post('/session-summary', [QrScannerController::class, 'storeSessionSummary'])->name('session-summary.store');
     });

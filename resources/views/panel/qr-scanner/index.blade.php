@@ -141,7 +141,12 @@
                         </div>
 
                         <div>
-                            <div class="fw-semibold mb-2">Ostatnie akcje</div>
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                <div class="fw-semibold mb-0">Ostatnie akcje</div>
+                                <button type="button" class="btn btn-outline-light btn-sm d-none" data-role="qr-session-summary-button">
+                                    Wygeneruj podsumowanie
+                                </button>
+                            </div>
                             <div class="list-group list-group-flush qr-activity-list" data-role="qr-activity-list">
                                 <div class="list-group-item text-muted small">Brak akcji w tej sesji.</div>
                             </div>

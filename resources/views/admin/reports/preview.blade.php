@@ -52,6 +52,19 @@
                     <div class="small text-muted">Suma</div>
                     <div>{{ $report['meta']['total_amount_label'] ?? '-' }}</div>
                 </div>
+            @elseif (($report['type'] ?? null) === 'qr_scanner_session')
+                <div>
+                    <div class="small text-muted">Sesja</div>
+                    <div>{{ $report['meta']['session_label'] ?? '-' }}</div>
+                </div>
+                <div>
+                    <div class="small text-muted">Karmienia / Wazenia / Wylinki</div>
+                    <div>
+                        {{ $report['meta']['feedings_count'] ?? 0 }} /
+                        {{ $report['meta']['weights_count'] ?? 0 }} /
+                        {{ $report['meta']['molts_count'] ?? 0 }}
+                    </div>
+                </div>
             @else
                 <div>
                     <div class="small text-muted">Data</div>

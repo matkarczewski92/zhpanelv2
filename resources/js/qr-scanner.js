@@ -26,6 +26,7 @@ const initQrScanner = () => {
     const modeTitle = root.querySelector('[data-role="qr-mode-title"]');
     const modeDescription = root.querySelector('[data-role="qr-mode-description"]');
     const activityList = root.querySelector('[data-role="qr-activity-list"]');
+    const sessionSummaryButton = root.querySelector('[data-role="qr-session-summary-button"]');
     const confirmationPanel = root.querySelector('[data-role="qr-confirmation-panel"]');
     const confirmationText = root.querySelector('[data-role="qr-confirmation-text"]');
     const confirmButton = root.querySelector('[data-role="qr-confirm-button"]');
@@ -52,11 +53,13 @@ const initQrScanner = () => {
         lastPayloadAt: 0,
         pendingConfirmation: null,
         weightContext: null,
-        activityItems: [],
+        activityEntries: [],
         detector: barcodeDetector,
         stream: null,
         scanTimer: null,
         scanInFlight: false,
+        sessionStartedAt: new Date().toISOString(),
+        summaryGenerating: false,
     };
 
     const setUiState = (name, label, badgeClass) => {
@@ -121,34 +124,61 @@ const initQrScanner = () => {
         }
     };
 
-    const addActivity = (outcome) => {
+    const updateSessionSummaryButton = () => {
+        if (!(sessionSummaryButton instanceof HTMLButtonElement)) {
+            return;
+        }
+
+        sessionSummaryButton.classList.toggle('d-none', state.activityEntries.length === 0);
+        sessionSummaryButton.disabled = state.activityEntries.length === 0 || state.summaryGenerating || state.processing;
+        sessionSummaryButton.textContent = state.summaryGenerating ? 'Generowanie...' : 'Wygeneruj podsumowanie';
+    };
+
+    const renderActivityList = () => {
         if (!(activityList instanceof HTMLElement)) {
             return;
         }
 
-        const item = document.createElement('div');
-        item.className = 'list-group-item';
-        item.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start gap-2">
-                <div>
-                    <div class="fw-semibold">${outcome.modeLabel}</div>
-                    <div class="small">${outcome.label}</div>
-                </div>
-                <span class="small text-muted">${new Date().toLocaleTimeString()}</span>
-            </div>
-            <div class="small text-muted mt-1">${outcome.message}</div>
-        `;
-
-        state.activityItems.unshift(item);
-        state.activityItems = state.activityItems.slice(0, 6);
         activityList.innerHTML = '';
-        state.activityItems.forEach((node) => activityList.appendChild(node));
+
+        if (state.activityEntries.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'list-group-item text-muted small';
+            empty.textContent = 'Brak akcji w tej sesji.';
+            activityList.appendChild(empty);
+            updateSessionSummaryButton();
+            return;
+        }
+
+        state.activityEntries.forEach((entry) => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item';
+            item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <div class="fw-semibold">${entry.modeLabel}</div>
+                        <div class="small">${entry.label}</div>
+                    </div>
+                    <span class="small text-muted">${entry.timeLabel}</span>
+                </div>
+                <div class="small text-muted mt-1">${entry.message}</div>
+            `;
+            activityList.appendChild(item);
+        });
+
+        updateSessionSummaryButton();
+    };
+
+    const addActivity = (entry) => {
+        state.activityEntries.unshift(entry);
+        renderActivityList();
     };
 
     const modeLabel = (mode) => modeConfig[mode]?.label ?? mode;
 
     const setProcessing = (processing) => {
         state.processing = processing;
+        updateSessionSummaryButton();
     };
 
     const closeConfirmation = () => {
@@ -360,6 +390,7 @@ const initQrScanner = () => {
         const detail = response.mode === 'weight'
             ? `${label} - ${response.data?.value ?? ''} g`
             : `${label} - ${animal.public_tag ?? ''}`;
+        const occurredAt = response.data?.occurred_at ?? new Date().toISOString();
 
         closeConfirmation();
         setProcessing(false);
@@ -369,6 +400,13 @@ const initQrScanner = () => {
             modeLabel: modeLabel(response.mode),
             label: detail.trim(),
             message: response.message,
+            timeLabel: new Date(occurredAt).toLocaleTimeString(),
+            mode: response.mode,
+            animalId: Number(animal.id ?? 0),
+            occurredAt,
+            feedType: response.mode === 'feeding' ? String(response.data?.feed_type ?? '') : null,
+            quantity: response.mode === 'feeding' ? Number(response.data?.quantity ?? 0) : null,
+            value: response.mode === 'weight' ? Number(response.data?.value ?? 0) : null,
         });
         await resumeScanner();
     };
@@ -448,8 +486,18 @@ const initQrScanner = () => {
     const processPayload = async (rawPayload) => {
         const payload = normalizePayload(rawPayload);
 
-        if (payload === '' || state.processing || state.weightContext || state.pendingConfirmation) {
+        if (payload === '' || state.processing || state.weightContext) {
             return;
+        }
+
+        if (state.pendingConfirmation) {
+            if (payload === state.lastPayload) {
+                return;
+            }
+
+            closeConfirmation();
+            clearFlash();
+            setUiState('Skanowanie', `Tryb: ${modeLabel(state.mode)}. Czekam na kod QR.`, 'text-bg-success');
         }
 
         if (shouldIgnorePayload(payload)) {
@@ -465,6 +513,41 @@ const initQrScanner = () => {
             payload,
             confirm_duplicate: false,
         });
+    };
+
+    const generateSessionSummary = async () => {
+        if (!endpoints.session_summary || state.activityEntries.length === 0 || state.summaryGenerating) {
+            return;
+        }
+
+        state.summaryGenerating = true;
+        updateSessionSummaryButton();
+        clearFlash();
+
+        try {
+            const response = await requestJson(endpoints.session_summary, {
+                session_started_at: state.sessionStartedAt,
+                entries: state.activityEntries
+                    .slice()
+                    .reverse()
+                    .map((entry) => ({
+                        mode: entry.mode,
+                        animal_id: entry.animalId,
+                        occurred_at: entry.occurredAt,
+                        feed_type: entry.feedType,
+                        quantity: entry.quantity,
+                        value: entry.value,
+                    })),
+            });
+
+            flash('success', response.message ?? 'Podsumowanie sesji zostalo zapisane.');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Nie udalo sie wygenerowac podsumowania sesji.';
+            flash('danger', message);
+        } finally {
+            state.summaryGenerating = false;
+            updateSessionSummaryButton();
+        }
     };
 
     const detectQrCode = async () => {
@@ -606,6 +689,10 @@ const initQrScanner = () => {
         clearFlash();
     });
 
+    sessionSummaryButton?.addEventListener('click', () => {
+        void generateSessionSummary();
+    });
+
     manualForm?.addEventListener('submit', (event) => {
         event.preventDefault();
         const payload = manualInput instanceof HTMLInputElement ? manualInput.value : '';
@@ -699,6 +786,7 @@ const initQrScanner = () => {
     });
 
     setMode(state.mode);
+    renderActivityList();
     void startScanner();
 };
 

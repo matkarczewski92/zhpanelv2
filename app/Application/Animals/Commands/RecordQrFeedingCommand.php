@@ -55,6 +55,8 @@ class RecordQrFeedingCommand
                 [
                     'created_id' => (int) $feeding->id,
                     'occurred_at' => optional($feeding->created_at)->toIso8601String(),
+                    'feed_type' => (string) ($animal->feed?->name ?? ''),
+                    'quantity' => 1,
                 ]
             );
         } catch (QrWorkflowException $exception) {

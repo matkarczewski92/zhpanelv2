@@ -40,6 +40,7 @@ class GetQrScannerPageQuery
                     'feeding' => route('panel.qr-scanner.feedings.store'),
                     'weight' => route('panel.qr-scanner.weights.store'),
                     'molt' => route('panel.qr-scanner.molts.store'),
+                    'session_summary' => route('panel.qr-scanner.session-summary.store'),
                 ],
             ],
         ];
