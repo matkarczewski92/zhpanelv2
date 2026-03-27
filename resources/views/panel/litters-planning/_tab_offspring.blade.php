@@ -63,7 +63,7 @@
             </thead>
             <tbody>
                 @forelse ($page->seasonOffspringRows as $row)
-                    <tr @class(['offspring-row--non-primary' => !($row['is_primary_litter'] ?? true)])>
+                    <tr @class(['offspring-row--non-primary' => empty($row['has_connection_date'])])>
                         <td>{{ $row['litter_id'] }}</td>
                         <td><a href="{{ $row['litter_url'] }}" class="link-reset">{{ $row['litter_code'] }}</a></td>
                         <td>{{ $row['season'] }}</td>
@@ -134,19 +134,19 @@
             </thead>
             <tbody>
                 @forelse ($page->seasonOffspringSummaryRows as $row)
-                    <tr @class(['offspring-row--non-primary' => !empty($row['has_non_primary_litters'])])>
+                    <tr @class(['offspring-row--non-primary' => !empty($row['has_unconnected_litters'])])>
                         <td>
                             @if ($row['morph_name'] !== '-')
                                 <span class="badge text-bg-light">{{ $row['morph_name'] }}</span>
                             @else
                                 <span class="text-muted">-</span>
                             @endif
-                            @if (!empty($row['has_non_primary_litters']))
+                            @if (!empty($row['has_unconnected_litters']))
                                 <span
                                     class="badge offspring-non-primary-badge ms-2"
                                     title="Ten wiersz zawiera udział z miotów o category != 1"
                                 >
-                                    Niepolaczone: {{ $row['non_primary_litters_count'] }} miotow
+                                    Niepolaczone: {{ $row['unconnected_litters_count'] }} miotow
                                 </span>
                             @endif
                         </td>
