@@ -691,6 +691,7 @@ class GetAnimalProfileQuery
         $plannedPercent = null;
         $actualPercent = null;
         $sheds = [];
+        $totalDays = $start && $end ? $start->diffInDays($end) : null;
 
         if ($start && $end) {
             $progressReference = $actualLaying ?? $now;
@@ -707,6 +708,7 @@ class GetAnimalProfileQuery
                         'id' => $shed->id,
                         'date_label' => $shedDate?->format('Y-m-d') ?? '-',
                         'position_percent' => $shedDate ? $this->resolveTimelinePercent($start, $shedDate, $end) : 0,
+                        'tooltip' => $this->buildTimelineTooltip('Wylinka', $shedDate, $start),
                     ];
                 })
                 ->values()
@@ -730,12 +732,53 @@ class GetAnimalProfileQuery
             'actual_percent' => $actualPercent,
             'sheds' => $sheds,
             'show_range' => $start !== null && $end !== null,
+            'duration_value' => $totalDays !== null ? $totalDays . ' dni' : null,
+            'duration_hint' => $totalDays !== null
+                ? ($actualLaying ? 'od laczenia do zniosu' : 'od laczenia do planu zniosu')
+                : null,
+            'start_tooltip' => $this->buildTimelineTooltip('Laczenie', $start, $start),
+            'planned_tooltip' => $this->buildTimelineTooltip('Plan zniosu', $plannedLaying, $start),
+            'actual_tooltip' => $this->buildTimelineTooltip('Znios', $actualLaying, $start),
             'range_label' => $start && $end ? $start->format('Y-m-d') . ' - ' . $end->format('Y-m-d') : 'Brak pelnego zakresu dat',
             'actual_extends_timeline' => $actualLaying && $plannedLaying ? $actualLaying->gt($plannedLaying) : false,
+            'laying_delta_label' => $this->buildLayingDeltaLabel($plannedLaying, $actualLaying),
             'store_url' => route('panel.animals.pregnancy-sheds.store', $animal->id),
             'selected_season_key' => $selectedSeasonKey,
             'show_url' => Route::has('panel.litters.show') ? route('panel.litters.show', $litter->id) : '#',
         ];
+    }
+
+    private function buildTimelineTooltip(string $label, ?CarbonImmutable $date, ?CarbonImmutable $start): string
+    {
+        if (!$date) {
+            return $label;
+        }
+
+        $parts = [$label, $date->format('Y-m-d')];
+        if ($start) {
+            $parts[] = 'dzien ' . $start->diffInDays($date);
+        }
+
+        return implode(' • ', $parts);
+    }
+
+    private function buildLayingDeltaLabel(?CarbonImmutable $plannedLaying, ?CarbonImmutable $actualLaying): ?string
+    {
+        if (!$plannedLaying || !$actualLaying) {
+            return null;
+        }
+
+        $days = $plannedLaying->diffInDays($actualLaying);
+
+        if ($days === 0) {
+            return 'Znios nastapil zgodnie z planowana data.';
+        }
+
+        if ($actualLaying->lt($plannedLaying)) {
+            return 'Znios nastapil ' . $days . ' dni przed planowana data.';
+        }
+
+        return 'Znios nastapil ' . $days . ' dni po planowanej dacie.';
     }
 
     private function resolvePregnancySeason(Litter $litter): array

@@ -52,6 +52,12 @@
 
             document.addEventListener('hidden.bs.modal', cleanupOverlayState);
             document.addEventListener('hidden.bs.offcanvas', cleanupOverlayState);
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+                bootstrap.Tooltip.getOrCreateInstance(el, {
+                    container: 'body',
+                    trigger: 'hover focus',
+                });
+            });
 
             const seasonSelect = document.getElementById('pregnancySeasonSelect');
             if (seasonSelect) {

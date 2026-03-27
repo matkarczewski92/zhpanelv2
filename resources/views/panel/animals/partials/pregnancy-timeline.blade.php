@@ -37,6 +37,12 @@
                                 <span class="badge {{ !empty($item['is_completed']) ? 'text-bg-success' : 'text-bg-warning' }}">
                                     {{ $item['status_label'] }}
                                 </span>
+                                @if (!empty($item['duration_value']))
+                                    <span class="pregnancy-progress-duration">
+                                        <span class="pregnancy-progress-duration__label">{{ $item['duration_hint'] }}</span>
+                                        <strong>{{ $item['duration_value'] }}</strong>
+                                    </span>
+                                @endif
                             </div>
                             @if (!empty($item['subtitle']))
                                 <div class="text-muted small mt-1">{{ $item['subtitle'] }}</div>
@@ -57,39 +63,63 @@
                         </button>
                     </div>
 
-                    <div class="pregnancy-progress-meta">
-                        <span><strong>Laczenie:</strong> {{ $item['start_date_label'] }}</span>
-                        <span><strong>Plan zniosu:</strong> {{ $item['planned_laying_label'] }}</span>
-                        @if (!empty($item['actual_laying_label']))
-                            <span><strong>Znios:</strong> {{ $item['actual_laying_label'] }}</span>
-                        @endif
-                    </div>
-
                     @if (!empty($item['show_range']))
                         <div class="pregnancy-progress-track-wrap">
                             <div class="pregnancy-progress-track">
                                 <div class="pregnancy-progress-fill" style="width: {{ $item['progress_percent'] }}%;"></div>
 
-                                <div class="pregnancy-progress-marker pregnancy-progress-marker--start" style="left: 0%;">
+                                <button
+                                    type="button"
+                                    class="pregnancy-progress-marker pregnancy-progress-marker--start"
+                                    style="left: 0%;"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-custom-class="pregnancy-tooltip"
+                                    data-bs-title="{{ $item['start_tooltip'] }}"
+                                    aria-label="{{ $item['start_tooltip'] }}"
+                                >
                                     <span class="pregnancy-progress-dot"></span>
-                                </div>
+                                </button>
 
                                 @if ($item['planned_percent'] !== null)
-                                    <div class="pregnancy-progress-marker pregnancy-progress-marker--planned" style="left: {{ $item['planned_percent'] }}%;">
+                                    <button
+                                        type="button"
+                                        class="pregnancy-progress-marker pregnancy-progress-marker--planned"
+                                        style="left: {{ $item['planned_percent'] }}%;"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-custom-class="pregnancy-tooltip"
+                                        data-bs-title="{{ $item['planned_tooltip'] }}"
+                                        aria-label="{{ $item['planned_tooltip'] }}"
+                                    >
                                         <span class="pregnancy-progress-dot"></span>
-                                    </div>
+                                    </button>
                                 @endif
 
                                 @foreach ($item['sheds'] as $shed)
-                                    <div class="pregnancy-progress-marker pregnancy-progress-marker--shed" style="left: {{ $shed['position_percent'] }}%;">
+                                    <button
+                                        type="button"
+                                        class="pregnancy-progress-marker pregnancy-progress-marker--shed"
+                                        style="left: {{ $shed['position_percent'] }}%;"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-custom-class="pregnancy-tooltip"
+                                        data-bs-title="{{ $shed['tooltip'] }}"
+                                        aria-label="{{ $shed['tooltip'] }}"
+                                    >
                                         <span class="pregnancy-progress-dot"></span>
-                                    </div>
+                                    </button>
                                 @endforeach
 
                                 @if ($item['actual_percent'] !== null)
-                                    <div class="pregnancy-progress-marker pregnancy-progress-marker--actual" style="left: {{ $item['actual_percent'] }}%;">
+                                    <button
+                                        type="button"
+                                        class="pregnancy-progress-marker pregnancy-progress-marker--actual"
+                                        style="left: {{ $item['actual_percent'] }}%;"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-custom-class="pregnancy-tooltip"
+                                        data-bs-title="{{ $item['actual_tooltip'] }}"
+                                        aria-label="{{ $item['actual_tooltip'] }}"
+                                    >
                                         <span class="pregnancy-progress-dot"></span>
-                                    </div>
+                                    </button>
                                 @endif
                             </div>
                         </div>
@@ -117,9 +147,9 @@
                         </div>
 
                         <div class="text-muted small mt-2">
-                            Zakres: {{ $item['range_label'] }}
-                            @if (!empty($item['actual_extends_timeline']))
-                                <span class="ms-2">Koniec osi wydluzony do realnego zniosu.</span>
+                            Ciaza: {{ $item['range_label'] }}
+                            @if (!empty($item['laying_delta_label']))
+                                <span class="ms-2">{{ $item['laying_delta_label'] }}</span>
                             @endif
                         </div>
                     @else
