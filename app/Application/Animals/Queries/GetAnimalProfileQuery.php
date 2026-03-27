@@ -709,6 +709,7 @@ class GetAnimalProfileQuery
                         'date_label' => $shedDate?->format('Y-m-d') ?? '-',
                         'position_percent' => $shedDate ? $this->resolveTimelinePercent($start, $shedDate, $end) : 0,
                         'tooltip' => $this->buildTimelineTooltip('Wylinka', $shedDate, $start),
+                        'delete_url' => route('panel.animals.pregnancy-sheds.destroy', [$animal->id, $shed->id]),
                     ];
                 })
                 ->values()

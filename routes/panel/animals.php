@@ -53,6 +53,8 @@ Route::delete('/animals/{animal}/molts/{molt}', [AnimalMoltController::class, 'd
     ->name('animals.molts.destroy');
 Route::post('/animals/{animal}/pregnancy-sheds', [AnimalPregnancyShedController::class, 'store'])
     ->name('animals.pregnancy-sheds.store');
+Route::delete('/animals/{animal}/pregnancy-sheds/{shed}', [AnimalPregnancyShedController::class, 'destroy'])
+    ->name('animals.pregnancy-sheds.destroy');
 
 Route::post('/animals/{animal}/genotypes', [AnimalGenotypeController::class, 'store'])
     ->name('animals.genotypes.store');

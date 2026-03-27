@@ -107,7 +107,27 @@
 
                 @foreach ($item['sheds'] as $index => $shed)
                     <span class="pregnancy-progress-event pregnancy-progress-event--shed">
-                        Wylinka {{ $index + 1 }}: {{ $shed['date_label'] }}
+                        <span>Wylinka {{ $index + 1 }}: {{ $shed['date_label'] }}</span>
+                        @if ($showAddButton && !empty($shed['delete_url']))
+                            <form
+                                method="POST"
+                                action="{{ $shed['delete_url'] }}"
+                                class="d-inline-flex"
+                                onsubmit="return confirm('Usunac te wylinke ciazowa?');"
+                            >
+                                @csrf
+                                @method('DELETE')
+                                <input type="hidden" name="pregnancy_season" value="{{ $timeline['selected_season_key'] ?? '' }}">
+                                <button
+                                    type="submit"
+                                    class="pregnancy-progress-event-delete"
+                                    aria-label="Usun wylinke ciazowa"
+                                    title="Usun wylinke ciazowa"
+                                >
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        @endif
                     </span>
                 @endforeach
 
