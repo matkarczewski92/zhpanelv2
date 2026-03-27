@@ -18,21 +18,36 @@
         </a>
     </div>
 
-    <div class="glass-card glass-table-wrapper panel-form-card mb-3">
-        <div class="card-header">
-            <div class="strike"><span>Filtry</span></div>
-        </div>
+    <div class="card cardopacity mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('panel.litters.index') }}" class="row g-2">
-                <div class="col-12 col-md-5">
-                    <input type="text" class="form-control form-control-sm" name="q" placeholder="Kod miotu / rodzice" value="{{ $filters['q'] ?? '' }}">
+            <form method="GET" action="{{ route('panel.litters.index') }}" class="row g-3 align-items-end">
+                <div class="col-12 col-md-6 col-xl-5">
+                    <label class="form-label" for="litter_q">Szukaj</label>
+                    <input
+                        id="litter_q"
+                        type="text"
+                        class="form-control"
+                        name="q"
+                        placeholder="Kod miotu / rodzice"
+                        value="{{ $filters['q'] ?? '' }}"
+                    >
                 </div>
-                <div class="col-12 col-md-3">
-                    <input type="number" min="0" class="form-control form-control-sm" name="season" placeholder="Sezon" value="{{ $filters['season'] ?? '' }}">
+                <div class="col-12 col-md-3 col-xl-3">
+                    <label class="form-label" for="litter_season">Sezon</label>
+                    <input
+                        id="litter_season"
+                        type="number"
+                        min="0"
+                        class="form-control"
+                        name="season"
+                        placeholder="Sezon"
+                        value="{{ $filters['season'] ?? '' }}"
+                    >
                 </div>
-                <div class="col-12 col-md-4">
-                    <select class="form-select form-select-sm" name="status">
-                        <option value="">Status</option>
+                <div class="col-12 col-md-3 col-xl-4">
+                    <label class="form-label" for="litter_status">Status</label>
+                    <select id="litter_status" class="form-select" name="status">
+                        <option value="">Wszystkie</option>
                         <option value="waiting_connection" @selected(($filters['status'] ?? '') === 'waiting_connection')>Oczekiwanie na laczenie</option>
                         <option value="waiting_laying" @selected(($filters['status'] ?? '') === 'waiting_laying')>Oczekiwanie na zniesienie</option>
                         <option value="incubation" @selected(($filters['status'] ?? '') === 'incubation')>W trakcie inkubacji</option>
@@ -40,9 +55,9 @@
                         <option value="closed" @selected(($filters['status'] ?? '') === 'closed')>Zakonczony</option>
                     </select>
                 </div>
-                <div class="col-12 d-flex justify-content-end gap-2">
-                    <a href="{{ route('panel.litters.index') }}" class="btn btn-outline-light btn-sm">Wyczysc</a>
-                    <button type="submit" class="btn btn-primary btn-sm">Filtruj</button>
+                <div class="col-12 d-flex flex-wrap align-items-center justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary">Filtruj</button>
+                    <a href="{{ route('panel.litters.index') }}" class="btn btn-outline-light">Reset</a>
                 </div>
             </form>
         </div>

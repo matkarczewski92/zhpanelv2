@@ -82,17 +82,17 @@
                     </div>
                 </div>
 
-                <div class="glass-card glass-table-wrapper panel-form-card">
-                    <div class="card-header">
-                        <div class="strike"><span>Wprowadzanie dostaw karmy</span></div>
-                    </div>
+                <div class="card cardopacity">
                     <div class="card-body">
-                        <form method="POST" action="{{ route('panel.feeds.delivery.items.store') }}" class="row g-2 align-items-end">
+                        <form method="POST" action="{{ route('panel.feeds.delivery.items.store') }}" class="row g-3 align-items-end">
                             @csrf
-                            <div class="col-12 col-lg-6">
-                                <label class="small text-muted mb-1">Pozycja</label>
+                            <div class="col-12">
+                                <div class="strike"><span>Wprowadzanie dostaw karmy</span></div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Pozycja</label>
                                 <select
-                                    class="form-select form-select-sm @error('feed_id', 'feedDelivery') is-invalid @enderror"
+                                    class="form-select @error('feed_id', 'feedDelivery') is-invalid @enderror"
                                     name="feed_id"
                                 >
                                     <option value="" selected>Wybierz pozycje</option>
@@ -105,32 +105,27 @@
                                     @endforelse
                                 </select>
                             </div>
-                            <div class="col-12 col-lg-3">
-                                <label class="small text-muted mb-1">Ilosc</label>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label">Ilosc</label>
                                 <input
                                     type="text"
-                                    class="form-control form-control-sm @error('amount', 'feedDelivery') is-invalid @enderror"
+                                    class="form-control @error('amount', 'feedDelivery') is-invalid @enderror"
                                     name="amount"
                                     placeholder="Ilosc"
                                     value="{{ old('amount') }}"
                                     inputmode="numeric"
                                 >
                             </div>
-                            <div class="col-12 col-lg-3">
-                                <label class="small text-muted mb-1">Wartosc</label>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label">Wartosc</label>
                                 <input
                                     type="text"
-                                    class="form-control form-control-sm @error('value', 'feedDelivery') is-invalid @enderror"
+                                    class="form-control @error('value', 'feedDelivery') is-invalid @enderror"
                                     name="value"
                                     placeholder="Wartosc"
                                     value="{{ old('value') }}"
                                     inputmode="decimal"
                                 >
-                            </div>
-                            <div class="col-12">
-                                <div class="d-flex justify-content-end">
-                                    <button class="btn btn-primary btn-sm" type="submit">Dodaj</button>
-                                </div>
                             </div>
                             @if ($deliveryFormErrors->any())
                                 <div class="col-12 small text-danger">
@@ -139,62 +134,66 @@
                                     @endforeach
                                 </div>
                             @endif
+                            <div class="col-12 d-flex flex-wrap align-items-center justify-content-end gap-2">
+                                <button class="btn btn-primary" type="submit">Dodaj</button>
+                            </div>
                         </form>
-                    </div>
 
-                    <div class="card-header border-top border-opacity-10 border-light">
-                        <div class="strike"><span>Rachunek</span></div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table glass-table table-sm align-middle mb-0">
-                            <thead>
-                                <tr class="text-muted small">
-                                    <th>Karma</th>
-                                    <th class="text-center">Ilosc</th>
-                                    <th class="text-center">Wartosc</th>
-                                    <th class="text-center" style="width: 90px;">Akcja</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($deliveryRows as $row)
-                                    <tr>
-                                        <td>{{ $row['name'] }}</td>
-                                        <td class="text-center">{{ $row['amount'] }}</td>
-                                        <td class="text-center text-nowrap">{{ $row['value_label'] }}</td>
-                                        <td class="text-center">
-                                            <form method="POST" action="{{ route('panel.feeds.delivery.items.destroy', $row['feed_id']) }}">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-outline-light btn-sm px-2 py-0" type="submit" aria-label="Usun pozycje">D</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">Brak pozycji na rachunku.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="card-header border-top border-opacity-10 border-light">
-                        <div class="strike"><span>Podsumowanie</span></div>
-                    </div>
-                    <div class="card-body d-flex align-items-center justify-content-between gap-3 flex-wrap">
-                        <form method="POST" action="{{ route('panel.feeds.delivery.commit') }}" class="m-0">
-                            @csrf
-                            <button class="btn btn-primary" type="submit" @disabled(!$deliveryHasItems)>Dodaj</button>
-                        </form>
-                        <div class="text-nowrap">Lacznie {{ $deliveryTotalLabel }}</div>
-                    </div>
-                    @if ($deliveryCommitErrors->any())
-                        <div class="px-3 pb-3 small text-danger">
-                            @foreach ($deliveryCommitErrors->all() as $error)
-                                <div>{{ $error }}</div>
-                            @endforeach
+                        <div class="mt-3 pt-3 border-top border-light border-opacity-10">
+                            <div class="strike mb-3"><span>Rachunek</span></div>
+                            <div class="table-responsive">
+                                <table class="table glass-table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr class="text-muted small">
+                                            <th>Karma</th>
+                                            <th class="text-center">Ilosc</th>
+                                            <th class="text-center">Wartosc</th>
+                                            <th class="text-center" style="width: 90px;">Akcja</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($deliveryRows as $row)
+                                            <tr>
+                                                <td>{{ $row['name'] }}</td>
+                                                <td class="text-center">{{ $row['amount'] }}</td>
+                                                <td class="text-center text-nowrap">{{ $row['value_label'] }}</td>
+                                                <td class="text-center">
+                                                    <form method="POST" action="{{ route('panel.feeds.delivery.items.destroy', $row['feed_id']) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="btn btn-outline-light btn-sm px-2 py-0" type="submit" aria-label="Usun pozycje">D</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted">Brak pozycji na rachunku.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    @endif
+
+                        <div class="mt-3 pt-3 border-top border-light border-opacity-10 d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                            <div>
+                                <div class="strike mb-2"><span>Podsumowanie</span></div>
+                                <div class="text-nowrap">Lacznie {{ $deliveryTotalLabel }}</div>
+                            </div>
+                            <form method="POST" action="{{ route('panel.feeds.delivery.commit') }}" class="m-0">
+                                @csrf
+                                <button class="btn btn-primary" type="submit" @disabled(!$deliveryHasItems)>Dodaj</button>
+                            </form>
+                        </div>
+
+                        @if ($deliveryCommitErrors->any())
+                            <div class="pt-3 small text-danger">
+                                @foreach ($deliveryCommitErrors->all() as $error)
+                                    <div>{{ $error }}</div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
