@@ -34,9 +34,6 @@
                         <div>
                             <div class="d-flex flex-wrap align-items-center gap-2">
                                 <a href="{{ $item['show_url'] }}" class="pregnancy-progress-title">{{ $item['title'] }}</a>
-                                <span class="badge {{ !empty($item['is_completed']) ? 'text-bg-success' : 'text-bg-warning' }}">
-                                    {{ $item['status_label'] }}
-                                </span>
                                 @if (!empty($item['duration_value']))
                                     <span class="pregnancy-progress-duration">
                                         <span class="pregnancy-progress-duration__label">{{ $item['duration_hint'] }}</span>
