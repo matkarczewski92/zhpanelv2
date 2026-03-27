@@ -732,10 +732,7 @@ class GetAnimalProfileQuery
             'actual_percent' => $actualPercent,
             'sheds' => $sheds,
             'show_range' => $start !== null && $end !== null,
-            'duration_value' => $totalDays !== null ? $totalDays . ' dni' : null,
-            'duration_hint' => $totalDays !== null
-                ? ($actualLaying ? 'od laczenia do zniosu' : 'od laczenia do planu zniosu')
-                : null,
+            'duration_badge' => $this->buildPregnancyDurationBadge($plannedLaying, $actualLaying, $totalDays),
             'start_tooltip' => $this->buildTimelineTooltip('Laczenie', $start, $start),
             'planned_tooltip' => $this->buildTimelineTooltip('Plan zniosu', $plannedLaying, $start),
             'actual_tooltip' => $this->buildTimelineTooltip('Znios', $actualLaying, $start),
@@ -779,6 +776,33 @@ class GetAnimalProfileQuery
         }
 
         return 'Znios nastapil ' . $days . ' dni po planowanej dacie.';
+    }
+
+    private function buildPregnancyDurationBadge(
+        ?CarbonImmutable $plannedLaying,
+        ?CarbonImmutable $actualLaying,
+        ?int $totalDays
+    ): ?string {
+        if ($actualLaying && $totalDays !== null) {
+            return 'Zniesienie po ' . $totalDays . ' dniach';
+        }
+
+        if (!$plannedLaying) {
+            return null;
+        }
+
+        $today = CarbonImmutable::today();
+        $days = $today->diffInDays($plannedLaying, false);
+
+        if ($days > 0) {
+            return 'Do planowanego zniosu pozostalo ' . $days . ' dni';
+        }
+
+        if ($days === 0) {
+            return 'Planowany znios jest dzisiaj';
+        }
+
+        return 'Planowany znios opozniony o ' . abs($days) . ' dni';
     }
 
     private function resolvePregnancySeason(Litter $litter): array

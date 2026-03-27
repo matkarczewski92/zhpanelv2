@@ -34,10 +34,12 @@
                         <div>
                             <div class="d-flex flex-wrap align-items-center gap-2">
                                 <a href="{{ $item['show_url'] }}" class="pregnancy-progress-title">{{ $item['title'] }}</a>
-                                @if (!empty($item['duration_value']))
+                                @if (!empty($item['show_range']))
+                                    <span class="pregnancy-progress-range-inline">{{ $item['range_label'] }}</span>
+                                @endif
+                                @if (!empty($item['duration_badge']))
                                     <span class="pregnancy-progress-duration">
-                                        <span class="pregnancy-progress-duration__label">{{ $item['duration_hint'] }}</span>
-                                        <strong>{{ $item['duration_value'] }}</strong>
+                                        <strong>{{ $item['duration_badge'] }}</strong>
                                     </span>
                                 @endif
                             </div>
@@ -144,10 +146,7 @@
                         </div>
 
                         <div class="text-muted small mt-2">
-                            Ciaza: {{ $item['range_label'] }}
-                            @if (!empty($item['laying_delta_label']))
-                                <span class="ms-2">{{ $item['laying_delta_label'] }}</span>
-                            @endif
+                            {{ $item['laying_delta_label'] ?? '' }}
                         </div>
                     @else
                         <div class="text-muted small mt-2">

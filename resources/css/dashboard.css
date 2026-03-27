@@ -842,10 +842,21 @@ body.panel-body {
     text-decoration: underline;
 }
 
+.pregnancy-progress-range-inline {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.74rem;
+    line-height: 1;
+}
+
 .pregnancy-progress-duration {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
     padding: 0.26rem 0.7rem;
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -853,13 +864,6 @@ body.panel-body {
     color: rgba(255, 255, 255, 0.92);
     font-size: 0.78rem;
     line-height: 1;
-}
-
-.pregnancy-progress-duration__label {
-    color: rgba(255, 255, 255, 0.65);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-size: 0.68rem;
 }
 
 .pregnancy-progress-meta {
