@@ -65,12 +65,7 @@
                 @forelse ($page->seasonOffspringRows as $row)
                     <tr @class(['offspring-row--non-primary' => !($row['is_primary_litter'] ?? true)])>
                         <td>{{ $row['litter_id'] }}</td>
-                        <td>
-                            <a href="{{ $row['litter_url'] }}" class="link-reset">{{ $row['litter_code'] }}</a>
-                            @if (!($row['is_primary_litter'] ?? true))
-                                <span class="badge offspring-non-primary-badge ms-2">kat. {{ $row['litter_category'] }}</span>
-                            @endif
-                        </td>
+                        <td><a href="{{ $row['litter_url'] }}" class="link-reset">{{ $row['litter_code'] }}</a></td>
                         <td>{{ $row['season'] }}</td>
                         <td>
                             @if ($row['traits_name'] !== '')
@@ -151,7 +146,7 @@
                                     class="badge offspring-non-primary-badge ms-2"
                                     title="Ten wiersz zawiera udział z miotów o category != 1"
                                 >
-                                    inne kat.: {{ $row['non_primary_litters_count'] }}
+                                    Niepolaczone: {{ $row['non_primary_litters_count'] }} miotow
                                 </span>
                             @endif
                         </td>
