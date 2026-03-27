@@ -926,7 +926,7 @@ class GetLitterPlanningPageQuery
     }
 
     /**
-     * @return array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int, string>,carrier_traits:array<int, string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int}>
+     * @return array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int, string>,carrier_traits:array<int, string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int,litter_category:int,is_primary_litter:bool}>
      */
     private function buildSeasonOffspringRows(int $season, string $sort = 'litter_id', string $direction = 'asc'): array
     {
@@ -943,7 +943,7 @@ class GetLitterPlanningPageQuery
             ->whereNotNull('parent_male')
             ->whereNotNull('parent_female')
             ->orderBy('id')
-            ->get(['id', 'litter_code', 'season', 'parent_male', 'parent_female', 'laying_eggs_ok']);
+            ->get(['id', 'litter_code', 'season', 'category', 'parent_male', 'parent_female', 'laying_eggs_ok']);
 
         if ($litters->isEmpty()) {
             return [];
@@ -988,6 +988,8 @@ class GetLitterPlanningPageQuery
                     'percentage_label' => number_format($percentage, 2, ',', ' ') . '%',
                     'litter_url' => route('panel.litters.show', $litter->id),
                     'litter_eggs_to_incubation' => (int) ($litter->laying_eggs_ok ?? 0),
+                    'litter_category' => (int) ($litter->category ?? 0),
+                    'is_primary_litter' => (int) ($litter->category ?? 0) === 1,
                 ];
             }
         }
@@ -996,8 +998,8 @@ class GetLitterPlanningPageQuery
     }
 
     /**
-     * @param array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int,string>,carrier_traits:array<int,string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int}> $rows
-     * @return array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int,string>,carrier_traits:array<int,string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int}>
+     * @param array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int,string>,carrier_traits:array<int,string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int,litter_category:int,is_primary_litter:bool}> $rows
+     * @return array<int, array{litter_id:int,litter_code:string,season:int,traits_name:string,visual_traits:array<int,string>,carrier_traits:array<int,string>,traits_count:int,percentage:float,percentage_label:string,litter_url:string,litter_eggs_to_incubation:int,litter_category:int,is_primary_litter:bool}>
      */
     private function sortSeasonOffspringRows(array $rows, string $sort, string $direction): array
     {
@@ -1065,6 +1067,8 @@ class GetLitterPlanningPageQuery
      *     morph_name:string,
      *     grouped_rows:int,
      *     litters_count:int,
+     *     non_primary_litters_count:int,
+     *     has_non_primary_litters:bool,
      *     percentage_sum:float,
      *     percentage_sum_label:string,
      *     avg_eggs_to_incubation:float,
@@ -1093,6 +1097,7 @@ class GetLitterPlanningPageQuery
                     'grouped_rows' => 0,
                     'percentage_sum' => 0.0,
                     'litters' => [],
+                    'non_primary_litters' => [],
                 ];
             }
 
@@ -1102,13 +1107,18 @@ class GetLitterPlanningPageQuery
             $litterId = (int) ($row['litter_id'] ?? 0);
             if ($litterId > 0) {
                 $grouped[$key]['litters'][$litterId] = true;
+                if ((int) ($row['litter_category'] ?? 0) !== 1) {
+                    $grouped[$key]['non_primary_litters'][$litterId] = true;
+                }
             }
         }
 
         $summary = collect($grouped)
             ->map(function (array $group) use ($stableEggsToIncubationAverage): array {
                 $litters = (array) ($group['litters'] ?? []);
+                $nonPrimaryLitters = (array) ($group['non_primary_litters'] ?? []);
                 $littersCount = count($litters);
+                $nonPrimaryLittersCount = count($nonPrimaryLitters);
                 $avgEggs = round($stableEggsToIncubationAverage, 0);
                 $percentageSum = (float) ($group['percentage_sum'] ?? 0);
                 $numericCount = round(($percentageSum / 100) * $avgEggs, 0);
@@ -1117,6 +1127,8 @@ class GetLitterPlanningPageQuery
                     'morph_name' => (string) ($group['morph_name'] ?? '-'),
                     'grouped_rows' => (int) ($group['grouped_rows'] ?? 0),
                     'litters_count' => $littersCount,
+                    'non_primary_litters_count' => $nonPrimaryLittersCount,
+                    'has_non_primary_litters' => $nonPrimaryLittersCount > 0,
                     'percentage_sum' => $percentageSum,
                     'percentage_sum_label' => number_format($percentageSum, 2, ',', ' ') . '%',
                     'avg_eggs_to_incubation' => $avgEggs,

@@ -63,9 +63,14 @@
             </thead>
             <tbody>
                 @forelse ($page->seasonOffspringRows as $row)
-                    <tr>
+                    <tr @class(['offspring-row--non-primary' => !($row['is_primary_litter'] ?? true)])>
                         <td>{{ $row['litter_id'] }}</td>
-                        <td><a href="{{ $row['litter_url'] }}" class="link-reset">{{ $row['litter_code'] }}</a></td>
+                        <td>
+                            <a href="{{ $row['litter_url'] }}" class="link-reset">{{ $row['litter_code'] }}</a>
+                            @if (!($row['is_primary_litter'] ?? true))
+                                <span class="badge offspring-non-primary-badge ms-2">kat. {{ $row['litter_category'] }}</span>
+                            @endif
+                        </td>
                         <td>{{ $row['season'] }}</td>
                         <td>
                             @if ($row['traits_name'] !== '')
@@ -134,12 +139,20 @@
             </thead>
             <tbody>
                 @forelse ($page->seasonOffspringSummaryRows as $row)
-                    <tr>
+                    <tr @class(['offspring-row--non-primary' => !empty($row['has_non_primary_litters'])])>
                         <td>
                             @if ($row['morph_name'] !== '-')
                                 <span class="badge text-bg-light">{{ $row['morph_name'] }}</span>
                             @else
                                 <span class="text-muted">-</span>
+                            @endif
+                            @if (!empty($row['has_non_primary_litters']))
+                                <span
+                                    class="badge offspring-non-primary-badge ms-2"
+                                    title="Ten wiersz zawiera udział z miotów o category != 1"
+                                >
+                                    inne kat.: {{ $row['non_primary_litters_count'] }}
+                                </span>
                             @endif
                         </td>
                         <td class="text-center fw-semibold">{{ $row['percentage_sum_label'] }}</td>
