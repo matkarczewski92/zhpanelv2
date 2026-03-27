@@ -16,6 +16,7 @@ class PortalUpdateRunRequest extends FormRequest
         return [
             'run_migrate' => ['sometimes', 'boolean'],
             'run_build' => ['sometimes', 'boolean'],
+            'force_overwrite' => ['sometimes', 'boolean'],
         ];
     }
 }

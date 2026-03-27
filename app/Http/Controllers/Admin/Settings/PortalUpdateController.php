@@ -41,9 +41,10 @@ class PortalUpdateController extends Controller
         $payload = $request->validated();
         $runMigrate = (bool) ($payload['run_migrate'] ?? false);
         $runBuild = (bool) ($payload['run_build'] ?? false);
+        $forceOverwrite = (bool) ($payload['force_overwrite'] ?? false);
 
         try {
-            $result = $this->service->runUpdate($runMigrate, $runBuild);
+            $result = $this->service->runUpdate($runMigrate, $runBuild, $forceOverwrite);
         } catch (RuntimeException $exception) {
             return $this->redirectToTab()
                 ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
