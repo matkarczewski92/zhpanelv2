@@ -77,6 +77,78 @@ body.panel-body {
 .panel-body .form-select {
     font-size: 0.92rem;
     padding: 0.35rem 0.6rem;
+    color: #f8f9fa;
+    background-color: rgba(5, 8, 10, 0.28);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 10px 22px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.panel-body .form-control.bg-dark,
+.panel-body .form-select.bg-dark,
+.panel-body textarea.form-control,
+.panel-body input.form-control,
+.panel-body select.form-select {
+    background-color: rgba(5, 8, 10, 0.28) !important;
+    color: #f8f9fa;
+    border-color: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.panel-body .form-control::placeholder {
+    color: rgba(248, 249, 250, 0.52);
+}
+
+.panel-body .form-control:focus,
+.panel-body .form-select:focus,
+.panel-body .form-check-input:focus {
+    color: #fff;
+    background-color: rgba(5, 8, 10, 0.38);
+    border-color: rgba(255, 255, 255, 0.24);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 0 0 0.14rem rgba(255, 255, 255, 0.08),
+        0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+.panel-body .form-control:disabled,
+.panel-body .form-select:disabled {
+    color: rgba(248, 249, 250, 0.55);
+    background-color: rgba(5, 8, 10, 0.2);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.panel-body .form-check-input {
+    background-color: rgba(5, 8, 10, 0.26);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 6px 14px rgba(0, 0, 0, 0.16);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.panel-body .form-check-input:checked {
+    background-color: rgba(13, 110, 253, 0.9);
+    border-color: rgba(13, 110, 253, 0.95);
+}
+
+.panel-body .form-select option {
+    background-color: #0a0d10;
+    color: #f8f9fa;
+}
+
+.panel-body input:-webkit-autofill,
+.panel-body input:-webkit-autofill:hover,
+.panel-body input:-webkit-autofill:focus,
+.panel-body textarea:-webkit-autofill,
+.panel-body select:-webkit-autofill {
+    -webkit-text-fill-color: #f8f9fa;
+    -webkit-box-shadow: 0 0 0 1000px rgba(5, 8, 10, 0.3) inset;
 }
 
 .panel-body .mb-4 {
