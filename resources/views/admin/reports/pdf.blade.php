@@ -24,6 +24,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
         th,
@@ -44,6 +45,26 @@
 
         .stack div {
             margin-bottom: 4px;
+        }
+
+        .col-id {
+            width: 5%;
+        }
+
+        .col-name {
+            width: 45%;
+        }
+
+        .col-feedings {
+            width: 18%;
+        }
+
+        .col-weights {
+            width: 16%;
+        }
+
+        .col-molts {
+            width: 16%;
         }
     </style>
 </head>
@@ -97,6 +118,13 @@
             @foreach (($group['types'] ?? []) as $type)
                 <h3 style="margin: 12px 0 6px; font-size: 13px; color: #444;">{{ $type['label'] }}</h3>
                 <table>
+                    <colgroup>
+                        <col class="col-id">
+                        <col class="col-name">
+                        <col class="col-feedings">
+                        <col class="col-weights">
+                        <col class="col-molts">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -142,6 +170,13 @@
         @endforelse
     @else
         <table>
+            <colgroup>
+                <col class="col-id">
+                <col class="col-name">
+                <col class="col-feedings">
+                <col class="col-weights">
+                <col class="col-molts">
+            </colgroup>
             <thead>
                 <tr>
                     <th>ID</th>

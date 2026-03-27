@@ -3,6 +3,38 @@
 @section('title', $report['title'] ?? 'Podglad raportu')
 
 @section('content')
+    <style>
+        .admin-report-fixed-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .admin-report-fixed-table col.col-id {
+            width: 5%;
+        }
+
+        .admin-report-fixed-table col.col-name {
+            width: 45%;
+        }
+
+        .admin-report-fixed-table col.col-feedings {
+            width: 18%;
+        }
+
+        .admin-report-fixed-table col.col-weights {
+            width: 16%;
+        }
+
+        .admin-report-fixed-table col.col-molts {
+            width: 16%;
+        }
+
+        .admin-report-fixed-table td,
+        .admin-report-fixed-table th {
+            word-break: break-word;
+        }
+    </style>
+
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
         <div>
             <h1 class="h4 mb-1">{{ $report['title'] ?? 'Raport' }}</h1>
@@ -130,7 +162,14 @@
                                 <div>
                                     <div class="small text-muted fw-semibold mb-2">{{ $type['label'] }}</div>
                                     <div class="table-responsive">
-                                        <table class="table glass-table table-sm align-middle mb-0">
+                                        <table class="table glass-table table-sm align-middle mb-0 admin-report-fixed-table">
+                                            <colgroup>
+                                                <col class="col-id">
+                                                <col class="col-name">
+                                                <col class="col-feedings">
+                                                <col class="col-weights">
+                                                <col class="col-molts">
+                                            </colgroup>
                                             <thead>
                                                 <tr class="text-muted small">
                                                     <th>ID</th>
@@ -183,7 +222,14 @@
     @else
         <div class="glass-card">
             <div class="table-responsive">
-                <table class="table glass-table table-sm align-middle mb-0">
+                <table class="table glass-table table-sm align-middle mb-0 admin-report-fixed-table">
+                    <colgroup>
+                        <col class="col-id">
+                        <col class="col-name">
+                        <col class="col-feedings">
+                        <col class="col-weights">
+                        <col class="col-molts">
+                    </colgroup>
                     <thead>
                         <tr class="text-muted small">
                             <th>ID</th>
