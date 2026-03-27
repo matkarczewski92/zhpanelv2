@@ -125,6 +125,9 @@
                     <a class="nav-link {{ request()->routeIs('panel.pregnancies.*') ? 'active' : '' }}" href="{{ route('panel.pregnancies.index') }}">Ciaze</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.qr-scanner.*') ? 'active' : '' }}" href="{{ route('panel.qr-scanner.index') }}">QR</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}" href="{{ route('panel.devices.index') }}">Urządzenia</a>
                 </li>
                 <li class="nav-item">
@@ -230,6 +233,11 @@
                             Cennik
                         </a>
                     </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.reports.index') }}">
+                            Raporty
+                        </a>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
@@ -312,6 +320,12 @@
                 Ciaze
             </a>
             <a
+                class="nav-link {{ request()->routeIs('panel.qr-scanner.*') ? 'active' : '' }}"
+                href="{{ route('panel.qr-scanner.index') }}"
+            >
+                Skaner QR
+            </a>
+            <a
                 class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}"
                 href="{{ route('panel.devices.index') }}"
             >
@@ -338,6 +352,9 @@
             </a>
             <a class="nav-link" href="{{ route('admin.pricelist.index') }}">
                 Cennik
+            </a>
+            <a class="nav-link" href="{{ route('admin.reports.index') }}">
+                Raporty
             </a>
             <form method="POST" action="{{ route('logout') }}" class="mt-2">
                 @csrf

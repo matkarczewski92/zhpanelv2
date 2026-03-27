@@ -28,6 +28,7 @@ Route::prefix('panel')
         require __DIR__ . '/massdata.php';
         require __DIR__ . '/winterings.php';
         require __DIR__ . '/pregnancies.php';
+        require __DIR__ . '/qr-scanner.php';
         require __DIR__ . '/devices.php';
         require __DIR__ . '/navbar-search.php';
     });

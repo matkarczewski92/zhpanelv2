@@ -5,3 +5,4 @@ import './animals-index';
 import './toasts';
 import './feeds-planning';
 import './litters-planning';
+import './qr-scanner';
