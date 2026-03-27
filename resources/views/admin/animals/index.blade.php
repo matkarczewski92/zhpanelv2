@@ -77,8 +77,12 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-12 col-md-6 col-xl-3 animals-filter-compact">
-                    <div class="form-check mt-md-4 pt-md-2">
+                @if (!empty($sort))
+                    <input type="hidden" name="sort" value="{{ $sort }}" />
+                    <input type="hidden" name="direction" value="{{ $direction }}" />
+                @endif
+                <div class="col-12 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="form-check m-0">
                         <input
                             class="form-check-input"
                             type="checkbox"
@@ -91,14 +95,10 @@
                             Tylko ciężarne samice
                         </label>
                     </div>
-                </div>
-                @if (!empty($sort))
-                    <input type="hidden" name="sort" value="{{ $sort }}" />
-                    <input type="hidden" name="direction" value="{{ $direction }}" />
-                @endif
-                <div class="col-12 d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary" type="submit">Filtruj</button>
-                    <a class="btn btn-outline-light" href="{{ route('panel.animals.index') }}">Reset</a>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary" type="submit">Filtruj</button>
+                        <a class="btn btn-outline-light" href="{{ route('panel.animals.index') }}">Reset</a>
+                    </div>
                 </div>
             </form>
 

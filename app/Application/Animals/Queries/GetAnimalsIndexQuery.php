@@ -13,7 +13,6 @@ use App\Models\ColorGroup;
 use App\Models\Feed;
 use App\Models\SystemConfig;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -126,12 +125,12 @@ class GetAnimalsIndexQuery
         if ($pregnantFemalesOnly) {
             $query
                 ->where('animals.sex', Sex::Female->value)
-                ->whereExists(function (Builder $builder): void {
+                ->whereExists(function ($builder): void {
                     $builder->selectRaw('1')
                         ->from('litters')
                         ->whereColumn('litters.parent_female', 'animals.id')
                         ->whereIn('litters.category', [1, 3])
-                        ->where(function (Builder $dateBuilder): void {
+                        ->where(function ($dateBuilder): void {
                             $dateBuilder
                                 ->whereNotNull('litters.connection_date')
                                 ->orWhereNotNull('litters.planned_connection_date');

@@ -128,6 +128,16 @@ class Animal extends Model
         return $this->hasMany(Wintering::class, 'animal_id');
     }
 
+    public function littersAsFemale(): HasMany
+    {
+        return $this->hasMany(Litter::class, 'parent_female');
+    }
+
+    public function littersAsMale(): HasMany
+    {
+        return $this->hasMany(Litter::class, 'parent_male');
+    }
+
     public function genotypes(): HasMany
     {
         return $this->hasMany(AnimalGenotype::class, 'animal_id');

@@ -122,6 +122,9 @@
                     <a class="nav-link {{ request()->routeIs('panel.winterings.*') ? 'active' : '' }}" href="{{ route('panel.winterings.index') }}">Zimowanie</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.pregnancies.*') ? 'active' : '' }}" href="{{ route('panel.pregnancies.index') }}">Ciaze</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}" href="{{ route('panel.devices.index') }}">Urządzenia</a>
                 </li>
                 <li class="nav-item">
@@ -301,6 +304,12 @@
                 href="{{ route('panel.winterings.index') }}"
             >
                 Zimowanie
+            </a>
+            <a
+                class="nav-link {{ request()->routeIs('panel.pregnancies.*') ? 'active' : '' }}"
+                href="{{ route('panel.pregnancies.index') }}"
+            >
+                Ciaze
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}"
