@@ -3,6 +3,7 @@
 namespace Tests\Unit\Application\Animals\Commands;
 
 use App\Application\Animals\Commands\RecordLitterPregnancyShedCommand;
+use App\Application\Animals\Commands\RecordMoltCommand;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -39,7 +40,7 @@ class RecordLitterPregnancyShedCommandTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $command = new RecordLitterPregnancyShedCommand();
+        $command = new RecordLitterPregnancyShedCommand(new RecordMoltCommand());
 
         $shed = $command->handle([
             'animal_id' => $animalId,
@@ -53,6 +54,11 @@ class RecordLitterPregnancyShedCommandTest extends TestCase
             'id' => $shed->id,
             'litter_id' => $litterId,
             'shed_date' => '2026-02-14',
+        ]);
+        $this->assertDatabaseHas('animal_molts', [
+            'animal_id' => $animalId,
+            'created_at' => '2026-02-14 00:00:00',
+            'updated_at' => '2026-02-14 00:00:00',
         ]);
     }
 
@@ -75,7 +81,7 @@ class RecordLitterPregnancyShedCommandTest extends TestCase
 
         $this->expectException(ModelNotFoundException::class);
 
-        (new RecordLitterPregnancyShedCommand())->handle([
+        (new RecordLitterPregnancyShedCommand(new RecordMoltCommand()))->handle([
             'animal_id' => $animalId,
             'litter_id' => $litterId,
             'shed_date' => '2026-03-01',
@@ -86,6 +92,7 @@ class RecordLitterPregnancyShedCommandTest extends TestCase
     {
         Schema::dropIfExists('litters_pregnancy_sheds');
         Schema::dropIfExists('litters');
+        Schema::dropIfExists('animal_molts');
         Schema::dropIfExists('animals');
 
         Schema::create('animals', function (Blueprint $table): void {
@@ -111,6 +118,12 @@ class RecordLitterPregnancyShedCommandTest extends TestCase
             $table->id();
             $table->unsignedBigInteger('litter_id');
             $table->date('shed_date');
+            $table->timestamps();
+        });
+
+        Schema::create('animal_molts', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('animal_id');
             $table->timestamps();
         });
     }

@@ -76,6 +76,7 @@ class BuildAdminReportDataServiceTest extends TestCase
                         'animal_name' => 'Butter Stripe',
                         'public_tag' => 'ebe5',
                         'animal_category_id' => 1,
+                        'animal_category_name' => 'W hodowli',
                         'animal_type_id' => 1,
                         'animal_type_name' => 'Waz zbozowy',
                         'feedings' => [
@@ -88,10 +89,23 @@ class BuildAdminReportDataServiceTest extends TestCase
                         'molts' => [],
                     ],
                     [
+                        'animal_id' => 12,
+                        'animal_name' => 'Amber',
+                        'public_tag' => 'abc1',
+                        'animal_category_id' => 1,
+                        'animal_category_name' => 'W hodowli',
+                        'animal_type_id' => 3,
+                        'animal_type_name' => 'Pyton zielony',
+                        'feedings' => [],
+                        'weights' => [],
+                        'molts' => [],
+                    ],
+                    [
                         'animal_id' => 11,
                         'animal_name' => 'Ghost',
                         'public_tag' => null,
                         'animal_category_id' => 5,
+                        'animal_category_name' => 'Usuniete',
                         'animal_type_id' => 2,
                         'animal_type_name' => 'Pyton',
                         'feedings' => [],
@@ -115,15 +129,17 @@ class BuildAdminReportDataServiceTest extends TestCase
         ]);
 
         $this->assertSame('daily_entered_data', $report['type']);
-        $this->assertSame(1, $report['meta']['item_count']);
+        $this->assertSame(2, $report['meta']['item_count']);
         $this->assertSame(2, $report['meta']['feedings_count']);
         $this->assertSame(1, $report['meta']['weights_count']);
         $this->assertSame(0, $report['meta']['molts_count']);
-        $this->assertCount(1, $report['rows']);
+        $this->assertCount(2, $report['rows']);
         $this->assertCount(1, $report['groups']);
-        $this->assertSame('Kategoria 1', $report['groups'][0]['label']);
-        $this->assertCount(1, $report['groups'][0]['types']);
+        $this->assertSame('Kategoria: W hodowli', $report['groups'][0]['label']);
+        $this->assertCount(2, $report['groups'][0]['types']);
+        $this->assertSame(1, $report['groups'][0]['types'][0]['animal_type_id']);
         $this->assertSame('Waz zbozowy', $report['groups'][0]['types'][0]['label']);
+        $this->assertSame(3, $report['groups'][0]['types'][1]['animal_type_id']);
 
         CarbonImmutable::setTestNow();
     }

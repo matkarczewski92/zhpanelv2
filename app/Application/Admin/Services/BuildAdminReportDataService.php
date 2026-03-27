@@ -79,10 +79,12 @@ class BuildAdminReportDataService
                 $categoryRows = $rows
                     ->filter(fn (array $row): bool => (int) ($row['animal_category_id'] ?? 0) === $categoryId)
                     ->values();
+                $firstRow = $categoryRows->first();
+                $categoryName = trim((string) ($firstRow['animal_category_name'] ?? ''));
 
                 return [
                     'category_id' => $categoryId,
-                    'label' => 'Kategoria ' . $categoryId,
+                    'label' => $categoryName !== '' ? ('Kategoria: ' . $categoryName) : ('Kategoria #' . $categoryId),
                     'rows' => $categoryRows->all(),
                     'types' => $categoryRows
                         ->groupBy(fn (array $row): int => (int) ($row['animal_type_id'] ?? 0))
@@ -96,7 +98,7 @@ class BuildAdminReportDataService
                                 'rows' => $typeRows->values()->all(),
                             ];
                         })
-                        ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+                        ->sortBy('animal_type_id')
                         ->values()
                         ->all(),
                 ];

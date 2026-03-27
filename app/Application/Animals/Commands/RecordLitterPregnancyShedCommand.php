@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class RecordLitterPregnancyShedCommand
 {
+    public function __construct(
+        private readonly RecordMoltCommand $recordMoltCommand
+    ) {
+    }
+
     public function handle(array $data): LitterPregnancyShed
     {
         $litter = Litter::query()
@@ -26,6 +31,10 @@ class RecordLitterPregnancyShedCommand
             $shed = LitterPregnancyShed::query()->create([
                 'litter_id' => $litter->id,
                 'shed_date' => $data['shed_date'],
+            ]);
+            $this->recordMoltCommand->handle([
+                'animal_id' => $data['animal_id'],
+                'occurred_at' => $data['shed_date'],
             ]);
 
             DB::afterCommit(static function () use ($shed): void {

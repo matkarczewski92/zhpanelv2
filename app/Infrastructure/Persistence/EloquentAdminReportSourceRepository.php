@@ -46,6 +46,7 @@ class EloquentAdminReportSourceRepository implements AdminReportSourceRepository
 
         return Animal::query()
             ->with([
+                'animalCategory:id,name',
                 'animalType:id,name',
                 'feedings' => function ($query) use ($start, $end): void {
                     $query
@@ -78,6 +79,7 @@ class EloquentAdminReportSourceRepository implements AdminReportSourceRepository
                     'animal_name' => $this->formatAnimalName($animal->name, $animal->second_name),
                     'public_tag' => $animal->public_profile_tag ?: null,
                     'animal_category_id' => $animal->animal_category_id ? (int) $animal->animal_category_id : null,
+                    'animal_category_name' => trim((string) ($animal->animalCategory?->name ?? '')),
                     'animal_type_id' => $animal->animal_type_id ? (int) $animal->animal_type_id : null,
                     'animal_type_name' => trim((string) ($animal->animalType?->name ?? '')),
                     'feedings' => $animal->feedings->map(function ($feeding): array {
