@@ -3,6 +3,7 @@
 namespace App\Application\Animals\Queries;
 
 use App\Application\Animals\ViewModels\AnimalProfileViewModel;
+use App\Application\Litters\Support\LitterTimelineCalculator;
 use App\Application\Winterings\Queries\GetAnimalWinteringProfileQuery;
 use App\Domain\Shared\Enums\Sex;
 use App\Models\Animal;
@@ -18,8 +19,10 @@ use App\Models\AnimalWeight;
 use App\Models\ColorGroup;
 use App\Models\Feed;
 use App\Models\Litter;
+use App\Models\LitterPregnancyShed;
 use App\Services\Animal\AnimalWeightChartService;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 
@@ -27,7 +30,8 @@ class GetAnimalProfileQuery
 {
     public function __construct(
         private readonly AnimalWeightChartService $weightChartService,
-        private readonly GetAnimalWinteringProfileQuery $winteringProfileQuery
+        private readonly GetAnimalWinteringProfileQuery $winteringProfileQuery,
+        private readonly LitterTimelineCalculator $litterTimelineCalculator
     )
     {
     }
@@ -94,6 +98,7 @@ class GetAnimalProfileQuery
 
         $edit = $this->buildEditData($animal);
         $colorGroups = $this->buildColorGroups($animal);
+        $pregnancyTimeline = $this->buildPregnancyTimeline($animal, $navigationInput);
         $navigation = $this->buildNavigation($animal->id, $navigationInput);
 
         return new AnimalProfileViewModel(
@@ -135,6 +140,7 @@ class GetAnimalProfileQuery
             toggle_public_profile_url: $togglePublicUrl,
             edit: $edit,
             colorGroups: $colorGroups,
+            pregnancyTimeline: $pregnancyTimeline,
             navigation: $navigation
         );
     }
@@ -604,6 +610,194 @@ class GetAnimalProfileQuery
             'selected_ids' => $animal->colorGroups->pluck('id')->map(fn ($id) => (int) $id)->all(),
             'update_url' => route('panel.animals.color-groups.sync', $animal->id),
         ];
+    }
+
+    private function buildPregnancyTimeline(Animal $animal, array $input): array
+    {
+        if ((int) $animal->sex !== Sex::Female->value) {
+            return ['visible' => false];
+        }
+
+        $litters = Litter::query()
+            ->with([
+                'maleParent:id,name',
+                'pregnancySheds:id,litter_id,shed_date',
+            ])
+            ->where('parent_female', $animal->id)
+            ->whereIn('category', [1, 3])
+            ->get();
+
+        if ($litters->isEmpty()) {
+            return ['visible' => false];
+        }
+
+        $groupedBySeason = [];
+        foreach ($litters as $litter) {
+            $season = $this->resolvePregnancySeason($litter);
+            $groupedBySeason[$season['key']] ??= [
+                'key' => $season['key'],
+                'label' => $season['label'],
+                'sort' => $season['sort'],
+                'litters' => [],
+            ];
+            $groupedBySeason[$season['key']]['litters'][] = $litter;
+        }
+
+        uasort($groupedBySeason, static fn (array $left, array $right): int => $right['sort'] <=> $left['sort']);
+
+        $selectedSeasonKey = (string) ($input['pregnancy_season'] ?? '');
+        if ($selectedSeasonKey === '' || !isset($groupedBySeason[$selectedSeasonKey])) {
+            $selectedSeasonKey = (string) array_key_first($groupedBySeason);
+        }
+
+        $selectedGroup = $groupedBySeason[$selectedSeasonKey] ?? null;
+        $timelineItems = collect($selectedGroup['litters'] ?? [])
+            ->sortByDesc(fn (Litter $litter) => $this->resolvePregnancySortTimestamp($litter))
+            ->values()
+            ->map(fn (Litter $litter): array => $this->buildPregnancyTimelineItem($animal, $litter, $selectedSeasonKey))
+            ->all();
+
+        return [
+            'visible' => true,
+            'selected_season_key' => $selectedSeasonKey,
+            'selected_season_label' => $selectedGroup['label'] ?? '',
+            'season_options' => collect($groupedBySeason)
+                ->map(fn (array $season): array => [
+                    'key' => $season['key'],
+                    'label' => $season['label'],
+                ])
+                ->values()
+                ->all(),
+            'items' => $timelineItems,
+            'store_url' => route('panel.animals.pregnancy-sheds.store', $animal->id),
+        ];
+    }
+
+    private function buildPregnancyTimelineItem(Animal $animal, Litter $litter, string $selectedSeasonKey): array
+    {
+        $start = $this->resolvePregnancyStartDate($litter);
+        $plannedLaying = $this->resolvePregnancyPlannedLayingDate($litter);
+        $actualLaying = $litter->laying_date ? CarbonImmutable::parse($litter->laying_date) : null;
+        $end = $plannedLaying;
+
+        if ($actualLaying && (!$end || $actualLaying->gt($end))) {
+            $end = $actualLaying;
+        } elseif (!$end) {
+            $end = $actualLaying;
+        }
+
+        $now = CarbonImmutable::now();
+        $progressPercent = 0.0;
+        $plannedPercent = null;
+        $actualPercent = null;
+        $sheds = [];
+
+        if ($start && $end) {
+            $progressReference = $actualLaying ?? $now;
+            $progressPercent = $this->resolveTimelinePercent($start, $progressReference, $end);
+            $plannedPercent = $plannedLaying ? $this->resolveTimelinePercent($start, $plannedLaying, $end) : null;
+            $actualPercent = $actualLaying ? $this->resolveTimelinePercent($start, $actualLaying, $end) : null;
+
+            $sheds = $litter->pregnancySheds
+                ->sortBy('shed_date')
+                ->map(function (LitterPregnancyShed $shed) use ($start, $end): array {
+                    $shedDate = $shed->shed_date ? CarbonImmutable::parse($shed->shed_date) : null;
+
+                    return [
+                        'id' => $shed->id,
+                        'date_label' => $shedDate?->format('Y-m-d') ?? '-',
+                        'position_percent' => $shedDate ? $this->resolveTimelinePercent($start, $shedDate, $end) : 0,
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        $title = $litter->litter_code ?: ('L#' . $litter->id);
+        $maleName = trim(strip_tags((string) optional($litter->maleParent)->name));
+
+        return [
+            'litter_id' => $litter->id,
+            'title' => $title,
+            'subtitle' => $maleName !== '' ? 'samiec: ' . $maleName : null,
+            'start_date_label' => $start?->format('Y-m-d') ?? '-',
+            'planned_laying_label' => $plannedLaying?->format('Y-m-d') ?? '-',
+            'actual_laying_label' => $actualLaying?->format('Y-m-d'),
+            'status_label' => $actualLaying ? 'Zniesienie zapisane' : 'W oczekiwaniu na zniesienie',
+            'is_completed' => $actualLaying !== null,
+            'progress_percent' => $progressPercent,
+            'planned_percent' => $plannedPercent,
+            'actual_percent' => $actualPercent,
+            'sheds' => $sheds,
+            'show_range' => $start !== null && $end !== null,
+            'range_label' => $start && $end ? $start->format('Y-m-d') . ' - ' . $end->format('Y-m-d') : 'Brak pelnego zakresu dat',
+            'actual_extends_timeline' => $actualLaying && $plannedLaying ? $actualLaying->gt($plannedLaying) : false,
+            'store_url' => route('panel.animals.pregnancy-sheds.store', $animal->id),
+            'selected_season_key' => $selectedSeasonKey,
+            'show_url' => Route::has('panel.litters.show') ? route('panel.litters.show', $litter->id) : '#',
+        ];
+    }
+
+    private function resolvePregnancySeason(Litter $litter): array
+    {
+        $season = $litter->season;
+        if ($season !== null && $season !== '') {
+            $seasonValue = (string) $season;
+
+            return [
+                'key' => 'season:' . $seasonValue,
+                'label' => 'Sezon ' . $seasonValue,
+                'sort' => (int) $season,
+            ];
+        }
+
+        $referenceDate = $this->resolvePregnancyStartDate($litter)
+            ?? ($litter->created_at ? CarbonImmutable::parse($litter->created_at) : null);
+        $year = $referenceDate?->format('Y') ?? 'brak';
+
+        return [
+            'key' => 'year:' . $year,
+            'label' => $year === 'brak' ? 'Bez sezonu' : 'Rok ' . $year,
+            'sort' => (int) ($referenceDate?->format('Y') ?? 0),
+        ];
+    }
+
+    private function resolvePregnancySortTimestamp(Litter $litter): int
+    {
+        return ($this->resolvePregnancyStartDate($litter) ?? CarbonImmutable::create(1970, 1, 1))->getTimestamp();
+    }
+
+    private function resolvePregnancyStartDate(Litter $litter): ?CarbonImmutable
+    {
+        $referenceDate = $litter->connection_date ?: $litter->planned_connection_date;
+
+        return $referenceDate ? CarbonImmutable::parse($referenceDate) : null;
+    }
+
+    private function resolvePregnancyPlannedLayingDate(Litter $litter): ?CarbonImmutable
+    {
+        $start = $this->resolvePregnancyStartDate($litter);
+        if (!$start) {
+            return null;
+        }
+
+        return $start->addDays($this->litterTimelineCalculator->getLayingDuration());
+    }
+
+    private function resolveTimelinePercent(CarbonImmutable $start, CarbonImmutable $point, CarbonImmutable $end): float
+    {
+        if ($point->lte($start)) {
+            return 0.0;
+        }
+
+        if ($point->gte($end)) {
+            return 100.0;
+        }
+
+        $totalDays = max($start->diffInDays($end), 1);
+        $elapsedDays = $start->diffInDays($point);
+
+        return round(($elapsedDays / $totalDays) * 100, 2);
     }
 
     private function buildNavigation(int $animalId, array $input): array

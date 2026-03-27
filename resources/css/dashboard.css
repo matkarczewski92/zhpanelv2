@@ -818,6 +818,136 @@ body.panel-body {
     border-color: rgba(255, 255, 255, 0.08);
 }
 
+.pregnancy-timeline-card .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pregnancy-progress-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 14px;
+    padding: 0.85rem 0.9rem;
+}
+
+.pregnancy-progress-title {
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.pregnancy-progress-title:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.pregnancy-progress-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.82rem;
+    margin-bottom: 0.8rem;
+}
+
+.pregnancy-progress-track-wrap {
+    padding: 0.45rem 0.1rem 0.2rem;
+}
+
+.pregnancy-progress-track {
+    position: relative;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.09);
+    overflow: visible;
+}
+
+.pregnancy-progress-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(255, 193, 7, 0.85), rgba(25, 135, 84, 0.9));
+}
+
+.pregnancy-progress-marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+.pregnancy-progress-dot {
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(9, 14, 18, 0.95);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.pregnancy-progress-marker--start .pregnancy-progress-dot {
+    background: #6ea8fe;
+}
+
+.pregnancy-progress-marker--planned .pregnancy-progress-dot {
+    background: #ffc107;
+}
+
+.pregnancy-progress-marker--shed .pregnancy-progress-dot {
+    background: #f8f9fa;
+    width: 12px;
+    height: 12px;
+}
+
+.pregnancy-progress-marker--actual .pregnancy-progress-dot {
+    background: #20c997;
+}
+
+.pregnancy-progress-events {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 0.9rem;
+}
+
+.pregnancy-progress-event {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.pregnancy-progress-event--start {
+    border-color: rgba(110, 168, 254, 0.35);
+}
+
+.pregnancy-progress-event--planned {
+    border-color: rgba(255, 193, 7, 0.35);
+}
+
+.pregnancy-progress-event--shed {
+    border-color: rgba(248, 249, 250, 0.25);
+}
+
+.pregnancy-progress-event--actual {
+    border-color: rgba(32, 201, 151, 0.35);
+}
+
+.pregnancy-season-select {
+    min-width: 160px;
+}
+
+.pregnancy-add-btn {
+    width: 34px;
+    height: 34px;
+}
+
 .genotype-chips {
     display: flex;
     flex-wrap: wrap;

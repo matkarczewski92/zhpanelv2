@@ -81,6 +81,11 @@ class Litter extends Model
         return $this->hasMany(LitterGallery::class, 'litter_id');
     }
 
+    public function pregnancySheds(): HasMany
+    {
+        return $this->hasMany(LitterPregnancyShed::class, 'litter_id');
+    }
+
     public function mainPhoto(): HasOne
     {
         return $this->hasOne(LitterGallery::class, 'litter_id')->where('main_photo', 1);

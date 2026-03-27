@@ -57,6 +57,7 @@ class AnimalController extends Controller
             'nav_back' => $navIdsFromQuery !== ''
                 ? $navBackFromQuery
                 : (string) ($storedNav['nav_back'] ?? ''),
+            'pregnancy_season' => trim((string) $request->query('pregnancy_season', '')),
         ];
         $profile = $query->handle($animal->id, $navigationInput);
 

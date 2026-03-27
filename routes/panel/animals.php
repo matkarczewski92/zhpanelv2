@@ -12,6 +12,7 @@ use App\Http\Controllers\Animals\AnimalPassportController;
 use App\Http\Controllers\Animals\AnimalLabelController;
 use App\Http\Controllers\Animals\AnimalPublicVisibilityController;
 use App\Http\Controllers\Animals\AnimalColorGroupController;
+use App\Http\Controllers\Animals\AnimalPregnancyShedController;
 use App\Http\Controllers\Animals\AnimalWinteringController;
 
 
@@ -50,6 +51,8 @@ Route::put('/animals/{animal}/molts/{molt}', [AnimalMoltController::class, 'upda
     ->name('animals.molts.update');
 Route::delete('/animals/{animal}/molts/{molt}', [AnimalMoltController::class, 'destroy'])
     ->name('animals.molts.destroy');
+Route::post('/animals/{animal}/pregnancy-sheds', [AnimalPregnancyShedController::class, 'store'])
+    ->name('animals.pregnancy-sheds.store');
 
 Route::post('/animals/{animal}/genotypes', [AnimalGenotypeController::class, 'store'])
     ->name('animals.genotypes.store');

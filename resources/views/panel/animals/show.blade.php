@@ -5,6 +5,7 @@
 @section('content')
     <div class="animal-profile">
         @include('panel.animals.partials.header', ['profile' => $profile])
+        @include('panel.animals.partials.pregnancy-timeline', ['profile' => $profile])
         @include('panel.animals.partials.photobar', ['profile' => $profile])
 
         <div class="row g-3">
@@ -52,59 +53,101 @@
             document.addEventListener('hidden.bs.modal', cleanupOverlayState);
             document.addEventListener('hidden.bs.offcanvas', cleanupOverlayState);
 
+            const seasonSelect = document.getElementById('pregnancySeasonSelect');
+            if (seasonSelect) {
+                seasonSelect.addEventListener('change', () => {
+                    const url = new URL(window.location.href);
+                    if (seasonSelect.value) {
+                        url.searchParams.set('pregnancy_season', seasonSelect.value);
+                    } else {
+                        url.searchParams.delete('pregnancy_season');
+                    }
+                    window.location.href = url.toString();
+                });
+            }
+
+            const pregnancyModal = document.getElementById('pregnancyShedModal');
+            if (pregnancyModal && window.bootstrap) {
+                const litterIdInput = document.getElementById('pregnancyShedLitterId');
+                const seasonInput = document.getElementById('pregnancyShedSeason');
+                const litterTitle = document.getElementById('pregnancyShedLitterTitle');
+
+                pregnancyModal.addEventListener('show.bs.modal', (event) => {
+                    const trigger = event.relatedTarget;
+                    if (!trigger) {
+                        return;
+                    }
+
+                    const litterId = trigger.getAttribute('data-litter-id') || '';
+                    const litterName = trigger.getAttribute('data-litter-title') || '';
+                    const seasonKey = trigger.getAttribute('data-pregnancy-season') || '';
+
+                    if (litterIdInput) {
+                        litterIdInput.value = litterId;
+                    }
+                    if (seasonInput) {
+                        seasonInput.value = seasonKey;
+                    }
+                    if (litterTitle) {
+                        litterTitle.textContent = litterName || `Miot #${litterId}`;
+                    }
+                });
+            }
+
             const photobar = document.getElementById('panelPhotobar');
             const previewModalEl = document.getElementById('animalPhotoPreviewModal');
             const previewImg = document.getElementById('photoPreviewImg');
             const btnPrev = document.getElementById('photoPreviewPrev');
             const btnNext = document.getElementById('photoPreviewNext');
-            if (!photobar || !previewModalEl || !previewImg || !btnPrev || !btnNext) return;
-
-            const photosAttr = photobar.querySelector('[data-photos]')?.getAttribute('data-photos');
-            const photos = photosAttr ? JSON.parse(photosAttr) : [];
-            if (!photos.length) return;
-
-            const modal = bootstrap.Modal.getOrCreateInstance(previewModalEl);
-            let current = 0;
-
-            const show = (idx) => {
-                current = (idx + photos.length) % photos.length;
-                previewImg.src = photos[current].url;
-                previewImg.alt = photos[current].alt || 'Zdjęcie';
-            };
-
-            document.querySelectorAll('.photobar-thumb[data-gallery-index]').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const idx = parseInt(btn.getAttribute('data-gallery-index') || '0', 10);
-                    show(idx);
-                    modal.show();
-                });
-            });
-
-            btnPrev.addEventListener('click', () => show(current - 1));
-            btnNext.addEventListener('click', () => show(current + 1));
-
-            const keyHandler = (e) => {
-                if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
-                if (e.key === 'ArrowRight') { e.preventDefault(); show(current + 1); }
-            };
-
-            previewModalEl.addEventListener('shown.bs.modal', () => {
-                document.addEventListener('keydown', keyHandler);
-            });
-            previewModalEl.addEventListener('hidden.bs.modal', () => {
-                document.removeEventListener('keydown', keyHandler);
-            });
-
-            // swipe support
-            let startX = 0;
-            previewImg.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
-            previewImg.addEventListener('touchend', (e) => {
-                const dx = e.changedTouches[0].clientX - startX;
-                if (Math.abs(dx) > 40) {
-                    if (dx > 0) show(current - 1);
-                    else show(current + 1);
+            if (photobar && previewModalEl && previewImg && btnPrev && btnNext) {
+                const photosAttr = photobar.querySelector('[data-photos]')?.getAttribute('data-photos');
+                const photos = photosAttr ? JSON.parse(photosAttr) : [];
+                if (!photos.length) {
+                    return;
                 }
-            });
+
+                const modal = bootstrap.Modal.getOrCreateInstance(previewModalEl);
+                let current = 0;
+
+                const show = (idx) => {
+                    current = (idx + photos.length) % photos.length;
+                    previewImg.src = photos[current].url;
+                    previewImg.alt = photos[current].alt || 'Zdjęcie';
+                };
+
+                document.querySelectorAll('.photobar-thumb[data-gallery-index]').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const idx = parseInt(btn.getAttribute('data-gallery-index') || '0', 10);
+                        show(idx);
+                        modal.show();
+                    });
+                });
+
+                btnPrev.addEventListener('click', () => show(current - 1));
+                btnNext.addEventListener('click', () => show(current + 1));
+
+                const keyHandler = (e) => {
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
+                    if (e.key === 'ArrowRight') { e.preventDefault(); show(current + 1); }
+                };
+
+                previewModalEl.addEventListener('shown.bs.modal', () => {
+                    document.addEventListener('keydown', keyHandler);
+                });
+                previewModalEl.addEventListener('hidden.bs.modal', () => {
+                    document.removeEventListener('keydown', keyHandler);
+                });
+
+                let startX = 0;
+                previewImg.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+                previewImg.addEventListener('touchend', (e) => {
+                    const dx = e.changedTouches[0].clientX - startX;
+                    if (Math.abs(dx) > 40) {
+                        if (dx > 0) show(current - 1);
+                        else show(current + 1);
+                    }
+                });
+            }
         });
     </script>
     @if ($errors->any() && session('form') === 'animal-edit')
@@ -133,6 +176,17 @@
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const modalEl = document.getElementById('galleryModal');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                }
+            });
+        </script>
+    @endif
+    @if ($errors->getBag('pregnancyShed')->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalEl = document.getElementById('pregnancyShedModal');
                 if (modalEl) {
                     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
                     modal.show();

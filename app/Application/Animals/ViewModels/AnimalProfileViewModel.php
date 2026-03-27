@@ -74,6 +74,7 @@ class AnimalProfileViewModel
         public readonly string $toggle_public_profile_url = '',
         public readonly array $edit = [],
         public readonly array $colorGroups = [],
+        public readonly array $pregnancyTimeline = [],
         public readonly array $navigation = []
     ) {
     }
