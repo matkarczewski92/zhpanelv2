@@ -11,6 +11,7 @@ use App\Application\Admin\Queries\PreviewAdminReportQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminReportActionRequest;
 use App\Models\AdminReport;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -24,9 +25,24 @@ class AdminReportsController extends Controller
         ]);
     }
 
-    public function preview(AdminReportActionRequest $request, PreviewAdminReportQuery $query): View|RedirectResponse
+    public function preview(AdminReportActionRequest $request, PreviewAdminReportQuery $query): View|RedirectResponse|JsonResponse
     {
         $result = $query->handle($request->validated());
+
+        if ($request->expectsJson()) {
+            if (($result['status'] ?? null) !== 'ok') {
+                return response()->json([
+                    'status' => 'empty',
+                    'message' => $result['message'] ?? 'Brak danych do podgladu.',
+                ], 422);
+            }
+
+            return response()->json([
+                'status' => 'ok',
+                'title' => $result['report']['title'] ?? 'Podglad raportu',
+                'html' => view('admin.reports.preview', $result)->render(),
+            ]);
+        }
 
         if (($result['status'] ?? null) !== 'ok') {
             return redirect()

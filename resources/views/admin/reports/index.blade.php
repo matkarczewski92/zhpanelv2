@@ -32,7 +32,7 @@
                     <div class="small text-muted">Sprzedane zwierzeta i suma przychodu z wybranego zakresu dat.</div>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ $generator['generate_url'] ?? '#' }}" class="row g-2 align-items-end">
+                    <form method="POST" action="{{ $generator['generate_url'] ?? '#' }}" class="row g-2 align-items-end" data-role="admin-report-form">
                         @csrf
                         <input type="hidden" name="report_type" value="sales">
                         <div class="col-12 col-md-6">
@@ -44,7 +44,14 @@
                             <input type="date" name="date_to" class="form-control form-control-sm" value="{{ old('date_to', $defaults['sales_to'] ?? '') }}">
                         </div>
                         <div class="col-12 d-flex flex-wrap gap-2">
-                            <button type="submit" formaction="{{ $generator['preview_url'] ?? '#' }}" formtarget="_blank" class="btn btn-outline-light btn-sm">Podglad HTML</button>
+                            <button
+                                type="button"
+                                class="btn btn-outline-light btn-sm"
+                                data-role="admin-report-preview"
+                                data-preview-url="{{ $generator['preview_url'] ?? '#' }}"
+                            >
+                                Podglad HTML
+                            </button>
                             <button type="submit" class="btn btn-primary btn-sm">Generuj PDF</button>
                         </div>
                     </form>
@@ -59,7 +66,7 @@
                     <div class="small text-muted">Karmienia, wazenia i wylinki wpisane w jednym dniu.</div>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ $generator['generate_url'] ?? '#' }}" class="row g-2 align-items-end">
+                    <form method="POST" action="{{ $generator['generate_url'] ?? '#' }}" class="row g-2 align-items-end" data-role="admin-report-form">
                         @csrf
                         <input type="hidden" name="report_type" value="daily_entered_data">
                         <div class="col-12 col-md-8">
@@ -67,7 +74,14 @@
                             <input type="date" name="report_date" class="form-control form-control-sm" value="{{ old('report_date', $defaults['daily_date'] ?? '') }}">
                         </div>
                         <div class="col-12 d-flex flex-wrap gap-2">
-                            <button type="submit" formaction="{{ $generator['preview_url'] ?? '#' }}" formtarget="_blank" class="btn btn-outline-light btn-sm">Podglad HTML</button>
+                            <button
+                                type="button"
+                                class="btn btn-outline-light btn-sm"
+                                data-role="admin-report-preview"
+                                data-preview-url="{{ $generator['preview_url'] ?? '#' }}"
+                            >
+                                Podglad HTML
+                            </button>
                             <button type="submit" class="btn btn-primary btn-sm">Generuj PDF</button>
                         </div>
                     </form>
