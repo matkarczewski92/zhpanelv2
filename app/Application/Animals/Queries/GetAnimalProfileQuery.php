@@ -701,7 +701,7 @@ class GetAnimalProfileQuery
 
             $sheds = $litter->pregnancySheds
                 ->sortBy('shed_date')
-                ->map(function (LitterPregnancyShed $shed) use ($start, $end): array {
+                ->map(function (LitterPregnancyShed $shed) use ($start, $end, $animal): array {
                     $shedDate = $shed->shed_date ? CarbonImmutable::parse($shed->shed_date) : null;
 
                     return [
