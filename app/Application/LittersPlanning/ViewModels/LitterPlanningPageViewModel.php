@@ -33,12 +33,16 @@ class LitterPlanningPageViewModel
      *     percentage:float,
      *     percentage_label:string,
      *     litter_url:string,
-     *     litter_eggs_to_incubation:int
+     *     litter_eggs_to_incubation:int,
+     *     connection_date:string|null,
+     *     has_connection_date:bool
      * }> $seasonOffspringRows
      * @param array<int, array{
      *     morph_name:string,
      *     grouped_rows:int,
      *     litters_count:int,
+     *     unconnected_litters_count:int,
+     *     has_unconnected_litters:bool,
      *     percentage_sum:float,
      *     percentage_sum_label:string,
      *     avg_eggs_to_incubation:float,
