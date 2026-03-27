@@ -10,7 +10,7 @@
         $feedingTables = $page->feedingTables;
     @endphp
 
-    <section class="glass-card p-3 mb-3">
+    <section class=" p-3 mb-3">
         <div class="strike mb-3"><span>Zarządzanie hodowlą</span></div>
         <div class="row g-2">
             <div class="col-12 col-md-6 col-xl-3">
