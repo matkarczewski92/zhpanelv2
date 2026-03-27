@@ -40,6 +40,9 @@
     }
     $navbarSearchQuery = trim((string) request()->query('q', ''));
     $isMaintenanceMode = app()->maintenanceMode()->active();
+    $hasPregnanciesRoute = \Illuminate\Support\Facades\Route::has('panel.pregnancies.index');
+    $hasQrScannerRoute = \Illuminate\Support\Facades\Route::has('panel.qr-scanner.index');
+    $hasReportsRoute = \Illuminate\Support\Facades\Route::has('admin.reports.index');
 @endphp
 
 <nav class="navbar navbar-expand-xl navbar-dark fixed-top navbar-glass @if($isMaintenanceMode) navbar-glass-maintenance @endif">
@@ -121,12 +124,16 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.winterings.*') ? 'active' : '' }}" href="{{ route('panel.winterings.index') }}">Zimowanie</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('panel.pregnancies.*') ? 'active' : '' }}" href="{{ route('panel.pregnancies.index') }}">Ciaze</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('panel.qr-scanner.*') ? 'active' : '' }}" href="{{ route('panel.qr-scanner.index') }}">QR</a>
-                </li>
+                @if ($hasPregnanciesRoute)
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('panel.pregnancies.*') ? 'active' : '' }}" href="{{ route('panel.pregnancies.index') }}">Ciaze</a>
+                    </li>
+                @endif
+                @if ($hasQrScannerRoute)
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('panel.qr-scanner.*') ? 'active' : '' }}" href="{{ route('panel.qr-scanner.index') }}">QR</a>
+                    </li>
+                @endif
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}" href="{{ route('panel.devices.index') }}">Urządzenia</a>
                 </li>
@@ -233,11 +240,13 @@
                             Cennik
                         </a>
                     </li>
-                    <li>
-                        <a class="dropdown-item" href="{{ route('admin.reports.index') }}">
-                            Raporty
-                        </a>
-                    </li>
+                    @if ($hasReportsRoute)
+                        <li>
+                            <a class="dropdown-item" href="{{ route('admin.reports.index') }}">
+                                Raporty
+                            </a>
+                        </li>
+                    @endif
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
@@ -313,18 +322,22 @@
             >
                 Zimowanie
             </a>
-            <a
-                class="nav-link {{ request()->routeIs('panel.pregnancies.*') ? 'active' : '' }}"
-                href="{{ route('panel.pregnancies.index') }}"
-            >
-                Ciaze
-            </a>
-            <a
-                class="nav-link {{ request()->routeIs('panel.qr-scanner.*') ? 'active' : '' }}"
-                href="{{ route('panel.qr-scanner.index') }}"
-            >
-                Skaner QR
-            </a>
+            @if ($hasPregnanciesRoute)
+                <a
+                    class="nav-link {{ request()->routeIs('panel.pregnancies.*') ? 'active' : '' }}"
+                    href="{{ route('panel.pregnancies.index') }}"
+                >
+                    Ciaze
+                </a>
+            @endif
+            @if ($hasQrScannerRoute)
+                <a
+                    class="nav-link {{ request()->routeIs('panel.qr-scanner.*') ? 'active' : '' }}"
+                    href="{{ route('panel.qr-scanner.index') }}"
+                >
+                    Skaner QR
+                </a>
+            @endif
             <a
                 class="nav-link {{ request()->routeIs('panel.devices.*') ? 'active' : '' }}"
                 href="{{ route('panel.devices.index') }}"
@@ -353,9 +366,11 @@
             <a class="nav-link" href="{{ route('admin.pricelist.index') }}">
                 Cennik
             </a>
-            <a class="nav-link" href="{{ route('admin.reports.index') }}">
-                Raporty
-            </a>
+            @if ($hasReportsRoute)
+                <a class="nav-link" href="{{ route('admin.reports.index') }}">
+                    Raporty
+                </a>
+            @endif
             <form method="POST" action="{{ route('logout') }}" class="mt-2">
                 @csrf
                 <button class="btn btn-outline-light w-100" type="submit">Wyloguj</button>
