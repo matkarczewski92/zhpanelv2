@@ -3,9 +3,13 @@ import qrScannerWorkerPath from 'qr-scanner/qr-scanner-worker.min?url';
 
 QrScanner.WORKER_PATH = qrScannerWorkerPath;
 
-const root = document.querySelector('[data-qr-scanner]');
+const initQrScanner = () => {
+    const root = document.querySelector('[data-qr-scanner]');
 
-if (root) {
+    if (!root) {
+        return;
+    }
+
     const configNode = root.querySelector('[data-role="qr-scanner-config"]');
     const config = configNode ? JSON.parse(configNode.textContent || '{}') : {};
     const modeConfig = config.modes ?? {};
@@ -320,7 +324,7 @@ if (root) {
         }
     };
 
-    const handleSuccess = async (response, payload) => {
+    const handleSuccess = async (response) => {
         const animal = response.animal ?? {};
         const label = animal.label ?? animal.name ?? 'Zwierze';
         const detail = response.mode === 'weight'
@@ -386,7 +390,7 @@ if (root) {
                 await closeWeightSheet();
             }
 
-            await handleSuccess(response, payload.payload);
+            await handleSuccess(response);
         } catch (error) {
             if (mode === 'weight' && reopenWeight) {
                 setUiState('Waga', 'Zweryfikuj wage lub potwierdz duplikat.', 'text-bg-warning');
@@ -581,4 +585,6 @@ if (root) {
 
     setMode(state.mode);
     void startScanner();
-}
+};
+
+document.addEventListener('DOMContentLoaded', initQrScanner);

@@ -38,7 +38,7 @@
                         </div>
 
                         <div class="qr-camera-frame mb-3">
-                            <video class="qr-camera-video" data-role="qr-video" playsinline muted></video>
+                            <video class="qr-camera-video" data-role="qr-video" playsinline muted autoplay></video>
                             <div class="qr-camera-overlay">
                                 <div class="qr-camera-target"></div>
                                 <div class="qr-camera-hint" data-role="qr-camera-hint">Ustaw kod QR w ramce.</div>
