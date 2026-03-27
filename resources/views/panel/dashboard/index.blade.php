@@ -65,7 +65,7 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    <div class="small text-secondary">Brak aktywnych miotów w tym statusie.</div>
+                                    <div class="small text-primary">Brak aktywnych miotów w tym statusie.</div>
                                 @endif
                             </div>
                         </div>
