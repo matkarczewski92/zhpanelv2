@@ -89,6 +89,15 @@ body.panel-body {
         background-color 0.15s ease;
 }
 
+.panel-body .form-control-sm,
+.panel-body .form-select-sm,
+.panel-body .input-group-sm > .form-control,
+.panel-body .input-group-sm > .form-select,
+.panel-body .input-group-sm > .input-group-text {
+    font-size: 0.92rem;
+    padding: 0.35rem 0.6rem;
+}
+
 .panel-body .form-control.bg-dark,
 .panel-body .form-select.bg-dark,
 .panel-body textarea.form-control,
@@ -277,17 +286,19 @@ body.panel-body {
     border-bottom: none;
 }
 
+.panel-body .glass-card:has(> .card-body > form),
+.panel-body .glass-card:has(> form),
 .glass-card.panel-form-card,
 .panel-form-card {
     background-color: rgba(18, 18, 18, 0.72);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
 }
 
+.panel-body .glass-card:has(> .card-header + .card-body > form) .card-header,
+.panel-body .glass-card:has(> form) .card-header,
 .glass-card.panel-form-card .card-header,
 .panel-form-card .card-header {
-    background-color: rgba(0, 0, 0, 0.18);
+    background-color: rgba(0, 0, 0, 0.3);
 }
 
 .glass-table-wrapper {
