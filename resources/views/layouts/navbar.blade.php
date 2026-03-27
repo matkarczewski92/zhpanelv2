@@ -42,6 +42,7 @@
     $isMaintenanceMode = app()->maintenanceMode()->active();
     $hasPregnanciesRoute = \Illuminate\Support\Facades\Route::has('panel.pregnancies.index');
     $hasQrScannerRoute = \Illuminate\Support\Facades\Route::has('panel.qr-scanner.index');
+    $hasHomepageGalleryRoute = \Illuminate\Support\Facades\Route::has('admin.homepage-gallery.index');
     $hasReportsRoute = \Illuminate\Support\Facades\Route::has('admin.reports.index');
 @endphp
 
@@ -240,6 +241,13 @@
                             Cennik
                         </a>
                     </li>
+                    @if ($hasHomepageGalleryRoute)
+                        <li>
+                            <a class="dropdown-item" href="{{ route('admin.homepage-gallery.index') }}">
+                                Galeria główna
+                            </a>
+                        </li>
+                    @endif
                     @if ($hasReportsRoute)
                         <li>
                             <a class="dropdown-item" href="{{ route('admin.reports.index') }}">
@@ -366,6 +374,11 @@
             <a class="nav-link" href="{{ route('admin.pricelist.index') }}">
                 Cennik
             </a>
+            @if ($hasHomepageGalleryRoute)
+                <a class="nav-link" href="{{ route('admin.homepage-gallery.index') }}">
+                    Galeria główna
+                </a>
+            @endif
             @if ($hasReportsRoute)
                 <a class="nav-link" href="{{ route('admin.reports.index') }}">
                     Raporty

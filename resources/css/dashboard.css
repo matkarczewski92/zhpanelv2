@@ -1461,3 +1461,21 @@ body.panel-body {
 .admin-content .table tbody td {
     border-color: rgba(255, 255, 255, 0.08);
 }
+
+.admin-homepage-gallery-card {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-homepage-gallery-thumb {
+    display: block;
+    aspect-ratio: 16 / 10;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-homepage-gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}

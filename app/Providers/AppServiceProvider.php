@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Domain\Animals\AnimalRepositoryInterface;
+use App\Domain\Admin\Gallery\AdminHomepageGalleryRepositoryInterface;
 use App\Domain\Admin\Reports\AdminReportHistoryRepositoryInterface;
 use App\Domain\Admin\Reports\AdminReportSourceRepositoryInterface;
 use App\Domain\Breeding\LitterRepositoryInterface;
 use App\Domain\Offers\OfferRepositoryInterface;
 use App\Domain\Winterings\WinteringRepositoryInterface;
 use App\Infrastructure\Persistence\EloquentAnimalRepository;
+use App\Infrastructure\Persistence\EloquentAdminHomepageGalleryRepository;
 use App\Infrastructure\Persistence\EloquentAdminReportHistoryRepository;
 use App\Infrastructure\Persistence\EloquentAdminReportSourceRepository;
 use App\Infrastructure\Persistence\EloquentLitterRepository;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AnimalRepositoryInterface::class, EloquentAnimalRepository::class);
+        $this->app->bind(AdminHomepageGalleryRepositoryInterface::class, EloquentAdminHomepageGalleryRepository::class);
         $this->app->bind(AdminReportHistoryRepositoryInterface::class, EloquentAdminReportHistoryRepository::class);
         $this->app->bind(AdminReportSourceRepositoryInterface::class, EloquentAdminReportSourceRepository::class);
         $this->app->bind(LitterRepositoryInterface::class, EloquentLitterRepository::class);
