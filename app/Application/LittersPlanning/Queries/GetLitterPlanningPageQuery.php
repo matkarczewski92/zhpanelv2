@@ -1117,15 +1117,16 @@ class GetLitterPlanningPageQuery
             ->map(function (array $group) use ($stableEggsToIncubationAverage): array {
                 $litters = (array) ($group['litters'] ?? []);
                 $nonPrimaryLitters = (array) ($group['non_primary_litters'] ?? []);
+                $groupedRows = (int) ($group['grouped_rows'] ?? 0);
                 $littersCount = count($litters);
                 $nonPrimaryLittersCount = count($nonPrimaryLitters);
-                $avgEggs = round($stableEggsToIncubationAverage, 0);
+                $avgEggs = round($stableEggsToIncubationAverage * $groupedRows, 0);
                 $percentageSum = (float) ($group['percentage_sum'] ?? 0);
                 $numericCount = round(($percentageSum / 100) * $avgEggs, 0);
 
                 return [
                     'morph_name' => (string) ($group['morph_name'] ?? '-'),
-                    'grouped_rows' => (int) ($group['grouped_rows'] ?? 0),
+                    'grouped_rows' => $groupedRows,
                     'litters_count' => $littersCount,
                     'non_primary_litters_count' => $nonPrimaryLittersCount,
                     'has_non_primary_litters' => $nonPrimaryLittersCount > 0,
