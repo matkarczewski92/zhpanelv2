@@ -1229,6 +1229,8 @@ body.panel-body {
 .dashboard-hero {
     position: relative;
     overflow: hidden;
+    background: transparent !important;
+    background-image: none !important;
 }
 
 .dashboard-kpi {
