@@ -44,7 +44,7 @@
 
     <div class="row g-3 mb-3">
         <div class="col-12">
-            <div class="glass-card p-3 h-100">
+            <div class=" p-3 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="strike mb-0"><span>Status miotów</span></div>
                 </div>
