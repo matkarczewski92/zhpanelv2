@@ -20,7 +20,7 @@
 
     <div class="row g-3">
         <div class="col-12 col-xl-8">
-            <div class="glass-card">
+            <div class="glass-card panel-form-card">
                 <div class="card-header">
                     <div class="strike"><span>Formularz edycji</span></div>
                 </div>

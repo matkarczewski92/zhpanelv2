@@ -78,11 +78,11 @@ body.panel-body {
     font-size: 0.92rem;
     padding: 0.35rem 0.6rem;
     color: #f8f9fa;
-    background-color: rgba(5, 8, 10, 0.28);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 10px 22px rgba(0, 0, 0, 0.18);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background-color: rgba(5, 8, 10, 0.18);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025), 0 8px 18px rgba(0, 0, 0, 0.16);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     transition:
         border-color 0.15s ease,
         box-shadow 0.15s ease,
@@ -94,33 +94,45 @@ body.panel-body {
 .panel-body textarea.form-control,
 .panel-body input.form-control,
 .panel-body select.form-select {
-    background-color: rgba(5, 8, 10, 0.28) !important;
+    background-color: rgba(5, 8, 10, 0.18) !important;
     color: #f8f9fa;
-    border-color: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    border-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 }
 
 .panel-body .form-control::placeholder {
     color: rgba(248, 249, 250, 0.52);
 }
 
+.panel-body .input-group-text,
+.panel-body .input-group-text.bg-dark {
+    color: #f8f9fa;
+    background-color: rgba(5, 8, 10, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025), 0 8px 18px rgba(0, 0, 0, 0.14);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
 .panel-body .form-control:focus,
 .panel-body .form-select:focus,
-.panel-body .form-check-input:focus {
+.panel-body .form-check-input:focus,
+.panel-body .input-group-text:has(+ .form-control:focus),
+.panel-body .input-group-text:has(+ .form-select:focus) {
     color: #fff;
-    background-color: rgba(5, 8, 10, 0.38);
-    border-color: rgba(255, 255, 255, 0.24);
+    background-color: rgba(5, 8, 10, 0.26);
+    border-color: rgba(255, 255, 255, 0.2);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.04),
-        0 0 0 0.14rem rgba(255, 255, 255, 0.08),
-        0 14px 28px rgba(0, 0, 0, 0.24);
+        inset 0 1px 0 rgba(255, 255, 255, 0.035),
+        0 0 0 0.14rem rgba(255, 255, 255, 0.07),
+        0 12px 24px rgba(0, 0, 0, 0.2);
 }
 
 .panel-body .form-control:disabled,
 .panel-body .form-select:disabled {
     color: rgba(248, 249, 250, 0.55);
-    background-color: rgba(5, 8, 10, 0.2);
+    background-color: rgba(5, 8, 10, 0.14);
     border-color: rgba(255, 255, 255, 0.08);
 }
 
@@ -140,6 +152,47 @@ body.panel-body {
 .panel-body .form-select option {
     background-color: #0a0d10;
     color: #f8f9fa;
+}
+
+.panel-body .form-control[type='date'],
+.panel-body .form-control[type='time'],
+.panel-body .form-control[type='datetime-local'],
+.panel-body .form-control[type='month'],
+.panel-body .form-control[type='week'] {
+    color-scheme: dark;
+}
+
+.panel-body .form-control[type='date']::-webkit-calendar-picker-indicator,
+.panel-body .form-control[type='time']::-webkit-calendar-picker-indicator,
+.panel-body .form-control[type='datetime-local']::-webkit-calendar-picker-indicator,
+.panel-body .form-control[type='month']::-webkit-calendar-picker-indicator,
+.panel-body .form-control[type='week']::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.8);
+    cursor: pointer;
+}
+
+.panel-body .form-control[type='file']::file-selector-button {
+    margin: -0.35rem -0.6rem;
+    margin-inline-end: 0.6rem;
+    padding: 0.35rem 0.75rem;
+    border: 0;
+    color: #f8f9fa;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.panel-body .btn-light {
+    color: #f8f9fa;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.panel-body .btn-light:hover,
+.panel-body .btn-light:focus {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.22);
 }
 
 .panel-body input:-webkit-autofill,
@@ -222,6 +275,19 @@ body.panel-body {
 .glass-card .card-header {
     background-color: rgba(0, 0, 0, 0.25);
     border-bottom: none;
+}
+
+.glass-card.panel-form-card,
+.panel-form-card {
+    background-color: rgba(18, 18, 18, 0.72);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.glass-card.panel-form-card .card-header,
+.panel-form-card .card-header {
+    background-color: rgba(0, 0, 0, 0.18);
 }
 
 .glass-table-wrapper {

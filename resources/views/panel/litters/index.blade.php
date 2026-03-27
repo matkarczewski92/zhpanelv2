@@ -18,7 +18,7 @@
         </a>
     </div>
 
-    <div class="glass-card glass-table-wrapper mb-3">
+    <div class="glass-card glass-table-wrapper panel-form-card mb-3">
         <div class="card-header">
             <div class="strike"><span>Filtry</span></div>
         </div>

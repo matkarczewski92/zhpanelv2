@@ -76,7 +76,7 @@
 
     <div class="row g-3">
         <div class="col-12 col-xl-8">
-            <div class="glass-card glass-table-wrapper mb-3">
+            <div class="glass-card glass-table-wrapper panel-form-card mb-3">
                 <div class="card-header">
                     <div class="strike"><span>Filtry transakcji</span></div>
                 </div>
@@ -258,7 +258,7 @@
         </div>
 
         <div class="col-12 col-xl-4">
-            <div class="glass-card mb-3">
+            <div class="glass-card panel-form-card mb-3">
                 <div class="card-header">
                     <div class="strike"><span>Dodaj transakcje</span></div>
                 </div>

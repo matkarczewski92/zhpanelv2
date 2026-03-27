@@ -13,7 +13,7 @@
 
     <div class="row justify-content-center">
         <div class="col-12 col-xl-8">
-            <div class="glass-card">
+            <div class="glass-card panel-form-card">
                 <div class="card-header">
                     <div class="strike"><span>Dane miotu</span></div>
                 </div>

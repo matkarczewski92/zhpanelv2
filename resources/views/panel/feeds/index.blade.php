@@ -82,16 +82,17 @@
                     </div>
                 </div>
 
-                <div class="glass-card glass-table-wrapper">
+                <div class="glass-card glass-table-wrapper panel-form-card">
                     <div class="card-header">
                         <div class="strike"><span>Wprowadzanie dostaw karmy</span></div>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ route('panel.feeds.delivery.items.store') }}" class="d-flex flex-column gap-3">
+                        <form method="POST" action="{{ route('panel.feeds.delivery.items.store') }}" class="row g-2 align-items-end">
                             @csrf
-                            <div class="input-group">
+                            <div class="col-12 col-lg-6">
+                                <label class="small text-muted mb-1">Pozycja</label>
                                 <select
-                                    class="form-select @error('feed_id', 'feedDelivery') is-invalid @enderror"
+                                    class="form-select form-select-sm @error('feed_id', 'feedDelivery') is-invalid @enderror"
                                     name="feed_id"
                                 >
                                     <option value="" selected>Wybierz pozycje</option>
@@ -103,31 +104,41 @@
                                         <option value="" disabled>Brak dostepnych pozycji</option>
                                     @endforelse
                                 </select>
+                            </div>
+                            <div class="col-12 col-lg-3">
+                                <label class="small text-muted mb-1">Ilosc</label>
                                 <input
                                     type="text"
-                                    class="form-control @error('amount', 'feedDelivery') is-invalid @enderror"
+                                    class="form-control form-control-sm @error('amount', 'feedDelivery') is-invalid @enderror"
                                     name="amount"
                                     placeholder="Ilosc"
                                     value="{{ old('amount') }}"
                                     inputmode="numeric"
                                 >
+                            </div>
+                            <div class="col-12 col-lg-3">
+                                <label class="small text-muted mb-1">Wartosc</label>
                                 <input
                                     type="text"
-                                    class="form-control @error('value', 'feedDelivery') is-invalid @enderror"
+                                    class="form-control form-control-sm @error('value', 'feedDelivery') is-invalid @enderror"
                                     name="value"
                                     placeholder="Wartosc"
                                     value="{{ old('value') }}"
                                     inputmode="decimal"
                                 >
                             </div>
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end">
+                                    <button class="btn btn-primary btn-sm" type="submit">Dodaj</button>
+                                </div>
+                            </div>
                             @if ($deliveryFormErrors->any())
-                                <div class="small text-danger">
+                                <div class="col-12 small text-danger">
                                     @foreach ($deliveryFormErrors->all() as $error)
                                         <div>{{ $error }}</div>
                                     @endforeach
                                 </div>
                             @endif
-                            <button class="btn btn-light" type="submit">Dodaj</button>
                         </form>
                     </div>
 
@@ -223,7 +234,7 @@
     <div class="row g-4 mt-2">
         <div class="col-12">
             <div
-                class="glass-card glass-table-wrapper"
+                class="glass-card glass-table-wrapper panel-form-card"
                 id="feedPlanning"
                 data-url="{{ route('panel.feeds.planning.recalculate', [], false) }}"
             >

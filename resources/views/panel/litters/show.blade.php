@@ -192,7 +192,7 @@
                 </div>
             </div>
 
-            <div class="glass-card">
+            <div class="glass-card panel-form-card">
                 <div class="card-header">
                     <div class="strike"><span>Planowanie</span></div>
                 </div>
@@ -203,35 +203,37 @@
                             <input type="hidden" name="edit_offspring" value="1">
                         @endif
 
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">Data laczenia</span>
-                            <input
-                                type="date"
-                                class="form-control"
-                                name="planning_connection_date"
-                                data-planning-source="connection"
-                                value="{{ $planning['connection_date'] ?? '' }}"
-                            >
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">Data zniosu</span>
-                            <input
-                                type="date"
-                                class="form-control"
-                                name="planning_laying_date"
-                                data-planning-source="laying"
-                                value="{{ $planning['laying_date'] ?? '' }}"
-                            >
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">Data wyklucia</span>
-                            <input
-                                type="date"
-                                class="form-control"
-                                name="planning_hatching_date"
-                                data-planning-source="hatching"
-                                value="{{ $planning['hatching_date'] ?? '' }}"
-                            >
+                        <div class="row g-2">
+                            <div class="col-12 col-lg-4">
+                                <label class="small text-muted mb-1">Data laczenia</label>
+                                <input
+                                    type="date"
+                                    class="form-control form-control-sm"
+                                    name="planning_connection_date"
+                                    data-planning-source="connection"
+                                    value="{{ $planning['connection_date'] ?? '' }}"
+                                >
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <label class="small text-muted mb-1">Data zniosu</label>
+                                <input
+                                    type="date"
+                                    class="form-control form-control-sm"
+                                    name="planning_laying_date"
+                                    data-planning-source="laying"
+                                    value="{{ $planning['laying_date'] ?? '' }}"
+                                >
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <label class="small text-muted mb-1">Data wyklucia</label>
+                                <input
+                                    type="date"
+                                    class="form-control form-control-sm"
+                                    name="planning_hatching_date"
+                                    data-planning-source="hatching"
+                                    value="{{ $planning['hatching_date'] ?? '' }}"
+                                >
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end">
