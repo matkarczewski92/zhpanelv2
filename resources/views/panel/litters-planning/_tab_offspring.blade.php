@@ -144,7 +144,7 @@
                             @if (!empty($row['has_unconnected_litters']))
                                 <span
                                     class="badge offspring-non-primary-badge ms-2"
-                                    title="Ten wiersz zawiera udział z miotów o category != 1"
+                                    title="Ten wiersz zawiera udzial z miotow bez daty laczenia"
                                 >
                                     Niepolaczone: {{ $row['unconnected_litters_count'] }} miotow
                                 </span>
