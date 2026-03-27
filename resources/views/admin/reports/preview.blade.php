@@ -119,6 +119,67 @@
                 </table>
             </div>
         </div>
+    @elseif (($report['type'] ?? null) === 'daily_entered_data')
+        <div class="glass-card">
+            <div class="card-body d-flex flex-column gap-3">
+                @forelse (($report['groups'] ?? []) as $group)
+                    <div>
+                        <div class="fw-semibold mb-2">{{ $group['label'] }}</div>
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (($group['types'] ?? []) as $type)
+                                <div>
+                                    <div class="small text-muted fw-semibold mb-2">{{ $type['label'] }}</div>
+                                    <div class="table-responsive">
+                                        <table class="table glass-table table-sm align-middle mb-0">
+                                            <thead>
+                                                <tr class="text-muted small">
+                                                    <th>ID</th>
+                                                    <th>Nazwa</th>
+                                                    <th>Karmienia</th>
+                                                    <th>Wazenia</th>
+                                                    <th>Wylinki</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (($type['rows'] ?? []) as $row)
+                                                    <tr>
+                                                        <td>{{ $row['animal_id'] }}</td>
+                                                        <td>{!! $row['animal_name'] !!}</td>
+                                                        <td>
+                                                            @forelse (($row['feedings'] ?? []) as $entry)
+                                                                <div>{{ $entry['label'] }}</div>
+                                                            @empty
+                                                                <span class="text-muted">-</span>
+                                                            @endforelse
+                                                        </td>
+                                                        <td>
+                                                            @forelse (($row['weights'] ?? []) as $entry)
+                                                                <div>{{ $entry['label'] }}</div>
+                                                            @empty
+                                                                <span class="text-muted">-</span>
+                                                            @endforelse
+                                                        </td>
+                                                        <td>
+                                                            @forelse (($row['molts'] ?? []) as $entry)
+                                                                <div>{{ $entry['label'] }}</div>
+                                                            @empty
+                                                                <span class="text-muted">-</span>
+                                                            @endforelse
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-muted">Brak danych w kategoriach 1-4.</div>
+                @endforelse
+            </div>
+        </div>
     @else
         <div class="glass-card">
             <div class="table-responsive">

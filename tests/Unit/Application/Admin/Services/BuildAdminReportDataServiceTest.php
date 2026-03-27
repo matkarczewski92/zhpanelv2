@@ -75,6 +75,9 @@ class BuildAdminReportDataServiceTest extends TestCase
                         'animal_id' => 10,
                         'animal_name' => 'Butter Stripe',
                         'public_tag' => 'ebe5',
+                        'animal_category_id' => 1,
+                        'animal_type_id' => 1,
+                        'animal_type_name' => 'Waz zbozowy',
                         'feedings' => [
                             ['label' => 'Mouse x1 08:10'],
                             ['label' => 'Mouse x1 12:45'],
@@ -88,6 +91,9 @@ class BuildAdminReportDataServiceTest extends TestCase
                         'animal_id' => 11,
                         'animal_name' => 'Ghost',
                         'public_tag' => null,
+                        'animal_category_id' => 5,
+                        'animal_type_id' => 2,
+                        'animal_type_name' => 'Pyton',
                         'feedings' => [],
                         'weights' => [],
                         'molts' => [
@@ -109,11 +115,15 @@ class BuildAdminReportDataServiceTest extends TestCase
         ]);
 
         $this->assertSame('daily_entered_data', $report['type']);
-        $this->assertSame(2, $report['meta']['item_count']);
+        $this->assertSame(1, $report['meta']['item_count']);
         $this->assertSame(2, $report['meta']['feedings_count']);
         $this->assertSame(1, $report['meta']['weights_count']);
-        $this->assertSame(1, $report['meta']['molts_count']);
-        $this->assertCount(2, $report['rows']);
+        $this->assertSame(0, $report['meta']['molts_count']);
+        $this->assertCount(1, $report['rows']);
+        $this->assertCount(1, $report['groups']);
+        $this->assertSame('Kategoria 1', $report['groups'][0]['label']);
+        $this->assertCount(1, $report['groups'][0]['types']);
+        $this->assertSame('Waz zbozowy', $report['groups'][0]['types'][0]['label']);
 
         CarbonImmutable::setTestNow();
     }

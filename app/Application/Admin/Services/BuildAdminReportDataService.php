@@ -70,7 +70,39 @@ class BuildAdminReportDataService
     private function buildDailyEnteredDataReport(array $filters): array
     {
         $day = CarbonImmutable::parse((string) $filters['report_date'])->startOfDay();
-        $rows = $this->sourceRepository->getDailyEnteredDataRows($day);
+        $rows = $this->sourceRepository
+            ->getDailyEnteredDataRows($day)
+            ->filter(fn (array $row): bool => in_array((int) ($row['animal_category_id'] ?? 0), [1, 2, 3, 4], true))
+            ->values();
+        $groups = collect([1, 2, 3, 4])
+            ->map(function (int $categoryId) use ($rows): array {
+                $categoryRows = $rows
+                    ->filter(fn (array $row): bool => (int) ($row['animal_category_id'] ?? 0) === $categoryId)
+                    ->values();
+
+                return [
+                    'category_id' => $categoryId,
+                    'label' => 'Kategoria ' . $categoryId,
+                    'rows' => $categoryRows->all(),
+                    'types' => $categoryRows
+                        ->groupBy(fn (array $row): int => (int) ($row['animal_type_id'] ?? 0))
+                        ->map(function ($typeRows, $typeId): array {
+                            $firstRow = $typeRows->first();
+                            $typeName = trim((string) ($firstRow['animal_type_name'] ?? ''));
+
+                            return [
+                                'animal_type_id' => (int) $typeId,
+                                'label' => $typeName !== '' ? $typeName : ('Typ #' . $typeId),
+                                'rows' => $typeRows->values()->all(),
+                            ];
+                        })
+                        ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->filter(fn (array $group): bool => $group['rows'] !== [])
+            ->values();
 
         return [
             'type' => self::TYPE_DAILY_ENTERED_DATA,
@@ -88,6 +120,7 @@ class BuildAdminReportDataService
                 'molts_count' => $rows->sum(fn (array $row): int => count($row['molts'] ?? [])),
             ],
             'rows' => $rows->all(),
+            'groups' => $groups->all(),
         ];
     }
 

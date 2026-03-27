@@ -4,6 +4,26 @@ const emitToast = (type, message) => {
     }));
 };
 
+const openPreviewWindow = (action, form) => {
+    const previewForm = document.createElement('form');
+    previewForm.method = 'POST';
+    previewForm.action = action;
+    previewForm.target = '_blank';
+    previewForm.style.display = 'none';
+
+    Array.from(new FormData(form).entries()).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = typeof value === 'string' ? value : '';
+        previewForm.appendChild(input);
+    });
+
+    document.body.appendChild(previewForm);
+    previewForm.submit();
+    previewForm.remove();
+};
+
 const extractErrorMessage = async (response) => {
     try {
         const payload = await response.json();
@@ -67,25 +87,12 @@ const initAdminReportsPreview = () => {
 
                 const payload = await response.json();
 
-                if (payload.status !== 'ok' || typeof payload.html !== 'string') {
+                if (payload.status !== 'ok') {
                     emitToast('warning', payload.message ?? 'Brak danych do podgladu.');
                     return;
                 }
 
-                const previewWindow = window.open('', '_blank', 'noopener,noreferrer');
-
-                if (!previewWindow) {
-                    emitToast('warning', 'Przegladarka zablokowala nowe okno podgladu.');
-                    return;
-                }
-
-                previewWindow.document.open();
-                previewWindow.document.write(payload.html);
-                previewWindow.document.close();
-
-                if (typeof payload.title === 'string' && payload.title !== '') {
-                    previewWindow.document.title = payload.title;
-                }
+                openPreviewWindow(previewUrl, form);
             } catch (_) {
                 emitToast('danger', 'Nie udalo sie przygotowac podgladu raportu.');
             } finally {

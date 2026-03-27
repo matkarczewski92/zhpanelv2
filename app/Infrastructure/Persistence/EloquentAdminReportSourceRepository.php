@@ -46,6 +46,7 @@ class EloquentAdminReportSourceRepository implements AdminReportSourceRepository
 
         return Animal::query()
             ->with([
+                'animalType:id,name',
                 'feedings' => function ($query) use ($start, $end): void {
                     $query
                         ->with('feed:id,name')
@@ -70,12 +71,15 @@ class EloquentAdminReportSourceRepository implements AdminReportSourceRepository
                     ->orWhereHas('molts', fn ($moltQuery) => $moltQuery->whereBetween('created_at', [$start, $end]));
             })
             ->orderBy('id')
-            ->get(['id', 'name', 'second_name', 'public_profile_tag'])
+            ->get(['id', 'name', 'second_name', 'public_profile_tag', 'animal_category_id', 'animal_type_id'])
             ->map(function (Animal $animal): array {
                 return [
                     'animal_id' => (int) $animal->id,
                     'animal_name' => $this->formatAnimalName($animal->name, $animal->second_name),
                     'public_tag' => $animal->public_profile_tag ?: null,
+                    'animal_category_id' => $animal->animal_category_id ? (int) $animal->animal_category_id : null,
+                    'animal_type_id' => $animal->animal_type_id ? (int) $animal->animal_type_id : null,
+                    'animal_type_name' => trim((string) ($animal->animalType?->name ?? '')),
                     'feedings' => $animal->feedings->map(function ($feeding): array {
                         $feedName = trim((string) optional($feeding->feed)->name);
 

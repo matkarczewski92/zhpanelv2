@@ -91,6 +91,55 @@
                 </tr>
             </tbody>
         </table>
+    @elseif (($report['type'] ?? null) === 'daily_entered_data')
+        @forelse (($report['groups'] ?? []) as $group)
+            <h2 style="margin: 18px 0 8px; font-size: 15px;">{{ $group['label'] }}</h2>
+            @foreach (($group['types'] ?? []) as $type)
+                <h3 style="margin: 12px 0 6px; font-size: 13px; color: #444;">{{ $type['label'] }}</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nazwa</th>
+                            <th>Karmienia</th>
+                            <th>Wazenia</th>
+                            <th>Wylinki</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (($type['rows'] ?? []) as $row)
+                            <tr>
+                                <td>{{ $row['animal_id'] }}</td>
+                                <td>{!! $row['animal_name'] !!}</td>
+                                <td class="stack">
+                                    @forelse (($row['feedings'] ?? []) as $entry)
+                                        <div>{{ $entry['label'] }}</div>
+                                    @empty
+                                        <span class="muted">-</span>
+                                    @endforelse
+                                </td>
+                                <td class="stack">
+                                    @forelse (($row['weights'] ?? []) as $entry)
+                                        <div>{{ $entry['label'] }}</div>
+                                    @empty
+                                        <span class="muted">-</span>
+                                    @endforelse
+                                </td>
+                                <td class="stack">
+                                    @forelse (($row['molts'] ?? []) as $entry)
+                                        <div>{{ $entry['label'] }}</div>
+                                    @empty
+                                        <span class="muted">-</span>
+                                    @endforelse
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endforeach
+        @empty
+            <div class="muted">Brak danych w kategoriach 1-4.</div>
+        @endforelse
     @else
         <table>
             <thead>
