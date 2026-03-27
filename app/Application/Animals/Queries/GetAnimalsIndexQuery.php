@@ -13,6 +13,7 @@ use App\Models\ColorGroup;
 use App\Models\Feed;
 use App\Models\SystemConfig;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -31,6 +32,7 @@ class GetAnimalsIndexQuery
         $categoryId = $this->intOrNull($request->query('category_id'));
         $feedId = $this->intOrNull($request->query('feed_id'));
         $sex = $this->normalizeSex($request->query('sex'));
+        $pregnantFemalesOnly = $this->normalizeBoolean($request->query('pregnant_females'));
         $colorGroupIds = $this->normalizeIdList($request->query('color_groups', []));
         $sortMap = [
             'id' => 'animals.id',
@@ -119,6 +121,23 @@ class GetAnimalsIndexQuery
 
         if ($sex !== null) {
             $query->where('animals.sex', $sex);
+        }
+
+        if ($pregnantFemalesOnly) {
+            $query
+                ->where('animals.sex', Sex::Female->value)
+                ->whereExists(function (Builder $builder): void {
+                    $builder->selectRaw('1')
+                        ->from('litters')
+                        ->whereColumn('litters.parent_female', 'animals.id')
+                        ->whereIn('litters.category', [1, 3])
+                        ->where(function (Builder $dateBuilder): void {
+                            $dateBuilder
+                                ->whereNotNull('litters.connection_date')
+                                ->orWhereNotNull('litters.planned_connection_date');
+                        })
+                        ->whereNull('litters.laying_date');
+                });
         }
 
         if ($colorGroupIds !== []) {
@@ -212,6 +231,7 @@ class GetAnimalsIndexQuery
                 'category_id' => $categoryId,
                 'feed_id' => $feedId,
                 'sex' => $sex,
+                'pregnant_females' => $pregnantFemalesOnly,
                 'color_groups' => $colorGroupIds,
             ],
             'colorGroupFilters' => $this->buildColorGroupFilters($request, $activeColorGroups, $colorGroupIds),
@@ -273,6 +293,19 @@ class GetAnimalsIndexQuery
         return in_array($sex, [Sex::Unknown->value, Sex::Male->value, Sex::Female->value], true)
             ? $sex
             : null;
+    }
+
+    private function normalizeBoolean(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'on', 'yes'], true);
     }
 
     private function resolveDefaultCategoryId(Collection $categories): ?int

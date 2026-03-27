@@ -77,6 +77,21 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-12 col-md-6 col-xl-3 animals-filter-compact">
+                    <div class="form-check mt-md-4 pt-md-2">
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            value="1"
+                            id="pregnant_females"
+                            name="pregnant_females"
+                            @checked(!empty($filters['pregnant_females']))
+                        >
+                        <label class="form-check-label" for="pregnant_females">
+                            Tylko ciężarne samice
+                        </label>
+                    </div>
+                </div>
                 @if (!empty($sort))
                     <input type="hidden" name="sort" value="{{ $sort }}" />
                     <input type="hidden" name="direction" value="{{ $direction }}" />
