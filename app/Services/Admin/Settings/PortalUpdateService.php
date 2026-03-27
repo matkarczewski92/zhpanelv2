@@ -245,7 +245,7 @@ class PortalUpdateService
         ];
     }
 
-    public function runUpdate(bool $runMigrate, bool $runBuild): array
+    public function runUpdate(bool $runMigrate, bool $runBuild, bool $forceOverwrite = false): array
     {
         if (function_exists('set_time_limit')) {
             @set_time_limit(0);
@@ -270,6 +270,7 @@ class PortalUpdateService
                 'run_migrate' => $runMigrate,
                 'run_migrate_effective' => $shouldRunMigrate,
                 'run_build' => $runBuild,
+                'force_overwrite' => $forceOverwrite,
                 'before_sha' => $beforeSha,
                 'before_sha_short' => $this->shortSha($beforeSha),
                 'after_sha' => $beforeSha,
@@ -281,7 +282,9 @@ class PortalUpdateService
         }
 
         $this->assertCanUseUpdater();
-        $this->assertCleanWorkTree();
+        if (!$forceOverwrite) {
+            $this->assertCleanWorkTree();
+        }
 
         $lock = Cache::lock(self::UPDATE_LOCK_KEY, self::UPDATE_LOCK_SECONDS);
         if (!$lock->get()) {
@@ -295,7 +298,7 @@ class PortalUpdateService
         $errorMessage = null;
 
         try {
-            foreach ($this->buildUpdateSteps($shouldRunMigrate, $runBuild) as $step) {
+            foreach ($this->buildUpdateSteps($shouldRunMigrate, $runBuild, $forceOverwrite) as $step) {
                 $result = $this->executeStep(
                     label: $step['label'],
                     command: $step['command'],
@@ -343,6 +346,7 @@ class PortalUpdateService
             'run_migrate' => $runMigrate,
             'run_migrate_effective' => $shouldRunMigrate,
             'run_build' => $runBuild,
+            'force_overwrite' => $forceOverwrite,
             'before_sha' => $beforeSha,
             'before_sha_short' => $this->shortSha($beforeSha),
             'after_sha' => $afterSha,
@@ -509,14 +513,14 @@ class PortalUpdateService
             'Nie udalo sie sprawdzic statusu Git.'
         );
         if (trim($status) !== '') {
-            throw new RuntimeException('Repozytorium ma lokalne zmiany. Aktualizacja zostala zablokowana.');
+            throw new RuntimeException('Repozytorium ma lokalne zmiany. Aktualizacja zostala zablokowana. Zaznacz opcje nadpisania, jesli chcesz wymusic update.');
         }
     }
 
     /**
      * @return array<int, array{step?:string, label:string, command:array<int, string>, timeout:int}>
      */
-    private function buildUpdateSteps(bool $runMigrate, bool $runBuild): array
+    private function buildUpdateSteps(bool $runMigrate, bool $runBuild, bool $forceOverwrite): array
     {
         $remote = $this->remote();
         $branch = $this->branch();
@@ -533,12 +537,21 @@ class PortalUpdateService
                 'command' => ['git', 'fetch', $remote, $branch],
                 'timeout' => 240,
             ],
-            [
+        ];
+
+        if ($forceOverwrite) {
+            $steps[] = [
+                'label' => 'Nadpisanie lokalnych zmian (git reset --hard)',
+                'command' => ['git', 'reset', '--hard', sprintf('%s/%s', $remote, $branch)],
+                'timeout' => 300,
+            ];
+        } else {
+            $steps[] = [
                 'label' => 'Aktualizacja kodu (git pull --ff-only)',
                 'command' => ['git', 'pull', '--ff-only', $remote, $branch],
                 'timeout' => 300,
-            ],
-        ];
+            ];
+        }
 
         if ($runMigrate) {
             $steps[] = [
@@ -916,9 +929,10 @@ class PortalUpdateService
             ($summary['updated'] ?? false) ? 'yes' : 'no'
         );
         $lines[] = sprintf(
-            'Options: migrate=%s, build=%s',
+            'Options: migrate=%s, build=%s, overwrite=%s',
             ($summary['run_migrate'] ?? false) ? 'yes' : 'no',
-            ($summary['run_build'] ?? false) ? 'yes' : 'no'
+            ($summary['run_build'] ?? false) ? 'yes' : 'no',
+            ($summary['force_overwrite'] ?? false) ? 'yes' : 'no'
         );
         if (($summary['run_migrate'] ?? false) && !($summary['run_migrate_effective'] ?? false)) {
             $lines[] = 'Migrate step skipped: brak zmian w database/migrations.';

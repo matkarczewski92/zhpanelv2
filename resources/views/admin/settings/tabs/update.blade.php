@@ -80,15 +80,22 @@
                     <form method="POST" action="{{ route('admin.settings.update.run') }}" onsubmit="return confirm('Uruchomic aktualizacje na serwerze?')" class="d-flex flex-wrap gap-3 align-items-center">
                         @csrf
                         <div class="form-check form-check-inline m-0">
-                            <input class="form-check-input" type="checkbox" id="run_migrate" name="run_migrate" value="1" checked>
+                            <input class="form-check-input" type="checkbox" id="run_migrate" name="run_migrate" value="1" @checked(old('run_migrate', '1') == '1')>
                             <label class="form-check-label small" for="run_migrate">migrate</label>
                         </div>
                         <div class="form-check form-check-inline m-0">
-                            <input class="form-check-input" type="checkbox" id="run_build" name="run_build" value="1" checked>
+                            <input class="form-check-input" type="checkbox" id="run_build" name="run_build" value="1" @checked(old('run_build', '1') == '1')>
                             <label class="form-check-label small" for="run_build">npm run build</label>
+                        </div>
+                        <div class="form-check form-check-inline m-0">
+                            <input class="form-check-input" type="checkbox" id="force_overwrite" name="force_overwrite" value="1" @checked(old('force_overwrite'))>
+                            <label class="form-check-label small" for="force_overwrite">nadpisz lokalne zmiany</label>
                         </div>
                         <button type="submit" class="btn btn-danger btn-sm">Aktualizuj teraz</button>
                     </form>
+                    <div class="small text-warning-emphasis mt-2">
+                        Opcja nadpisania wymusza <code>git reset --hard {{ $updatePanel['remote'] ?? 'origin' }}/{{ $updatePanel['branch'] ?? 'main' }}</code> i kasuje lokalne, niescommitowane zmiany w repozytorium.
+                    </div>
                 </div>
 
                 @if(is_array($lastCheck))
@@ -118,7 +125,8 @@
                             Commit: <span class="font-monospace">{{ $lastRun['before_sha_short'] ?? '-' }}</span>
                             ->
                             <span class="font-monospace">{{ $lastRun['after_sha_short'] ?? '-' }}</span>,
-                            Updated: @if(!empty($lastRun['updated'])) tak @else nie @endif
+                            Updated: @if(!empty($lastRun['updated'])) tak @else nie @endif,
+                            Nadpisanie: @if(!empty($lastRun['force_overwrite'])) tak @else nie @endif
                         </div>
                         @if(!empty($lastRun['error']))
                             <div class="small mt-1">Blad: {{ $lastRun['error'] }}</div>

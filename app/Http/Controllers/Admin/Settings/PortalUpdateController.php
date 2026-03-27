@@ -47,6 +47,7 @@ class PortalUpdateController extends Controller
             $result = $this->service->runUpdate($runMigrate, $runBuild, $forceOverwrite);
         } catch (RuntimeException $exception) {
             return $this->redirectToTab()
+                ->withInput()
                 ->with('toast', ['type' => 'error', 'message' => $exception->getMessage()]);
         }
 
