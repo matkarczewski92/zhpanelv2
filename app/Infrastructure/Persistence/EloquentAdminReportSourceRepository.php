@@ -78,13 +78,12 @@ class EloquentAdminReportSourceRepository implements AdminReportSourceRepository
                     'public_tag' => $animal->public_profile_tag ?: null,
                     'feedings' => $animal->feedings->map(function ($feeding): array {
                         $feedName = trim((string) optional($feeding->feed)->name);
-                        $time = optional($feeding->created_at)?->format('H:i');
 
                         return [
                             'feed_type' => $feedName !== '' ? $feedName : '-',
                             'quantity' => (int) ($feeding->amount ?? 0),
-                            'time' => $time,
-                            'label' => trim(($feedName !== '' ? $feedName : '-') . ' x' . (int) ($feeding->amount ?? 0) . ($time ? ' ' . $time : '')),
+                            'time' => optional($feeding->created_at)?->format('H:i'),
+                            'label' => trim(($feedName !== '' ? $feedName : '-') . ' x' . (int) ($feeding->amount ?? 0)),
                         ];
                     })->values()->all(),
                     'weights' => $animal->weights->map(function ($weight): array {
@@ -112,9 +111,9 @@ class EloquentAdminReportSourceRepository implements AdminReportSourceRepository
 
     private function formatAnimalName(?string $name, ?string $secondName): string
     {
-        $main = trim(strip_tags((string) $name, '<b><i><u>'));
-        $second = trim(strip_tags((string) $secondName, '<b><i><u>'));
-        $label = trim($second !== '' ? $second . ' ' . $main : $main);
+        $main = trim(strip_tags((string) $name, '<b><i><u><strong><em><br>'));
+        $second = trim(strip_tags((string) $secondName));
+        $label = trim($second !== '' ? e($second) . ' ' . $main : $main);
 
         return $label !== '' ? $label : '-';
     }

@@ -24,6 +24,15 @@ class PreviewAdminReportQuery
             'message' => empty($report['rows']) ? 'Brak danych dla wybranego zakresu.' : null,
             'report' => $report,
             'from_history' => false,
+            'generate' => [
+                'url' => route('admin.reports.store'),
+                'filters' => [
+                    'report_type' => $report['type'] ?? null,
+                    'date_from' => $report['filters']['date_from'] ?? null,
+                    'date_to' => $report['filters']['date_to'] ?? null,
+                    'report_date' => $report['filters']['report_date'] ?? null,
+                ],
+            ],
         ];
     }
 }

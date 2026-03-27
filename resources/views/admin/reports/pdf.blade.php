@@ -76,7 +76,7 @@
                 @foreach (($report['rows'] ?? []) as $row)
                     <tr>
                         <td>{{ $row['animal_id'] }}</td>
-                        <td>{{ $row['animal_name'] }}</td>
+                        <td>{!! $row['animal_name'] !!}</td>
                         <td>{{ $row['public_tag'] ?? '-' }}</td>
                         <td>{{ $row['sale_date'] }}</td>
                         <td>{{ $row['sale_price_label'] }}</td>
@@ -94,7 +94,6 @@
                 <tr>
                     <th>ID</th>
                     <th>Nazwa</th>
-                    <th>Public tag</th>
                     <th>Karmienia</th>
                     <th>Wazenia</th>
                     <th>Wylinki</th>
@@ -104,8 +103,7 @@
                 @foreach (($report['rows'] ?? []) as $row)
                     <tr>
                         <td>{{ $row['animal_id'] }}</td>
-                        <td>{{ $row['animal_name'] }}</td>
-                        <td>{{ $row['public_tag'] ?? '-' }}</td>
+                        <td>{!! $row['animal_name'] !!}</td>
                         <td class="stack">
                             @forelse (($row['feedings'] ?? []) as $entry)
                                 <div>{{ $entry['label'] }}</div>

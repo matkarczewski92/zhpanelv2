@@ -17,6 +17,21 @@
         <div class="d-flex flex-wrap gap-2">
             @if (!empty($history['download_url']))
                 <a href="{{ $history['download_url'] }}" class="btn btn-outline-light btn-sm">Pobierz PDF</a>
+            @elseif (!empty($generate['url']) && !empty($generate['filters']['report_type']))
+                <form method="POST" action="{{ $generate['url'] }}">
+                    @csrf
+                    <input type="hidden" name="report_type" value="{{ $generate['filters']['report_type'] }}">
+                    @if (!empty($generate['filters']['date_from']))
+                        <input type="hidden" name="date_from" value="{{ $generate['filters']['date_from'] }}">
+                    @endif
+                    @if (!empty($generate['filters']['date_to']))
+                        <input type="hidden" name="date_to" value="{{ $generate['filters']['date_to'] }}">
+                    @endif
+                    @if (!empty($generate['filters']['report_date']))
+                        <input type="hidden" name="report_date" value="{{ $generate['filters']['report_date'] }}">
+                    @endif
+                    <button type="submit" class="btn btn-primary btn-sm">Generuj PDF</button>
+                </form>
             @endif
             <a href="{{ route('admin.reports.index') }}" class="btn btn-outline-light btn-sm">Wroc</a>
         </div>
@@ -75,7 +90,7 @@
                         @foreach (($report['rows'] ?? []) as $row)
                             <tr>
                                 <td>{{ $row['animal_id'] }}</td>
-                                <td>{{ $row['animal_name'] }}</td>
+                                <td>{!! $row['animal_name'] !!}</td>
                                 <td>{{ $row['public_tag'] ?? '-' }}</td>
                                 <td>{{ $row['sale_date'] }}</td>
                                 <td>{{ $row['sale_price_label'] }}</td>
@@ -99,7 +114,6 @@
                         <tr class="text-muted small">
                             <th>ID</th>
                             <th>Nazwa</th>
-                            <th>Public tag</th>
                             <th>Karmienia</th>
                             <th>Wazenia</th>
                             <th>Wylinki</th>
@@ -109,8 +123,7 @@
                         @foreach (($report['rows'] ?? []) as $row)
                             <tr>
                                 <td>{{ $row['animal_id'] }}</td>
-                                <td>{{ $row['animal_name'] }}</td>
-                                <td>{{ $row['public_tag'] ?? '-' }}</td>
+                                <td>{!! $row['animal_name'] !!}</td>
                                 <td>
                                     @forelse (($row['feedings'] ?? []) as $entry)
                                         <div>{{ $entry['label'] }}</div>
