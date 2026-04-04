@@ -624,7 +624,7 @@ class GetAnimalProfileQuery
                 'pregnancySheds:id,litter_id,shed_date',
             ])
             ->where('parent_female', $animal->id)
-            ->whereIn('category', [1, 3])
+            ->whereNotNull('connection_date')
             ->get();
 
         if ($litters->isEmpty()) {
