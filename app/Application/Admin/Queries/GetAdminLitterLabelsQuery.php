@@ -17,7 +17,7 @@ class GetAdminLitterLabelsQuery
 
     public function handle(array $filters): AdminLitterLabelsViewModel
     {
-        $selectedCategoryIds = $filters['category_ids'] ?? [1, 4];
+        $selectedCategoryIds = $filters['category_ids'] ?? [1, 2];
 
         $categories = collect([1, 2, 3, 4])
             ->map(fn (int $id): array => [

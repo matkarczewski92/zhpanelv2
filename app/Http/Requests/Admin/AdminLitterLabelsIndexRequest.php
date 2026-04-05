@@ -13,10 +13,10 @@ class AdminLitterLabelsIndexRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $categoryIds = $this->normalizeIds($this->input('category_ids', [1, 4]));
+        $categoryIds = $this->normalizeIds($this->input('category_ids', [1, 2]));
 
         if ($categoryIds === []) {
-            $categoryIds = [1, 4];
+            $categoryIds = [1, 2];
         }
 
         $this->merge([
