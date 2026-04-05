@@ -407,11 +407,8 @@
                                             <span class="badge text-bg-light litter-trait-badge">{{ $row['traits_name'] }}</span>
                                         @endif
                                     </td>
-                                    <td @class([
-                                        'text-center',
-                                        'text-muted fst-italic' => !empty($row['quantity_is_estimated']),
-                                    ])>
-                                        {{ $row['quantity_label'] }}
+                                    <td class="text-center{{ !empty($row['quantity_is_estimated']) ? ' text-muted fst-italic' : '' }}">
+                                        {{ number_format((int) ($row['quantity'] ?? 0), 0, ',', ' ') }}
                                     </td>
                                     <td>{{ $row['traits_count'] }}</td>
                                 </tr>
