@@ -52,7 +52,7 @@ class LitterTimelineCalculator
      */
     public function buildPlanning(Litter $litter, array $input): array
     {
-        $source = $this->resolveSource($input);
+        $source = $this->resolveSource($litter, $input);
 
         $connection = $this->parseNullableDate($input['planning_connection_date'] ?? null)
             ?? $this->parseNullableDate($litter->connection_date?->format('Y-m-d'))
@@ -120,7 +120,7 @@ class LitterTimelineCalculator
     /**
      * @param array<string, mixed> $input
      */
-    private function resolveSource(array $input): string
+    private function resolveSource(Litter $litter, array $input): string
     {
         $source = (string) ($input['planning_source'] ?? '');
         if (in_array($source, ['connection', 'laying', 'hatching'], true)) {
@@ -139,7 +139,23 @@ class LitterTimelineCalculator
             return 'hatching';
         }
 
-        return 'connection';
+        if ($litter->hatching_date !== null) {
+            return 'hatching';
+        }
+
+        if ($litter->laying_date !== null) {
+            return 'laying';
+        }
+
+        if ($litter->connection_date !== null) {
+            return 'connection';
+        }
+
+        if ($litter->planned_connection_date !== null) {
+            return 'connection';
+        }
+
+        return '';
     }
 
     private function parseNullableDate(mixed $value): ?CarbonImmutable
