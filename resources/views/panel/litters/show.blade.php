@@ -395,7 +395,7 @@
                                 <th style="width: 12%;">Procent</th>
                                 <th style="width: 20%;">Nazwa</th>
                                 <th>Traits</th>
-                                <th style="width: 10%;">#Traits</th>
+                                <th style="width: 10%;" class="text-center">Ilosc</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -415,7 +415,7 @@
                                             <span class="badge litter-trait-badge @if(str_starts_with($trait, '50%')) text-bg-secondary @elseif(str_starts_with($trait, '66%')) text-bg-info @else text-bg-primary @endif">{{ $trait }}</span>
                                         @endforeach
                                     </td>
-                                    <td>{{ $row['traits_count'] }}</td>
+                                    <td class="text-center">{{ number_format((int) ($row['quantity'] ?? 0), 0, ',', ' ') }}</td>
                                 </tr>
                             @empty
                                 <tr>
