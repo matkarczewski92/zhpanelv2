@@ -393,9 +393,8 @@
                         <thead>
                             <tr class="text-muted small">
                                 <th style="width: 12%;">Procent</th>
-                                <th style="width: 20%;">Nazwa</th>
+                                <th>Nazwa</th>
                                 <th style="width: 12%;" class="text-center">Ilosc</th>
-                                <th style="width: 10%;">#Traits</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -410,11 +409,10 @@
                                     <td class="text-center{{ !empty($row['quantity_is_estimated']) ? ' text-muted fst-italic' : '' }}">
                                         {{ number_format((int) ($row['quantity'] ?? 0), 0, ',', ' ') }}
                                     </td>
-                                    <td>{{ $row['traits_count'] }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-3">Brak danych o mozliwym potomstwie.</td>
+                                    <td colspan="3" class="text-center text-muted py-3">Brak danych o mozliwym potomstwie.</td>
                                 </tr>
                             @endforelse
                         </tbody>
