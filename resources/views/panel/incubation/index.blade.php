@@ -57,30 +57,9 @@
     </div>
 
     @forelse ($rows as $row)
-        <div class="card cardopacity mb-3 pregnancy-timeline-card">
-            <div class="card-header d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2">
-                <div>
-                    <a href="{{ $row['litter']['profile_url'] }}" class="fw-semibold link-reset">
-                        {{ $row['litter']['code'] }}
-                        @if (!empty($row['litter']['season']))
-                            <span class="text-muted small">/ sezon {{ $row['litter']['season'] }}</span>
-                        @endif
-                    </a>
-                    <div class="text-muted small">
-                        Samica: {{ $row['litter']['female_name'] }} | Samiec: {{ $row['litter']['male_name'] }}
-                    </div>
-                    <div class="text-muted small">
-                        Jaja do inkubacji: {{ $row['litter']['eggs_to_incubation_label'] }} | Wyklute: {{ $row['litter']['hatching_eggs_label'] }}
-                    </div>
-                </div>
-                <a href="{{ $row['litter']['profile_url'] }}" class="btn btn-outline-light btn-sm">Profil</a>
-            </div>
-            <div class="card-body">
-                @include('panel.litters.partials.incubation-timeline-items', [
-                    'timeline' => $row['timeline'],
-                ])
-            </div>
-        </div>
+        @include('panel.litters.partials.incubation-timeline-items', [
+            'timeline' => $row['timeline'],
+        ])
     @empty
         <div class="card cardopacity">
             <div class="card-body text-center text-muted">Brak aktywnej inkubacji.</div>
