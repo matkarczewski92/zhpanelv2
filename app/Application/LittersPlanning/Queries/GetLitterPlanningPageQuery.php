@@ -152,8 +152,10 @@ class GetLitterPlanningPageQuery
         if (!in_array($seasonOffspringSummaryDirection, ['asc', 'desc'], true)) {
             $seasonOffspringSummaryDirection = 'desc';
         }
+        $stableEggsToIncubationAverage = $this->getStableEggsToIncubationAverage();
         $seasonOffspringSummaryRows = $this->buildSeasonOffspringSummaryRows(
             $seasonOffspringRows,
+            $stableEggsToIncubationAverage,
             $seasonOffspringSummarySort,
             $seasonOffspringSummaryDirection
         );
@@ -1077,6 +1079,7 @@ class GetLitterPlanningPageQuery
      */
     private function buildSeasonOffspringSummaryRows(
         array $rows,
+        float $stableEggsToIncubationAverage,
         string $sort = 'percentage_sum',
         string $direction = 'desc'
     ): array
@@ -1116,14 +1119,13 @@ class GetLitterPlanningPageQuery
         }
 
         $summary = collect($grouped)
-            ->map(function (array $group): array {
+            ->map(function (array $group) use ($stableEggsToIncubationAverage): array {
                 $litters = (array) ($group['litters'] ?? []);
                 $unconnectedLitters = (array) ($group['unconnected_litters'] ?? []);
                 $groupedRows = (int) ($group['grouped_rows'] ?? 0);
                 $littersCount = count($litters);
                 $unconnectedLittersCount = count($unconnectedLitters);
-                $eggsToIncubationSum = (float) ($group['eggs_to_incubation_sum'] ?? 0);
-                $avgEggs = $groupedRows > 0 ? round($eggsToIncubationSum / $groupedRows, 0) : 0.0;
+                $avgEggs = round($stableEggsToIncubationAverage * $groupedRows, 0);
                 $percentageSum = (float) ($group['percentage_sum'] ?? 0);
                 $numericCount = round((float) ($group['numeric_count_sum'] ?? 0), 0);
 
@@ -1145,6 +1147,17 @@ class GetLitterPlanningPageQuery
             ->all();
 
         return $this->sortSeasonOffspringSummaryRows($summary, $sort, $direction);
+    }
+
+    private function getStableEggsToIncubationAverage(): float
+    {
+        $average = Litter::query()
+            ->whereIn('category', [1, 4])
+            ->whereNotNull('laying_eggs_ok')
+            ->where('laying_eggs_ok', '>', 0)
+            ->avg('laying_eggs_ok');
+
+        return is_numeric($average) ? round((float) $average, 0) : 0.0;
     }
 
     /**

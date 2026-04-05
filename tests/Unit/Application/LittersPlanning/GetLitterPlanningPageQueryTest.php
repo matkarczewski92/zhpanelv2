@@ -53,13 +53,13 @@ class GetLitterPlanningPageQueryTest extends TestCase
             ],
         ];
 
-        $result = $method->invoke($query, $rows, 'percentage_sum', 'desc');
+        $result = $method->invoke($query, $rows, 10.0, 'percentage_sum', 'desc');
 
         $this->assertCount(1, $result);
         $this->assertSame('Amel', $result[0]['morph_name']);
         $this->assertSame(150.0, $result[0]['percentage_sum']);
-        $this->assertSame(15.0, $result[0]['avg_eggs_to_incubation']);
-        $this->assertSame('15', $result[0]['avg_eggs_to_incubation_label']);
+        $this->assertSame(20.0, $result[0]['avg_eggs_to_incubation']);
+        $this->assertSame('20', $result[0]['avg_eggs_to_incubation_label']);
         $this->assertSame(20.0, $result[0]['numeric_count']);
         $this->assertSame('20', $result[0]['numeric_count_label']);
     }
