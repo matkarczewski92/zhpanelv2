@@ -39,6 +39,10 @@ class IncubationTimelineBuilder
             return false;
         }
 
+        if ((int) ($litter->laying_eggs_ok ?? 0) <= 0) {
+            return false;
+        }
+
         if (!$activeOnly) {
             return true;
         }

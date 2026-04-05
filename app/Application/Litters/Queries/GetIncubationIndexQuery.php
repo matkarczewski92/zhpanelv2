@@ -24,6 +24,8 @@ class GetIncubationIndexQuery
                 'femaleParent:id,name',
             ])
             ->whereNotNull('laying_date')
+            ->whereNotNull('laying_eggs_ok')
+            ->where('laying_eggs_ok', '>', 0)
             ->whereNull('hatching_date')
             ->orderBy('laying_date')
             ->orderBy('id')
