@@ -10,7 +10,7 @@ use ReflectionMethod;
 
 class GetLitterPlanningPageQueryTest extends TestCase
 {
-    public function test_season_offspring_summary_numeric_count_uses_per_litter_contribution(): void
+    public function test_season_offspring_summary_numeric_count_uses_average_eggs_and_percentage_sum(): void
     {
         $query = new GetLitterPlanningPageQuery(
             $this->createMock(GenotypeCalculator::class),
@@ -58,9 +58,9 @@ class GetLitterPlanningPageQueryTest extends TestCase
         $this->assertCount(1, $result);
         $this->assertSame('Amel', $result[0]['morph_name']);
         $this->assertSame(150.0, $result[0]['percentage_sum']);
-        $this->assertSame(20.0, $result[0]['avg_eggs_to_incubation']);
-        $this->assertSame('20', $result[0]['avg_eggs_to_incubation_label']);
-        $this->assertSame(20.0, $result[0]['numeric_count']);
-        $this->assertSame('20', $result[0]['numeric_count_label']);
+        $this->assertSame(10.0, $result[0]['avg_eggs_to_incubation']);
+        $this->assertSame('10', $result[0]['avg_eggs_to_incubation_label']);
+        $this->assertSame(15.0, $result[0]['numeric_count']);
+        $this->assertSame('15', $result[0]['numeric_count_label']);
     }
 }

@@ -1096,8 +1096,6 @@ class GetLitterPlanningPageQuery
                     'morph_name' => $displayName,
                     'grouped_rows' => 0,
                     'percentage_sum' => 0.0,
-                    'eggs_to_incubation_sum' => 0.0,
-                    'numeric_count_sum' => 0.0,
                     'litters' => [],
                     'unconnected_litters' => [],
                 ];
@@ -1105,9 +1103,6 @@ class GetLitterPlanningPageQuery
 
             $grouped[$key]['grouped_rows']++;
             $grouped[$key]['percentage_sum'] += (float) ($row['percentage'] ?? 0);
-            $grouped[$key]['eggs_to_incubation_sum'] += (float) ($row['litter_eggs_to_incubation'] ?? 0);
-            $grouped[$key]['numeric_count_sum'] += ((float) ($row['litter_eggs_to_incubation'] ?? 0))
-                * (((float) ($row['percentage'] ?? 0)) / 100);
 
             $litterId = (int) ($row['litter_id'] ?? 0);
             if ($litterId > 0) {
@@ -1125,9 +1120,9 @@ class GetLitterPlanningPageQuery
                 $groupedRows = (int) ($group['grouped_rows'] ?? 0);
                 $littersCount = count($litters);
                 $unconnectedLittersCount = count($unconnectedLitters);
-                $avgEggs = round($stableEggsToIncubationAverage * $groupedRows, 0);
+                $avgEggs = round($stableEggsToIncubationAverage, 0);
                 $percentageSum = (float) ($group['percentage_sum'] ?? 0);
-                $numericCount = round((float) ($group['numeric_count_sum'] ?? 0), 0);
+                $numericCount = round(($percentageSum / 100) * $avgEggs, 0);
 
                 return [
                     'morph_name' => (string) ($group['morph_name'] ?? '-'),
@@ -1152,7 +1147,8 @@ class GetLitterPlanningPageQuery
     private function getStableEggsToIncubationAverage(): float
     {
         $average = Litter::query()
-            ->whereIn('category', [1, 4])
+            ->whereIn('category', [1, 2, 4])
+            ->whereNotNull('laying_date')
             ->whereNotNull('laying_eggs_ok')
             ->where('laying_eggs_ok', '>', 0)
             ->avg('laying_eggs_ok');
