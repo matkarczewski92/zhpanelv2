@@ -227,6 +227,11 @@
                         </a>
                     </li>
                     <li>
+                        <a class="dropdown-item" href="{{ route('admin.labels.litters.print') }}">
+                            Drukowanie etykiet - mioty
+                        </a>
+                    </li>
+                    <li>
                         <a class="dropdown-item" href="{{ route('admin.labels.secret.print') }}">
                             Etykiety (sekret)
                         </a>
@@ -364,6 +369,9 @@
             </a>
             <a class="nav-link" href="{{ route('admin.labels.print') }}">
                 Drukowanie etykiet
+            </a>
+            <a class="nav-link" href="{{ route('admin.labels.litters.print') }}">
+                Drukowanie etykiet - mioty
             </a>
             <a class="nav-link" href="{{ route('admin.labels.secret.print') }}">
                 Etykiety (sekret)
