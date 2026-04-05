@@ -2,6 +2,7 @@
 
 namespace App\Application\Litters\Queries;
 
+use App\Application\Litters\Support\IncubationTimelineBuilder;
 use App\Application\Litters\Support\LitterStatusResolver;
 use App\Application\Litters\Support\LitterTimelineCalculator;
 use App\Application\Litters\ViewModels\LitterShowViewModel;
@@ -17,6 +18,7 @@ class GetLitterShowQuery
     public function __construct(
         private readonly LitterStatusResolver $statusResolver,
         private readonly LitterTimelineCalculator $timelineCalculator,
+        private readonly IncubationTimelineBuilder $incubationTimelineBuilder,
         private readonly GenotypeCalculator $genotypeCalculator,
     ) {
     }
@@ -78,6 +80,7 @@ class GetLitterShowQuery
             ->all();
 
         $plannedOffspring = $this->buildPlannedOffspringRows($litter);
+        $incubationTimeline = $this->incubationTimelineBuilder->buildActiveBoardForLitter($litter);
 
         $soldRows = collect($offspring)
             ->filter(fn (array $row) => $row['is_sold'])
@@ -159,6 +162,7 @@ class GetLitterShowQuery
                 'estimated_laying_date' => $estimatedLayingDate?->format('Y-m-d'),
                 'estimated_hatching_date' => $estimatedHatchingDate?->format('Y-m-d'),
                 'planning' => $planning,
+                'incubation' => $incubationTimeline,
             ],
         );
     }

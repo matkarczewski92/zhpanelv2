@@ -8,6 +8,7 @@
         $sales = $page->salesSummary;
         $timeline = $page->timeline;
         $planning = $timeline['planning'] ?? [];
+        $incubationTimeline = $timeline['incubation'] ?? ['visible' => false];
         $galleryPhotos = $litter['gallery_photos'] ?? [];
         $maleAvatar = $litter['parent_male']['avatar_url'] ?? null;
         $femaleAvatar = $litter['parent_female']['avatar_url'] ?? null;
@@ -90,6 +91,22 @@
             </div>
         </div>
     </div>
+
+    @if (!empty($incubationTimeline['visible']))
+        <div class="glass-card mb-3 pregnancy-timeline-card" style="position: relative; z-index: 2;">
+            <div class="card-header d-flex justify-content-between align-items-center gap-2">
+                <div class="strike flex-grow-1"><span>Inkubacja</span></div>
+                @if (\Illuminate\Support\Facades\Route::has('panel.incubation.index'))
+                    <a href="{{ route('panel.incubation.index') }}" class="btn btn-outline-light btn-sm">Widok inkubacji</a>
+                @endif
+            </div>
+            <div class="card-body">
+                @include('panel.litters.partials.incubation-timeline-items', [
+                    'timeline' => $incubationTimeline,
+                ])
+            </div>
+        </div>
+    @endif
 
     <div class="row g-3 mb-3">
         <div class="col-12 col-xl-8">
@@ -609,6 +626,13 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+                bootstrap.Tooltip.getOrCreateInstance(el, {
+                    container: 'body',
+                    trigger: 'hover focus',
+                });
+            });
+
             const sourceField = document.getElementById('planningSourceField');
             const planningForm = document.getElementById('litterPlanningForm');
             if (!sourceField) return;

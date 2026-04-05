@@ -41,6 +41,7 @@
     $navbarSearchQuery = trim((string) request()->query('q', ''));
     $isMaintenanceMode = app()->maintenanceMode()->active();
     $hasPregnanciesRoute = \Illuminate\Support\Facades\Route::has('panel.pregnancies.index');
+    $hasIncubationRoute = \Illuminate\Support\Facades\Route::has('panel.incubation.index');
     $hasQrScannerRoute = \Illuminate\Support\Facades\Route::has('panel.qr-scanner.index');
     $hasHomepageGalleryRoute = \Illuminate\Support\Facades\Route::has('admin.homepage-gallery.index');
     $hasReportsRoute = \Illuminate\Support\Facades\Route::has('admin.reports.index');
@@ -128,6 +129,11 @@
                 @if ($hasPregnanciesRoute)
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('panel.pregnancies.*') ? 'active' : '' }}" href="{{ route('panel.pregnancies.index') }}">Ciaze</a>
+                    </li>
+                @endif
+                @if ($hasIncubationRoute)
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('panel.incubation.*') ? 'active' : '' }}" href="{{ route('panel.incubation.index') }}">Inkubacja</a>
                     </li>
                 @endif
                 @if ($hasQrScannerRoute)
@@ -341,6 +347,14 @@
                     href="{{ route('panel.pregnancies.index') }}"
                 >
                     Ciaze
+                </a>
+            @endif
+            @if ($hasIncubationRoute)
+                <a
+                    class="nav-link {{ request()->routeIs('panel.incubation.*') ? 'active' : '' }}"
+                    href="{{ route('panel.incubation.index') }}"
+                >
+                    Inkubacja
                 </a>
             @endif
             @if ($hasQrScannerRoute)
