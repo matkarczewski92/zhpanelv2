@@ -174,6 +174,12 @@ class GetLitterShowQuery
             return [];
         }
 
+        $eggsToIncubation = (int) ($litter->laying_eggs_ok ?? 0);
+        $usesAverageEggs = $eggsToIncubation <= 0;
+        $eggsBase = $usesAverageEggs
+            ? $this->getStableEggsToIncubationAverage()
+            : (float) $eggsToIncubation;
+
         $dictionary = AnimalGenotypeCategory::query()
             ->get(['gene_code', 'name', 'gene_type'])
             ->map(fn (AnimalGenotypeCategory $gene): array => [
@@ -197,16 +203,34 @@ class GetLitterShowQuery
         return collect($rows)
             ->sortByDesc('percentage')
             ->values()
-            ->map(function (array $row): array {
+            ->map(function (array $row) use ($eggsBase, $usesAverageEggs): array {
+                $percentage = (float) ($row['percentage'] ?? 0);
+                $quantity = round(($percentage / 100) * $eggsBase, 0);
+
                 return [
-                    'percentage' => (float) ($row['percentage'] ?? 0),
+                    'percentage' => $percentage,
                     'traits_name' => trim((string) ($row['traits_name'] ?? '')),
                     'traits_count' => (int) ($row['traits_count'] ?? 0),
+                    'quantity' => $quantity,
+                    'quantity_label' => number_format($quantity, 0, ',', ' '),
+                    'quantity_is_estimated' => $usesAverageEggs,
                     'visual_traits' => array_values((array) ($row['visual_traits'] ?? [])),
                     'carrier_traits' => $this->sortCarrierTraitsForDisplay(array_values((array) ($row['carrier_traits'] ?? []))),
                 ];
             })
             ->all();
+    }
+
+    private function getStableEggsToIncubationAverage(): float
+    {
+        $average = Litter::query()
+            ->whereIn('category', [1, 2, 4])
+            ->whereNotNull('laying_date')
+            ->whereNotNull('laying_eggs_ok')
+            ->where('laying_eggs_ok', '>', 0)
+            ->avg('laying_eggs_ok');
+
+        return is_numeric($average) ? round((float) $average, 0) : 0.0;
     }
 
     /**
