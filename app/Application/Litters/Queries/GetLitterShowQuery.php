@@ -174,7 +174,9 @@ class GetLitterShowQuery
             return [];
         }
 
-        $averageEggsToIncubation = $this->getStableEggsToIncubationAverage();
+        $eggsToIncubationBase = $litter->laying_eggs_ok !== null
+            ? (float) $litter->laying_eggs_ok
+            : $this->getStableEggsToIncubationAverage();
 
         $dictionary = AnimalGenotypeCategory::query()
             ->get(['gene_code', 'name', 'gene_type'])
@@ -199,14 +201,14 @@ class GetLitterShowQuery
         return collect($rows)
             ->sortByDesc('percentage')
             ->values()
-            ->map(function (array $row) use ($averageEggsToIncubation): array {
+            ->map(function (array $row) use ($eggsToIncubationBase): array {
                 $percentage = (float) ($row['percentage'] ?? 0);
 
                 return [
                     'percentage' => $percentage,
                     'traits_name' => trim((string) ($row['traits_name'] ?? '')),
                     'traits_count' => (int) ($row['traits_count'] ?? 0),
-                    'quantity' => (int) round(($averageEggsToIncubation * $percentage) / 100, 0),
+                    'quantity' => (int) round(($eggsToIncubationBase * $percentage) / 100, 0),
                     'visual_traits' => array_values((array) ($row['visual_traits'] ?? [])),
                     'carrier_traits' => $this->sortCarrierTraitsForDisplay(array_values((array) ($row['carrier_traits'] ?? []))),
                 ];
