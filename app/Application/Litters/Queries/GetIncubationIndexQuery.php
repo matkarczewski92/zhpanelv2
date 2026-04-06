@@ -93,12 +93,11 @@ class GetIncubationIndexQuery
         }
 
         $snapshot = $this->ewelinkDeviceDataFormatter->formatForDevice($device);
-        $switchState = strtolower(trim((string) ($snapshot['switch'] ?? '')));
+        $onlineState = strtolower(trim((string) ($snapshot['online'] ?? '')));
 
-        [$statusLabel, $statusIcon, $statusClass] = match ($switchState) {
-            'on' => ['Wlaczony', 'bi-toggle-on', 'text-success'],
-            'off' => ['Wylaczony', 'bi-toggle-off', 'text-danger'],
-            'mixed' => ['Stan mieszany', 'bi-exclamation-triangle', 'text-warning'],
+        [$statusLabel, $statusIcon, $statusClass] = match ($onlineState) {
+            'online' => ['online', 'bi-wifi', 'text-success'],
+            'offline' => ['offline', 'bi-wifi-off', 'text-danger'],
             default => ['Brak danych', 'bi-question-circle', 'text-muted'],
         };
 

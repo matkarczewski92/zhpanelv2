@@ -22,7 +22,7 @@
                 <div class="small text-muted text-uppercase">Inkubator</div>
                 @if (!empty($incubator['found']))
                     <div class="fw-semibold">{{ $incubator['device_name'] }}</div>
-                    <div class="small text-muted">Online: {{ $incubator['online'] }} | Ostatnia synchronizacja: {{ $incubator['last_synced_at'] }}</div>
+                    <div class="small text-muted">Ostatnia synchronizacja: {{ $incubator['last_synced_at'] }}</div>
                 @else
                     <div class="fw-semibold">{{ $incubator['message'] ?? 'Brak danych inkubatora.' }}</div>
                 @endif
@@ -33,7 +33,7 @@
                     <div class="incubation-status-metric">
                         <i class="bi {{ $incubator['status_icon'] ?? 'bi-question-circle' }} incubation-status-icon {{ $incubator['status_class'] ?? 'text-muted' }}"></i>
                         <div>
-                            <div class="small text-muted">Stan</div>
+                            <div class="small text-muted">Status</div>
                             <div class="fw-semibold {{ $incubator['status_class'] ?? 'text-muted' }}">{{ $incubator['status_label'] ?? '-' }}</div>
                         </div>
                     </div>
