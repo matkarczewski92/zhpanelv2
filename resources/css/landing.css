@@ -147,6 +147,20 @@
     max-width: 90vw;
 }
 
+.landing-filter-group {
+    margin-bottom: 0.75rem;
+}
+
+.landing-filter-label {
+    margin-bottom: 0.5rem;
+    text-align: center;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+}
+
 .landing-offer-card {
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(18, 23, 31, 0.78);

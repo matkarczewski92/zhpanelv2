@@ -101,15 +101,18 @@
         <section class="landing-section landing-offer-section">
             <div class="container landing-offer-container">
                 <h2 class="landing-section-title">NADWYŻKI HODOWLANE</h2>
-                <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-                    <button type="button" class="btn btn-outline-light btn-sm landing-type-filter is-active" data-offer-type="all">
-                        Wszystkie typy
-                    </button>
-                    @foreach ($offerGroups as $group)
-                        <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-type="{{ $group['type_id'] }}">
-                            {{ $group['type_name'] }}
+                <div class="landing-filter-group">
+                    <div class="landing-filter-label">Gatunek</div>
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                        <button type="button" class="btn btn-outline-light btn-sm landing-type-filter is-active" data-offer-type="all">
+                            Wszystkie gatunki
                         </button>
-                    @endforeach
+                        @foreach ($offerGroups as $group)
+                            <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-type="{{ $group['type_id'] }}">
+                                {{ $group['type_name'] }}
+                            </button>
+                        @endforeach
+                    </div>
                 </div>
                 @if (count($offerColorGroups))
                     @php
@@ -117,21 +120,27 @@
                         $secondaryColorGroups = collect($offerColorGroups)->filter(fn ($group) => (int) ($group['sort_order'] ?? 0) > 90)->values()->all();
                     @endphp
                     @if (count($primaryColorGroups))
-                        <div class="d-flex flex-wrap justify-content-center gap-2 mb-2">
-                            @foreach ($primaryColorGroups as $group)
-                                <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-color="{{ $group['id'] }}">
-                                    {{ $group['name'] }}
-                                </button>
-                            @endforeach
+                        <div class="landing-filter-group">
+                            <div class="landing-filter-label">Grupa kolorystyczna</div>
+                            <div class="d-flex flex-wrap justify-content-center gap-2 mb-2">
+                                @foreach ($primaryColorGroups as $group)
+                                    <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-color="{{ $group['id'] }}">
+                                        {{ $group['name'] }}
+                                    </button>
+                                @endforeach
+                            </div>
                         </div>
                     @endif
                     @if (count($secondaryColorGroups))
-                        <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-                            @foreach ($secondaryColorGroups as $group)
-                                <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-color="{{ $group['id'] }}">
-                                    {{ $group['name'] }}
-                                </button>
-                            @endforeach
+                        <div class="landing-filter-group">
+                            <div class="landing-filter-label">Typ wzoru</div>
+                            <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                                @foreach ($secondaryColorGroups as $group)
+                                    <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-color="{{ $group['id'] }}">
+                                        {{ $group['name'] }}
+                                    </button>
+                                @endforeach
+                            </div>
                         </div>
                     @endif
                 @endif
