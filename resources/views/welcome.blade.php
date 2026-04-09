@@ -148,7 +148,7 @@
                         <div class="row g-3">
                             @foreach ($group['offers'] as $offer)
                                 <div
-                                    class="col-12 col-md-6 col-xl-3 landing-offer-card-wrap"
+                                    class="col-12 col-md-6 col-lg-4 landing-offer-card-wrap"
                                     data-offer-type-item="{{ $group['type_id'] }}"
                                     data-offer-colors="{{ implode(',', $offer['color_group_ids'] ?? []) }}"
                                 >
