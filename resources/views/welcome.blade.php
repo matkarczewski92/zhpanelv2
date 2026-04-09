@@ -98,8 +98,8 @@
             </div>
         </section>
 
-        <section class="landing-section">
-            <div class="container">
+        <section class="landing-section landing-offer-section">
+            <div class="container landing-offer-container">
                 <h2 class="landing-section-title">NADWYŻKI HODOWLANE</h2>
                 <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
                     <button type="button" class="btn btn-outline-light btn-sm landing-type-filter is-active" data-offer-type="all">
