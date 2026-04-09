@@ -124,7 +124,7 @@
                             <div class="landing-filter-label">Grupa kolorystyczna</div>
                             <div class="d-flex flex-wrap justify-content-center gap-2 mb-2">
                                 @foreach ($primaryColorGroups as $group)
-                                    <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-color="{{ $group['id'] }}">
+                                    <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-primary-color="{{ $group['id'] }}">
                                         {{ $group['name'] }}
                                     </button>
                                 @endforeach
@@ -136,7 +136,7 @@
                             <div class="landing-filter-label">Typ wzoru</div>
                             <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
                                 @foreach ($secondaryColorGroups as $group)
-                                    <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-color="{{ $group['id'] }}">
+                                    <button type="button" class="btn btn-outline-light btn-sm landing-type-filter" data-offer-pattern="{{ $group['id'] }}">
                                         {{ $group['name'] }}
                                     </button>
                                 @endforeach
@@ -301,7 +301,8 @@
             const cards = document.querySelectorAll('.landing-offer-card-wrap');
 
             let selectedType = 'all';
-            const selectedColors = new Set();
+            const selectedPrimaryColors = new Set();
+            const selectedPatterns = new Set();
 
             const applyOfferFilters = () => {
                 cards.forEach((card) => {
@@ -310,10 +311,12 @@
                     const cardColors = rawColors === '' ? [] : rawColors.split(',').filter(Boolean);
 
                     const typeMatch = selectedType === 'all' || selectedType === cardType;
-                    const colorMatch = selectedColors.size === 0
-                        || Array.from(selectedColors).every((id) => cardColors.includes(id));
+                    const primaryColorMatch = selectedPrimaryColors.size === 0
+                        || Array.from(selectedPrimaryColors).some((id) => cardColors.includes(id));
+                    const patternMatch = selectedPatterns.size === 0
+                        || Array.from(selectedPatterns).some((id) => cardColors.includes(id));
 
-                    card.classList.toggle('d-none', !(typeMatch && colorMatch));
+                    card.classList.toggle('d-none', !(typeMatch && primaryColorMatch && patternMatch));
                 });
 
                 groups.forEach((group) => {
@@ -325,7 +328,8 @@
             filterButtons.forEach((button) => {
                 button.addEventListener('click', () => {
                     const typeValue = button.getAttribute('data-offer-type');
-                    const colorValue = button.getAttribute('data-offer-color');
+                    const primaryColorValue = button.getAttribute('data-offer-primary-color');
+                    const patternValue = button.getAttribute('data-offer-pattern');
 
                     if (typeValue !== null) {
                         selectedType = typeValue;
@@ -333,12 +337,22 @@
                         button.classList.add('is-active');
                     }
 
-                    if (colorValue !== null) {
-                        if (selectedColors.has(colorValue)) {
-                            selectedColors.delete(colorValue);
+                    if (primaryColorValue !== null) {
+                        if (selectedPrimaryColors.has(primaryColorValue)) {
+                            selectedPrimaryColors.delete(primaryColorValue);
                             button.classList.remove('is-active');
                         } else {
-                            selectedColors.add(colorValue);
+                            selectedPrimaryColors.add(primaryColorValue);
+                            button.classList.add('is-active');
+                        }
+                    }
+
+                    if (patternValue !== null) {
+                        if (selectedPatterns.has(patternValue)) {
+                            selectedPatterns.delete(patternValue);
+                            button.classList.remove('is-active');
+                        } else {
+                            selectedPatterns.add(patternValue);
                             button.classList.add('is-active');
                         }
                     }
