@@ -179,7 +179,7 @@
 
                 <div class="col-lg-3">
                     <div class="card cardopacity mb-3">
-                        <div class="card-header">Oferta</div>
+                        <div class="card-header">Dostępność</div>
                         <div class="card-body">
                             <div class="d-flex flex-column gap-2">
                                 <div><span class="text-muted">Wartość hodowlana:</span> <span class="fw-semibold">{{ $profile->offerValue ?? '-' }}</span></div>
