@@ -9,7 +9,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="panel-body">
-    <div class="public-brand-strip" style=" margin-top:-25px">
+    <div class="public-brand-strip">
         <div class="panel-container-wide public-brand-strip__inner">
             <img src="{{ asset('src/logo_black.png') }}" alt="Logo MaksSnake" class="public-brand-strip__logo" />
             <span class="public-brand-strip__title">Hodowla Gadów MaksSnake</span>
@@ -20,7 +20,7 @@
 
     <div class="panel-content animal-profile">
         <div class="panel-container-wide">
-            <div class="profile-header-wrap mb-3" style="margin-top: -110px">
+            <div class="profile-header-wrap mb-3">
                 <div class="card cardopacity profile-header">
                     <div class="card-body d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3">
                         <div class="profile-avatar">
