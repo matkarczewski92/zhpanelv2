@@ -1,40 +1,40 @@
 # ZH Panel v2
 
-ZH Panel v2 to aplikacja Laravel 12 do zarzadzania hodowla: ewidencja zwierzat, karmien, wag, wylinek, miotow, ofert sprzedazowych, finansow oraz procesow takich jak zimowanie, inkubacja i planowanie rozrodu. Repozytorium zawiera panel operacyjny, sekcje administracyjna, publiczne profile oraz read-only API.
+ZH Panel v2 to aplikacja Laravel 12 do zarządzania hodowlą: ewidencją zwierząt, karmień, wag, wylinek, miotów, ofert sprzedażowych, finansów oraz procesów takich jak zimowanie, inkubacja i planowanie rozrodu. Repozytorium zawiera panel operacyjny, sekcję administracyjną, publiczne profile oraz read-only API.
 
-## Co znajduje sie w projekcie
+## Co znajduje się w projekcie
 
 ### Panel operacyjny (`/panel`)
 
-- zarzadzanie zwierzetami, genotypami, grupami kolorystycznymi i galeriami
-- rejestrowanie karmien, wag, wylinek i zrzutow ciazowych
-- obsluga ofert, rezerwacji, paszportow i etykiet
-- planowanie miotow, predykcja potomstwa i roadmapy hodowlane
-- widoki ciaz, inkubacji i zimowania
-- planowanie karmy i przyjec dostaw
+- zarządzanie zwierzętami, genotypami, grupami kolorystycznymi i galeriami
+- rejestrowanie karmień, wag, wylinek i zrzutów ciążowych
+- obsługa ofert, rezerwacji, paszportów i etykiet
+- planowanie miotów, predykcja potomstwa i roadmapy hodowlane
+- widoki ciąż, inkubacji i zimowania
+- planowanie karmy i przyjęć dostaw
 - finanse, masowe operacje i szybkie wyszukiwanie
-- workflow QR do szybkiego zapisu karmien, wag i wylinek
-- obsluga urzadzen eWeLink oraz harmonogramow
+- workflow QR do szybkiego zapisu karmień, wag i wylinek
+- obsługa urządzeń eWeLink oraz harmonogramów
 
 ### Admin (`/admin`)
 
-- slowniki i konfiguracja systemu
-- typy i kategorie zwierzat
-- kategorie genotypow, cechy i slownik genow
-- etapy zimowania, pasze, kategorie finansowe i grupy kolorow
+- słowniki i konfiguracja systemu
+- typy i kategorie zwierząt
+- kategorie genotypów, cechy i słownik genów
+- etapy zimowania, pasze, kategorie finansowe i grupy kolorów
 - generator konfiguracji genetyki
-- synchronizacja urzadzen eWeLink
-- import/eksport ustawien
-- raporty, listy wysylkowe, cenniki i etykiety
-- zarzadzanie galeria strony glownej
-- opcjonalny modul aktualizacji portalu
+- synchronizacja urządzeń eWeLink
+- import/eksport ustawień
+- raporty, listy wysyłkowe, cenniki i etykiety
+- zarządzanie galerią strony głównej
+- opcjonalny moduł aktualizacji portalu
 
 ### Public + API
 
 - landing page i wyszukiwanie publicznego profilu po kodzie
-- publiczne profile zwierzat z historiami wag i wylinek
+- publiczne profile zwierząt z historiami wag i wylinek
 - `GET /api/offers/current` z aktualnymi ofertami
-- `GET /api/animals/{secret_tag}` zabezpieczone naglowkiem `X-API-KEY`
+- `GET /api/animals/{secret_tag}` zabezpieczone nagłówkiem `X-API-KEY`
 
 ## Stack technologiczny
 
@@ -44,20 +44,20 @@ ZH Panel v2 to aplikacja Laravel 12 do zarzadzania hodowla: ewidencja zwierzat, 
 - Bootstrap 5 + Bootstrap Icons
 - SQLite do szybkiego local dev
 - MySQL/MariaDB do importu danych legacy
-- `barryvdh/laravel-dompdf` do PDF-ow
-- `intervention/image` do obslugi obrazow
+- `barryvdh/laravel-dompdf` do PDF-ów
+- `intervention/image` do obsługi obrazów
 
 ## Architektura
 
-Projekt nie jest "czystym CRUD-em" na kontrolerach. Logika biznesowa jest rozdzielona zgodnie z podejsciem Service Layer / Application Layer:
+Projekt nie jest "czystym CRUD-em" na kontrolerach. Logika biznesowa jest rozdzielona zgodnie z podejściem Service Layer / Application Layer:
 
 - `app/Application` - komendy i zapytania use-case
-- `app/Domain` - kontrakty repozytoriow, zdarzenia i logika domenowa
+- `app/Domain` - kontrakty repozytoriów, zdarzenia i logika domenowa
 - `app/Infrastructure/Persistence` - implementacje odczytu/zapisu
 - `app/Http/Controllers` - cienkie kontrolery HTTP
-- `routes/panel` i `routes/admin` - routing rozdzielony per obszar odpowiedzialnosci
+- `routes/panel` i `routes/admin` - routing rozdzielony per obszar odpowiedzialności
 
-W repo sa tez materialy pomocnicze dla deweloperow:
+W repo są też materiały pomocnicze dla deweloperów:
 
 - `docs/CODEX_PLAYBOOK.md` - zasady architektury
 - `docs/DB_RELATIONSHIPS.md` - mapa relacji i FK
@@ -67,22 +67,22 @@ W repo sa tez materialy pomocnicze dla deweloperow:
 
 ## Szybki start
 
-### 1. Instalacja zaleznosci
+### 1. Instalacja zależności
 
 ```bash
 composer install
 npm install
 ```
 
-### 2. Konfiguracja srodowiska
+### 2. Konfiguracja środowiska
 
-Skopiuj `.env.example` do `.env`, a nastepnie wygeneruj klucz aplikacji:
+Skopiuj `.env.example` do `.env`, a następnie wygeneruj klucz aplikacji:
 
 ```bash
 php artisan key:generate
 ```
 
-Repo zawiera juz plik `database/database.sqlite`, a domyslne `.env.example` korzysta z SQLite, wiec do pierwszego uruchomienia nie trzeba od razu stawiac MySQL.
+Repo zawiera już plik `database/database.sqlite`, a domyślne `.env.example` korzysta z SQLite, więc do pierwszego uruchomienia nie trzeba od razu stawiać MySQL.
 
 ### 3. Migracje
 
@@ -96,26 +96,26 @@ php artisan migrate
 npm run build
 ```
 
-W trybie developerskim mozesz zamiast tego uruchomic Vite watcher:
+W trybie developerskim możesz zamiast tego uruchomić Vite watcher:
 
 ```bash
 npm run dev
 ```
 
-### 5. Pierwszy uzytkownik
+### 5. Pierwszy użytkownik
 
-Projekt ma tylko logowanie, bez publicznej rejestracji. Po czystej migracji utworz konto recznie, np. przez Tinker:
+Projekt ma tylko logowanie, bez publicznej rejestracji. Po czystej migracji utwórz konto ręcznie, np. przez Tinker:
 
-```php
+```text
 php artisan tinker
-App\Models\User::create([
-    'name' => 'Admin',
-    'email' => 'admin@example.com',
-    'password' => 'secret1234',
-]);
+>>> App\Models\User::create([
+...     'name' => 'Admin',
+...     'email' => 'admin@example.com',
+...     'password' => 'secret1234',
+... ]);
 ```
 
-Haslo zostanie zahashowane automatycznie przez model `User`.
+Hasło zostanie zahashowane automatycznie przez model `User`.
 
 ### 6. Start aplikacji
 
@@ -125,11 +125,11 @@ Najwygodniejsza komenda developerska:
 composer run dev
 ```
 
-Ten skrypt uruchamia jednoczesnie:
+Ten skrypt uruchamia jednocześnie:
 
 - serwer Laravel
 - listener kolejki
-- podglad logow przez Laravel Pail
+- podgląd logów przez Laravel Pail
 - Vite dev server
 
 Po starcie:
@@ -141,17 +141,17 @@ Po starcie:
 
 ## Dane demo / import legacy
 
-Seeder `DatabaseSeeder` laduje duzy zestaw danych legacy przez `ZhpanelSqlSeeder` oraz konfiguracje API. To przydatne do lokalnego odtworzenia starego stanu systemu, ale trzeba uwazac na dwa ograniczenia:
+Seeder `DatabaseSeeder` ładuje duży zestaw danych legacy przez `ZhpanelSqlSeeder` oraz konfigurację API. To przydatne do lokalnego odtworzenia starego stanu systemu, ale trzeba uważać na dwa ograniczenia:
 
-- seeder czysci wiele tabel przed importem
-- seeder uzywa skladni specyficznej dla MySQL (`SET FOREIGN_KEY_CHECKS`, `TRUNCATE TABLE`, surowe inserty)
+- seeder czyści wiele tabel przed importem
+- seeder używa składni specyficznej dla MySQL (`SET FOREIGN_KEY_CHECKS`, `TRUNCATE TABLE`, surowe inserty)
 
-To oznacza, ze:
+To oznacza, że:
 
-- pusty local dev mozesz odpalic na SQLite
-- seedowanie danych legacy powinno byc robione na MySQL/MariaDB
+- pusty local dev możesz odpalić na SQLite
+- seedowanie danych legacy powinno być robione na MySQL/MariaDB
 
-Przykladowy przebieg dla danych legacy:
+Przykładowy przebieg dla danych legacy:
 
 ```bash
 php artisan migrate:fresh --seed
@@ -168,7 +168,7 @@ php artisan db:seed
 php artisan storage:link
 ```
 
-`composer run setup` instaluje zaleznosci, kopiuje `.env`, generuje klucz, wykonuje migracje i buduje frontend. Przy pracy z domyslnym SQLite powinien dzialac od razu, bo repo zawiera `database/database.sqlite`.
+`composer run setup` instaluje zależności, kopiuje `.env`, generuje klucz, wykonuje migracje i buduje frontend. Przy pracy z domyślnym SQLite powinien działać od razu, bo repo zawiera `database/database.sqlite`.
 
 ## API
 
@@ -178,9 +178,9 @@ php artisan storage:link
 GET /api/offers/current
 ```
 
-Publiczny endpoint zwracajacy aktualne oferty.
+Publiczny endpoint zwracający aktualne oferty.
 
-### Profil zwierzecia po `secret_tag`
+### Profil zwierzęcia po `secret_tag`
 
 ```http
 GET /api/animals/{secret_tag}
@@ -189,11 +189,11 @@ X-API-KEY: <token>
 
 Wymagania:
 
-- naglowek `X-API-KEY`
+- nagłówek `X-API-KEY`
 - limitowanie `throttle:30,1`
 - token trzymany w `system_config` pod kluczem `apiDziennik`
 
-Przykladowe wywolanie:
+Przykładowe wywołanie:
 
 ```bash
 curl -X GET "http://127.0.0.1:8000/api/animals/A7K2P9" \
@@ -201,11 +201,11 @@ curl -X GET "http://127.0.0.1:8000/api/animals/A7K2P9" \
   -H "X-API-KEY: TWOJ_TOKEN"
 ```
 
-Szczegoly formatu odpowiedzi sa opisane w `docs/apiInstrukcja.txt`.
+Szczegóły formatu odpowiedzi są opisane w `docs/apiInstrukcja.txt`.
 
 ## Testy
 
-Testy skupiaja sie glownie na warstwie `Application` i logice biznesowej:
+Testy skupiają się głównie na warstwie `Application` i logice biznesowej:
 
 ```bash
 php artisan test
@@ -214,18 +214,18 @@ php artisan test
 W repo znajdziesz m.in. testy dla:
 
 - dashboardu
-- planowania miotow
+- planowania miotów
 - workflow karmy
-- komend zwiazanych z wagami, wylinkami i zimowaniem
-- eksportu etykiet i raportow admina
+- komend związanych z wagami, wylinkami i zimowaniem
+- eksportu etykiet i raportów admina
 
 ## Uwagi implementacyjne
 
-- schemat danych jest legacy i trzeba go traktowac jako zrodlo prawdy
-- routing jest juz rozdzielony na `panel` i `admin`
+- schemat danych jest legacy i trzeba go traktować jako źródło prawdy
+- routing jest już rozdzielony na `panel` i `admin`
 - projekt nie korzysta z Livewire
-- funkcje aktualizacji portalu sa kontrolowane przez zmienne `PORTAL_UPDATE_*`
-- integracja z eWeLink wymaga uzupelnienia zmiennych `EWELINK_CLOUD_*`
+- funkcje aktualizacji portalu są kontrolowane przez zmienne `PORTAL_UPDATE_*`
+- integracja z eWeLink wymaga uzupełnienia zmiennych `EWELINK_CLOUD_*`
 
 ## Struktura repozytorium
 
@@ -246,12 +246,3 @@ routes/
 tests/
 ```
 
-## Dla GitHuba
-
-Jesli repo ma byc publiczne, warto przed publikacja przejrzec:
-
-- czy w danych seedujacych nie ma wrazliwych tokenow testowych
-- czy `.env` nie trafia do repo
-- czy opis projektu ma pozostac po polsku, czy potrzebna jest wersja angielska
-
-Obecna wersja README jest nastawiona na szybkie wdrozenie dewelopera w projekt i realny sposob uruchomienia aplikacji.
