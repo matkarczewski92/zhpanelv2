@@ -6,11 +6,21 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>{{ $vm->title }} - lista zwierząt (kategorie 1,2,4)</span>
-            <form id="adminLabelForm" method="POST" action="{{ $vm->exportUrl }}">
-                @csrf
-                <input type="hidden" name="animal_ids" id="adminAnimalIds" />
-                <button type="button" class="btn btn-outline-primary btn-sm" id="adminExportBtn">Eksportuj wybrane etykiety</button>
-            </form>
+            <div class="d-flex flex-wrap justify-content-end gap-2">
+                <form id="adminLabelForm" method="POST" action="{{ $vm->exportUrl }}">
+                    @csrf
+                    <input type="hidden" name="animal_ids" id="adminAnimalIds" />
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="adminExportBtn">Eksportuj wybrane etykiety</button>
+                </form>
+                <form method="POST" action="{{ route('admin.labels.secret-tags.generate') }}">
+                    @csrf
+                    <button
+                        type="submit"
+                        class="btn btn-outline-warning btn-sm"
+                        onclick="return confirm('Wygenerować Secret Tag dla wszystkich zwierząt, które jeszcze go nie mają?');"
+                    >Generuj Secret Tag</button>
+                </form>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">

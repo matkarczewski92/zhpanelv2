@@ -14,7 +14,7 @@ class RegisterAnimalCommandTest extends TestCase
     {
         parent::setUp();
 
-        if (!in_array('sqlite', \PDO::getAvailableDrivers(), true)) {
+        if (! in_array('sqlite', \PDO::getAvailableDrivers(), true)) {
             $this->markTestSkipped('Test requires pdo_sqlite extension.');
         }
 
@@ -23,7 +23,7 @@ class RegisterAnimalCommandTest extends TestCase
 
     public function test_defaults_feed_quantity_to_one_when_not_provided(): void
     {
-        $command = new RegisterAnimalCommand(new SecretTagGenerator());
+        $command = new RegisterAnimalCommand(new SecretTagGenerator);
 
         $animal = $command->handle([
             'name' => 'Test snake',
@@ -37,6 +37,7 @@ class RegisterAnimalCommandTest extends TestCase
         ]);
 
         $this->assertSame(1, (int) $animal->feed_quantity);
+        $this->assertMatchesRegularExpression('/^[A-HJ-NP-Z2-9]{6}$/', (string) $animal->secret_tag);
         $this->assertDatabaseHas('animals', [
             'id' => $animal->id,
             'feed_quantity' => 1,

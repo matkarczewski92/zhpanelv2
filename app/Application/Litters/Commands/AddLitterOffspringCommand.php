@@ -2,6 +2,7 @@
 
 namespace App\Application\Litters\Commands;
 
+use App\Application\Animals\Services\SecretTagGenerator;
 use App\Domain\Events\LitterOffspringAdded;
 use App\Models\Animal;
 use App\Models\Litter;
@@ -10,6 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class AddLitterOffspringCommand
 {
+    public function __construct(
+        private readonly SecretTagGenerator $secretTagGenerator
+    ) {}
+
     public function handle(Litter $litter, int $amount): void
     {
         DB::transaction(function () use ($litter, $amount): void {
@@ -28,10 +33,11 @@ class AddLitterOffspringCommand
                 $animal = Animal::query()->create([
                     'animal_category_id' => 2,
                     'animal_type_id' => $animalTypeId,
-                    'name' => $litter->litter_code . ' - Waz nr ' . $sequence,
+                    'name' => $litter->litter_code.' - Waz nr '.$sequence,
                     'sex' => 1,
                     'date_of_birth' => $birthDate->format('Y-m-d'),
                     'litter_id' => $litter->id,
+                    'secret_tag' => $this->secretTagGenerator->generate(),
                 ]);
 
                 $animal->public_profile_tag = $this->buildPublicProfileTag($animal->id);
@@ -52,13 +58,14 @@ class AddLitterOffspringCommand
         }
 
         $femaleType = Animal::query()->whereKey($litter->parent_female)->value('animal_type_id');
+
         return $femaleType ? (int) $femaleType : null;
     }
 
     private function buildPublicProfileTag(int $animalId): string
     {
         $suffix = substr(bin2hex(random_bytes(4)), 0, 5);
-        return substr((string) $animalId . $suffix, 0, 16);
+
+        return substr((string) $animalId.$suffix, 0, 16);
     }
 }
-

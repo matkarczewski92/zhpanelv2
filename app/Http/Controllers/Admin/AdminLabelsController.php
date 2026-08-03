@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Application\Admin\Commands\GenerateMissingAnimalSecretTagsCommand;
+use App\Application\Admin\Queries\GetAdminLabelsQuery;
 use App\Application\Labels\LabelService;
 use App\Http\Controllers\Controller;
-use App\Application\Admin\Queries\GetAdminLabelsQuery;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class AdminLabelsController extends Controller
@@ -39,6 +41,23 @@ class AdminLabelsController extends Controller
         return $this->exportLabels($request, $labels, 'etykiety_secret_admin.csv');
     }
 
+    public function generateSecretTags(GenerateMissingAnimalSecretTagsCommand $command): RedirectResponse
+    {
+        $generated = $command->handle();
+
+        if ($generated === 0) {
+            return redirect()->back()->with('toast', [
+                'type' => 'info',
+                'message' => 'Wszystkie zwierzęta mają już Secret Tag.',
+            ]);
+        }
+
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'message' => "Wygenerowano Secret Tag dla {$generated} zwierząt.",
+        ]);
+    }
+
     private function exportLabels(Request $request, LabelService $labels, string $filename)
     {
         $ids = collect($request->input('animal_ids', []))
@@ -46,6 +65,7 @@ class AdminLabelsController extends Controller
                 if (is_string($v)) {
                     return array_filter(explode(',', $v));
                 }
+
                 return (array) $v;
             })
             ->map(fn ($v) => (int) $v)
