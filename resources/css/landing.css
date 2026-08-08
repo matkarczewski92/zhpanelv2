@@ -65,7 +65,6 @@
 }
 
 .landing-hero-offer { background-image: url('/images/landing/x1a.jpg'); }
-.landing-hero-plans { background-image: url('/images/landing/x7a.jpg'); }
 .landing-hero-profile { background-image: url('/images/landing/x4a.jpg'); }
 .landing-hero-about { background-image: url('/images/landing/x5a.jpg'); }
 .landing-hero-quote {
@@ -74,7 +73,6 @@
 }
 
 .landing-hero-offer,
-.landing-hero-plans,
 .landing-hero-profile,
 .landing-hero-about {
     min-height: 83vh; /* dodatkowe +25% */
@@ -82,7 +80,6 @@
 }
 
 .landing-hero-offer .landing-overlay,
-.landing-hero-plans .landing-overlay,
 .landing-hero-profile .landing-overlay,
 .landing-hero-about .landing-overlay,
 .landing-hero-quote .landing-overlay,
@@ -198,17 +195,6 @@
     background: rgba(25, 135, 84, 0.9);
     color: #fff;
     border-color: rgba(25, 135, 84, 1);
-}
-
-.landing-plan-list .list-group-item {
-    background: transparent;
-    border: 0 !important;
-    color: inherit;
-    box-shadow: none !important;
-}
-
-.landing-plan-list .list-group-item + .list-group-item {
-    border-top: 0 !important;
 }
 
 .landing-legal {

@@ -2,21 +2,15 @@
 
 namespace App\Application\Public\Queries;
 
-use App\Application\Litters\Support\LitterStatusResolver;
 use App\Application\Public\ViewModels\LandingPageViewModel;
 use App\Domain\Shared\Enums\Sex;
 use App\Models\Animal;
 use App\Models\AnimalOffer;
 use App\Models\AnimalPhotoGallery;
-use App\Models\Litter;
 use Illuminate\Support\Collection;
 
 class GetLandingPageQuery
 {
-    public function __construct(private readonly LitterStatusResolver $statusResolver)
-    {
-    }
-
     public function handle(): LandingPageViewModel
     {
         $gallery = AnimalPhotoGallery::query()
@@ -52,31 +46,10 @@ class GetLandingPageQuery
         $offerGroups = $this->buildOfferGroups($offers);
         $offerColorGroups = $this->buildOfferColorGroups($offers);
 
-        $actualYear = (int) now()->format('Y');
-        $breedingPlans = Litter::query()
-            ->with([
-                'maleParent:id,name',
-                'femaleParent:id,name',
-            ])
-            ->where('season', $actualYear)
-            ->where('litter_code', '!=', 'PLAN')
-            ->orderBy('category')
-            ->orderBy('id')
-            ->get(['id', 'litter_code', 'category', 'parent_male', 'parent_female', 'connection_date', 'laying_date', 'hatching_date'])
-            ->map(fn (Litter $litter): array => [
-                'id' => (int) $litter->id,
-                'title' => (string) ($litter->litter_code ?: ('Miot #' . $litter->id)),
-                'status_label' => $this->statusResolver->statusLabel($litter),
-                'male_name' => $this->formatNullableName($litter->maleParent?->name),
-                'female_name' => $this->formatNullableName($litter->femaleParent?->name),
-            ])
-            ->all();
-
         return new LandingPageViewModel(
             gallery: $gallery,
             offerGroups: $offerGroups,
             offerColorGroups: $offerColorGroups,
-            breedingPlans: $breedingPlans,
         );
     }
 
@@ -229,13 +202,6 @@ class GetLandingPageQuery
         $value = trim(strip_tags((string) $name, '<b><i><u>'));
 
         return $value !== '' ? $value : 'Bez nazwy';
-    }
-
-    private function formatNullableName(?string $name): ?string
-    {
-        $value = trim(strip_tags((string) $name));
-
-        return $value !== '' ? $value : null;
     }
 
     private function normalizeImageUrl(?string $url): string

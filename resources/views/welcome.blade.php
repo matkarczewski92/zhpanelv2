@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=0.7">
-    <meta name="description" content="Hodowla gadów MaksSnake - profile, oferta i plany hodowlane.">
+    <meta name="description" content="Hodowla gadów MaksSnake - profile i nadwyżki hodowlane.">
     <link rel="icon" type="image/png" href="{{ asset('src/logo_black.png') }}">
     <link rel="shortcut icon" href="{{ asset('src/logo_black.png') }}">
     <title>Hodowla Gadów MaksSnake</title>
@@ -14,7 +14,6 @@
         $gallery = $page->gallery ?? [];
         $offerGroups = $page->offerGroups ?? [];
         $offerColorGroups = $page->offerColorGroups ?? [];
-        $breedingPlans = $page->breedingPlans ?? [];
         $isMaintenanceMode = app()->maintenanceMode()->active();
     @endphp
 
@@ -34,7 +33,6 @@
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item"><a class="nav-link" href="#gallery">Galeria</a></li>
                         <li class="nav-item"><a class="nav-link" href="#offer">Nadwyżki hodowlane</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#plans">Plany hodowlane</a></li>
                         <li class="nav-item"><a class="nav-link" href="#profile">Profil węża</a></li>
                         <li class="nav-item"><a class="nav-link" href="#about-us">O nas</a></li>
                     </ul>
@@ -202,33 +200,6 @@
             </div>
         </section>
 
-        <section class="landing-hero landing-hero-plans" id="plans">
-            <div class="landing-overlay"></div>
-            <div class="container position-relative z-2 text-center">
-                <h2 class="display-6 fw-bold mb-0">Plany hodowlane</h2>
-            </div>
-        </section>
-
-        <section class="landing-section">
-            <div class="container">
-                <h2 class="landing-section-title">Plany hodowlane - projekty na bieżący rok</h2>
-                <div class="list-group landing-plan-list">
-                    @forelse ($breedingPlans as $plan)
-                        <div class="list-group-item">
-                            <div class="fw-semibold">{{ $plan['title'] }} <span class="text-light-emphasis">({{ $plan['status_label'] }})</span></div>
-                            @if ($plan['male_name'] || $plan['female_name'])
-                                <div class="small text-light-emphasis mt-1">
-                                    {{ $plan['male_name'] ?: 'Brak samca' }} x {{ $plan['female_name'] ?: 'Brak samicy' }}
-                                </div>
-                            @endif
-                        </div>
-                    @empty
-                        <div class="list-group-item text-light-emphasis">Brak planów hodowlanych na bieżący rok.</div>
-                    @endforelse
-                </div>
-            </div>
-        </section>
-
         <section class="landing-hero landing-hero-profile" id="profile">
             <div class="landing-overlay"></div>
             <div class="container position-relative z-2 text-center">
@@ -364,4 +335,3 @@
     </script>
 </body>
 </html>
-

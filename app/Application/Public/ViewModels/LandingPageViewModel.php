@@ -24,13 +24,11 @@ class LandingPageViewModel
      *     }>
      * }> $offerGroups
      * @param array<int, array{id:int, name:string, sort_order:int}> $offerColorGroups
-     * @param array<int, array{id:int, title:string, status_label:string, male_name:string|null, female_name:string|null}> $breedingPlans
      */
     public function __construct(
         public readonly array $gallery,
         public readonly array $offerGroups,
-        public readonly array $offerColorGroups,
-        public readonly array $breedingPlans
+        public readonly array $offerColorGroups
     ) {
     }
 }
