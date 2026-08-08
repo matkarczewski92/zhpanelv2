@@ -15,6 +15,8 @@ use Illuminate\Support\Str;
 
 class GetLitterShowQuery
 {
+    private const EXCLUDED_FEEDING_FEED_IDS = [9, 10];
+
     public function __construct(
         private readonly LitterStatusResolver $statusResolver,
         private readonly LitterTimelineCalculator $timelineCalculator,
@@ -47,7 +49,9 @@ class GetLitterShowQuery
                 'animalCategory:id,name',
                 'offers:id,animal_id,price,sold_date',
             ])
-            ->withCount('feedings')
+            ->withCount([
+                'feedings' => fn ($query) => $query->whereNotIn('feed_id', self::EXCLUDED_FEEDING_FEED_IDS),
+            ])
             ->withMax('weights', 'value')
             ->where('litter_id', $litter->id)
             ->orderBy('id')
