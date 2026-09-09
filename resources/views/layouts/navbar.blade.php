@@ -118,6 +118,9 @@
                     <a class="nav-link {{ request()->routeIs('panel.finances.*') ? 'active' : '' }}" href="{{ route('panel.finances.index') }}">Finanse</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('panel.young-animals.*') ? 'active' : '' }}" href="{{ route('panel.young-animals.index') }}">Maluchy</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('panel.offers.*') ? 'active' : '' }}" href="{{ route('panel.offers.index') }}">Oferty</a>
                 </li>
                 <li class="nav-item">
@@ -322,6 +325,12 @@
                 href="{{ route('panel.finances.index') }}"
             >
                 Finanse
+            </a>
+            <a
+                class="nav-link {{ request()->routeIs('panel.young-animals.*') ? 'active' : '' }}"
+                href="{{ route('panel.young-animals.index') }}"
+            >
+                Maluchy
             </a>
             <a
                 class="nav-link {{ request()->routeIs('panel.offers.*') ? 'active' : '' }}"

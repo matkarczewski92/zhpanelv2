@@ -16,6 +16,8 @@ use App\Http\Controllers\Animals\AnimalPregnancyShedController;
 use App\Http\Controllers\Animals\AnimalWinteringController;
 
 
+Route::get('/young-animals', \App\Http\Controllers\Animals\YoungAnimalsController::class)->name('young-animals.index');
+
 Route::get('/animals', [AnimalController::class, 'index'])
     ->name('animals.index');
 Route::get('/animals/create', [AnimalController::class, 'create'])

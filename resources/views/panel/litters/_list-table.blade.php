@@ -65,7 +65,14 @@
                         @endif
                     </td>
                     <td>
-                        <span class="badge text-bg-secondary">{{ $row['status_label'] }}</span>
+                        @php
+                            $statusClass = match ($row['status_label']) {
+                                'W trakcie odchowu' => 'text-bg-success',
+                                'W trakcie inkubacji' => 'text-dark',
+                                default => 'text-bg-secondary',
+                            };
+                        @endphp
+                        <span class="badge {{ $statusClass }}" @if ($row['status_label'] === 'W trakcie inkubacji') style="background-color: #fd7e14;" @endif>{{ $row['status_label'] }}</span>
                     </td>
                     <td class="text-end text-nowrap">
                         <a href="{{ $row['show_url'] }}" class="btn btn-link text-light p-0 me-2" aria-label="Podglad">

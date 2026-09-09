@@ -151,7 +151,7 @@ class GetAnimalsIndexQuery
 
         $query->orderBy($sortMap[$sort], $direction);
 
-        $paginator = $query->paginate(50);
+        $paginator = $query->paginate(100);
 
         $leadTimeDays = (int) SystemConfig::where('key', 'feedLeadTime')->value('value');
         if ($leadTimeDays <= 0) {

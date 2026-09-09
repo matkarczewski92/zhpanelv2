@@ -3,6 +3,7 @@
 namespace Tests\Unit\Application\Litters;
 
 use App\Application\Litters\Queries\GetLitterShowQuery;
+use App\Application\Litters\Support\IncubationTimelineBuilder;
 use App\Application\Litters\Support\LitterStatusResolver;
 use App\Application\Litters\Support\LitterTimelineCalculator;
 use App\Services\Genetics\GenotypeCalculator;
@@ -14,9 +15,11 @@ class GetLitterShowQueryTest extends TestCase
 {
     public function test_formats_date_with_days_difference(): void
     {
+        $timelineCalculator = new LitterTimelineCalculator();
         $query = new GetLitterShowQuery(
             new LitterStatusResolver(),
-            new LitterTimelineCalculator(),
+            $timelineCalculator,
+            new IncubationTimelineBuilder($timelineCalculator),
             $this->createMock(GenotypeCalculator::class),
         );
 
@@ -34,9 +37,11 @@ class GetLitterShowQueryTest extends TestCase
 
     public function test_formats_date_without_days_when_reference_missing(): void
     {
+        $timelineCalculator = new LitterTimelineCalculator();
         $query = new GetLitterShowQuery(
             new LitterStatusResolver(),
-            new LitterTimelineCalculator(),
+            $timelineCalculator,
+            new IncubationTimelineBuilder($timelineCalculator),
             $this->createMock(GenotypeCalculator::class),
         );
 
