@@ -92,6 +92,34 @@ class YoungAnimalsTest extends TestCase
         $this->assertStringContainsString('n/d', $html);
     }
 
+    public function test_feeding_warning_requires_over_six_feedings_and_only_the_third_latest_invalid(): void
+    {
+        $histories = [
+            1 => [1, 1, 1, 1, 9, 1, 1],
+            2 => [1, 1, 1, 1, 10, 1, 1],
+            3 => [1, 1, 1, 9, 1, 1],
+            4 => [1, 1, 1, 1, 1, 9, 1],
+            5 => [1, 1, 1, 1, 9, 1, 10],
+            6 => [1, 1, 1, 1, 1, 1, 1],
+        ];
+        foreach ($histories as $id => $feeds) {
+            DB::table('animals')->insert(['id' => $id, 'name' => 'Snake '.$id]);
+            foreach ($feeds as $feedId) {
+                DB::table('animal_feedings')->insert([
+                    'animal_id' => $id, 'feed_id' => $feedId, 'created_at' => '2026-01-01',
+                ]);
+            }
+        }
+
+        $rows = app(GetYoungAnimalsIndexQuery::class)->handle()->keyBy('id');
+        foreach ([1 => true, 2 => true, 3 => false, 4 => false, 5 => false, 6 => false] as $id => $expected) {
+            $this->assertSame($expected, $rows[$id]['feedings_warning'], 'Animal '.$id);
+        }
+        $this->assertFalse($rows[1]['feedings_ok']);
+        $this->assertTrue($rows[6]['feedings_ok']);
+        $html = view('panel.animals.young', ['animals' => $rows])->render();
+        $this->assertSame(2, substr_count($html, 'data-sort-value="0.5"'));
+    }
     public function test_requires_three_latest_valid_feedings_for_each_animal(): void
     {
         $histories = [

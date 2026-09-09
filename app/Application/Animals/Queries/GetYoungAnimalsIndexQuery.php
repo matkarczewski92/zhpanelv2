@@ -13,6 +13,7 @@ class GetYoungAnimalsIndexQuery
         $animals = Animal::query()
             ->where('animal_category_id', 2)
             ->withExists('photos')
+            ->withCount('feedings')
             ->with([
                 'litter:id,litter_code',
                 'offers' => fn ($query) => $query->orderByDesc('created_at')->orderByDesc('id')->limit(1),
@@ -34,6 +35,11 @@ class GetYoungAnimalsIndexQuery
                 'feedings_ok' => $animal->feedings->count() === 3
                     && $animal->feedings->every(fn ($feeding) => $feeding->feed_id !== null
                         && ! in_array((int) $feeding->feed_id, [9, 10], true)),
+                'feedings_warning' => $animal->feedings_count > 6
+                    && $animal->feedings->count() === 3
+                    && $animal->feedings->take(2)->every(fn ($feeding) => $feeding->feed_id !== null
+                        && ! in_array((int) $feeding->feed_id, [9, 10], true))
+                    && in_array((int) $animal->feedings->last()->feed_id, [9, 10], true),
                 'price' => $offer?->price,
                 'is_public' => (int) $animal->public_profile === 1,
                 'profile_url' => route('panel.animals.show', $animal->id),

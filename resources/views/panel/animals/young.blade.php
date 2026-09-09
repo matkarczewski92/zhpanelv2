@@ -37,11 +37,21 @@
                                 <td class="text-center">{{ $animal['litter_code'] }}</td>
                                 <td class="text-center">{{ $animal['sex_label'] }}</td>
                                 @foreach (['has_photo', 'has_offer', 'feedings_ok'] as $status)
-                                    <td class="text-center" data-sort-value="{{ (int) $animal[$status] }}">
+                                    @php
+                                        $feedingWarning = $status === 'feedings_ok' && ($animal['feedings_warning'] ?? false);
+                                    @endphp
+                                    <td class="text-center" data-sort-value="{{ $feedingWarning ? 0.5 : (int) $animal[$status] }}">
+                                        @if ($feedingWarning)
+                                            <span style="color: #fd7e14; print-color-adjust: exact; -webkit-print-color-adjust: exact;" title="Ponad 6 karmień. Dwa najnowsze są prawidłowe; trzecie od końca ma typ 9 lub 10.">
+                                                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                                <span class="visually-hidden">Uwaga: trzecie od końca karmienie ma typ 9 lub 10.</span>
+                                            </span>
+                                        @else
                                         <span class="{{ $animal[$status] ? 'text-success' : 'text-danger' }}">
                                             <i class="bi {{ $animal[$status] ? 'bi-check-lg' : 'bi-x-lg' }}" aria-hidden="true"></i>
                                             <span class="visually-hidden">{{ $animal[$status] ? 'Tak' : 'Nie' }}</span>
                                         </span>
+                                        @endif
                                     </td>
                                 @endforeach
                                 <td class="text-center" data-sort-value="{{ $animal['price'] }}">{{ $animal['price'] !== null ? number_format((float) $animal['price'], 2, ',', ' ') . ' zł' : 'n/d' }}</td>
@@ -50,7 +60,7 @@
                                         <i class="bi {{ $animal['is_public'] ? 'bi-check-lg' : 'bi-x-lg' }}" aria-hidden="true"></i>
                                         <span class="visually-hidden">{{ $animal['is_public'] ? 'Tak' : 'Nie' }}</span>
                                     </span>
-                                    @if ($animal['is_public'] && (! $animal['has_photo'] || ! $animal['has_offer'] || ! $animal['feedings_ok']))
+                                    @if ($animal['is_public'] && (! $animal['has_photo'] || ! $animal['has_offer'] || (! $animal['feedings_ok'] && ! ($animal['feedings_warning'] ?? false))))
                                         <span class="ms-1" style="color: #fd7e14; print-color-adjust: exact; -webkit-print-color-adjust: exact;" title="Profil publiczny: brakuje zdjęcia, oferty lub trzech prawidłowych karmień." data-public-warning>
                                             <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                                             <span class="visually-hidden">Uwaga: brakuje zdjęcia, oferty lub trzech prawidłowych karmień.</span>
