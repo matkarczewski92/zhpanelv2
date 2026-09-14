@@ -332,7 +332,10 @@ class DashboardQueryService
         }
 
         $tables['breeding']['rows'] = $this->sortFeedingRows($tables['breeding']['rows']);
-        $tables['litters']['rows'] = $this->sortFeedingRows($tables['litters']['rows']);
+        usort(
+            $tables['litters']['rows'],
+            static fn (array $left, array $right): int => (int) $left['id'] <=> (int) $right['id']
+        );
         $tables['breeding']['summary'] = $this->buildFeedingSummary($tables['breeding']['rows'], false);
         $tables['breeding']['summary_past'] = $this->buildFeedingSummary($tables['breeding']['rows'], true);
         $tables['litters']['summary'] = $this->buildFeedingSummary($tables['litters']['rows'], false);
