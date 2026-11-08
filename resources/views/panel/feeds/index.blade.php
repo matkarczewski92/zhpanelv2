@@ -305,7 +305,7 @@
                         <button
                             type="button"
                             class="btn btn-outline-light btn-sm"
-                            data-action="planning-order"
+                            data-action="planning-order-summary"
                         >
                             Zamówienie
                         </button>
@@ -379,6 +379,7 @@
 @endsection
 
 @push('scripts')
+    @include('panel.feeds.order-script')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
