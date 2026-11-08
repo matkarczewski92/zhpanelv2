@@ -259,7 +259,7 @@
                         </thead>
                         <tbody>
                             @forelse ($planningRows as $feedId => $row)
-                                <tr data-feed-id="{{ $feedId }}">
+                                <tr data-feed-id="{{ $feedId }}" data-unit-price="{{ $row['unit_price'] ?? '' }}">
                                     <td class="fw-semibold text-break" data-feed-name>{{ $row['name'] }}</td>
                                     <td class="js-dk fw-semibold">{{ $row['dk_label'] }}</td>
                                     <td class="js-dz text-nowrap text-muted small">{{ $row['dz_label'] }}</td>
