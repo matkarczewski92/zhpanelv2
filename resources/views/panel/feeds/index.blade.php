@@ -260,7 +260,7 @@
                         <tbody>
                             @forelse ($planningRows as $feedId => $row)
                                 <tr data-feed-id="{{ $feedId }}">
-                                    <td class="fw-semibold text-break">{{ $row['name'] }}</td>
+                                    <td class="fw-semibold text-break" data-feed-name>{{ $row['name'] }}</td>
                                     <td class="js-dk fw-semibold">{{ $row['dk_label'] }}</td>
                                     <td class="js-dz text-nowrap text-muted small">{{ $row['dz_label'] }}</td>
                                     <td>
@@ -301,6 +301,13 @@
                             data-action="planning-recalculate"
                         >
                             Przelicz
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-outline-light btn-sm"
+                            data-action="planning-order"
+                        >
+                            Zamówienie
                         </button>
                     </div>
                 </div>
